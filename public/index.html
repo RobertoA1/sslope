@@ -41,24 +41,64 @@
         <article class="card metric"><p class="label">Desplazamiento previsto</p><strong id="displacement">—</strong><span id="interval">Intervalo: —</span></article>
         <article class="card metric"><p class="label">Incertidumbre</p><strong id="uncertainty">—</strong><span id="residual">Residuo físico: —</span></article>
       </section>
+      <section class="twin-flow" aria-label="Flujo del gemelo digital">
+        <article class="flow-step"><p class="label">01 · ESTADO ACTUAL</p><strong id="state-current">—</strong><span id="state-detail">Esperando telemetría.</span></article>
+        <span class="flow-arrow">→</span>
+        <article class="flow-step"><p class="label">02 · PREDICCIÓN</p><strong id="state-prediction">—</strong><span id="prediction-detail">Modelo pendiente.</span></article>
+        <span class="flow-arrow">→</span>
+        <article class="flow-step"><p class="label">03 · RIESGO</p><strong id="state-risk">—</strong><span id="risk-detail">Configuración de sitio pendiente.</span></article>
+      </section>
 
       <section class="scene-layout">
         <article class="card scene-card">
           <div class="section-title"><div><p class="label">SIMULADOR ESPACIAL</p><h2>Talud 3D · estado del gemelo</h2></div><span id="scene-status" class="chip">CARGANDO</span></div>
           <canvas id="scene-3d" width="960" height="480" tabindex="0" aria-label="Modelo tridimensional interactivo del talud"></canvas>
-          <div class="scene-footer"><span id="layer-legend"></span><span id="camera-mode">Cámara orbital · arrastra para rotar</span></div>
+          <div class="scene-footer"><span id="layer-legend"></span><span id="coordinate-readout">Sistema local · metros</span><span id="camera-mode">Cámara orbital · arrastra para rotar</span></div>
         </article>
         <aside class="card scene-tools">
+          <details class="geometry-ingestion" open>
+            <summary>Geometría del Digital Twin</summary>
+            <label for="geometry-source">Fuente de geometría</label>
+            <select id="geometry-source"><option value="PROCEDURAL">Talud paramétrico</option><option value="PHOTO_APPROXIMATION">Aproximación desde fotografía</option><option value="IMPORTED_MODEL">Modelo / datos topográficos</option></select>
+            <input id="geometry-file" type="file" accept="image/*,.csv,.dxf,.obj,.stl,.gltf,.glb" />
+            <button id="load-geometry" class="secondary">Escanear / aplicar fuente</button>
+            <p class="control-hint">Pruebas: <a href="/samples/talud-circular-xyz.csv" download>CSV XYZ</a> · <a href="/samples/perfil-talud-bancado.dxf" download>DXF de perfil</a></p>
+            <img id="photo-preview" alt="Fotografía de referencia del talud" hidden />
+            <p id="geometry-status" class="control-hint">Geometría procedural activa.</p>
+          </details>
           <p class="label">CAPAS DEL MODELO</p>
           <label for="scene-layer">Variable visualizada</label>
           <select id="scene-layer"><option value="risk">Riesgo pronosticado</option><option value="displacement">Desplazamiento previsto</option><option value="pore">Presión de poros</option><option value="safety">Factor de seguridad</option><option value="uncertainty">Incertidumbre</option></select>
+          <section class="forecast-playback" aria-label="Reproducción temporal del desplazamiento previsto">
+            <p class="label">SIMULACIÓN TEMPORAL</p>
+            <div class="playback-actions"><button id="play-displacement" class="secondary" type="button">▶ Simular desplazamiento</button><button id="pause-displacement" class="secondary" type="button" disabled>❚❚ Pausar</button><button id="reset-displacement" class="secondary" type="button">↺ Reiniciar</button></div>
+            <label for="playback-speed">Velocidad de reproducción</label>
+            <select id="playback-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+            <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">450×</output><input id="playback-amplification" type="range" min="100" max="900" step="50" value="450" /></label>
+            <div class="playback-track" role="progressbar" aria-label="Progreso de la simulación temporal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="playback-progress"></span></div>
+            <div class="playback-readout"><strong id="playback-time">t = 0.0 h</strong><span id="playback-displacement">Desplazamiento: —</span></div>
+            <p class="control-hint">Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo.</p>
+          </section>
           <div class="visual-toggles" aria-label="Opciones de visualización">
             <label class="toggle"><input id="terrain-enabled" type="checkbox" checked /> <span>Forma y textura del talud</span></label>
             <label class="toggle"><input id="materials-enabled" type="checkbox" checked /> <span>Color de materiales</span></label>
             <label class="toggle"><input id="overlay-enabled" type="checkbox" checked /> <span>Capa analítica</span></label>
             <label class="toggle"><input id="contrast-enabled" type="checkbox" checked /> <span>Contraste alto</span></label>
+            <label class="toggle"><input id="coordinates-enabled" type="checkbox" checked /> <span>Cuadrícula y coordenadas</span></label>
             <label class="toggle"><input id="freecam-enabled" type="checkbox" /> <span>Vuelo libre (WASD + Q/E)</span></label>
           </div>
+          <section class="coordinate-inspector" aria-label="Inspector de coordenadas">
+            <p class="label">REFERENCIA ESPACIAL</p>
+            <strong id="coordinate-system">Sistema local del simulador</strong>
+            <div class="coordinate-rows"><span><i class="axis-e"></i>E / X <output id="coordinate-east">—</output></span><span><i class="axis-n"></i>N / Y <output id="coordinate-north">—</output></span><span><i class="axis-z"></i>Cota / Z <output id="coordinate-elevation">—</output></span></div>
+            <p id="coordinate-hover" class="control-hint">Mueve el cursor sobre una marca de la retícula.</p>
+          </section>
+          <section class="report-actions" aria-label="Generación de informes">
+            <p class="label">INFORME DEL GEMELO</p>
+            <p>Genera un resumen trazable del estado actual, simulación y geometría.</p>
+            <div><button id="download-pdf" class="secondary">Descargar PDF</button><button id="download-word" class="secondary">Descargar Word</button></div>
+            <p id="report-status" class="control-hint">El informe se genera con el estado visible actual.</p>
+          </section>
           <div class="viewpoints" aria-label="Puntos de observación del talud">
             <p class="label">PUNTOS DE OBSERVACIÓN</p>
             <button class="viewpoint active" data-viewpoint="overview">▣ Vista completa</button>
@@ -66,10 +106,20 @@
             <button class="viewpoint" data-viewpoint="midbench">◉ Banco medio</button>
             <button class="viewpoint" data-viewpoint="toe">◉ Pie del talud</button>
           </div>
+          <details class="simulation-controls">
+            <summary>Política de riesgo del sitio</summary>
+            <p class="control-hint">Valores de demostración. Deben ser aprobados por geotecnia antes de uso operacional.</p>
+            <label class="range-control">Índice: vigilancia <output id="riskWatch-value">0.30</output><input data-policy="riskWatch" type="range" min="0" max="1" step="0.01" value="0.30" /></label>
+            <label class="range-control">Índice: alerta <output id="riskAlert-value">0.55</output><input data-policy="riskAlert" type="range" min="0" max="1" step="0.01" value="0.55" /></label>
+            <label class="range-control">Índice: crítico <output id="riskCritical-value">0.78</output><input data-policy="riskCritical" type="range" min="0" max="1" step="0.01" value="0.78" /></label>
+            <label class="range-control">FS: vigilancia <output id="fsWatch-value">1.30</output><input data-policy="fsWatch" type="range" min="0.5" max="2" step="0.01" value="1.30" /></label>
+            <label class="range-control">FS: alerta <output id="fsAlert-value">1.15</output><input data-policy="fsAlert" type="range" min="0.5" max="2" step="0.01" value="1.15" /></label>
+            <label class="range-control">FS: crítico <output id="fsCritical-value">1.00</output><input data-policy="fsCritical" type="range" min="0.5" max="2" step="0.01" value="1.00" /></label>
+          </details>
           <details class="simulation-controls" open>
             <summary>Factores geotécnicos simulables</summary>
             <p class="control-hint">Cada ajuste recalcula el factor de seguridad, pronóstico y alerta.</p>
-            <label class="select-control">Tipo de talud<select data-param="geometryType"><option value="LINEAR">Corte recto</option><option value="BENCHED">Mina a cielo abierto con bancos</option><option value="CIRCULAR">Circular / cóncavo</option><option value="SEMICIRCULAR">Semicircular / anfiteatro</option><option value="WASTE_DUMP">Botadero / terraplén</option></select></label>
+            <label class="select-control">Tipo de talud<select data-param="geometryType"><option value="LINEAR">Corte recto</option><option value="BENCHED">Mina a cielo abierto con bancos</option><option value="CIRCULAR">Fosa circular / cóncava</option><option value="SEMICIRCULAR">Semicircular / anfiteatro</option><option value="WASTE_DUMP">Botadero radial / terraplén</option></select></label>
             <label class="range-control">Altura del talud <output id="slopeHeightM-value">90 m</output><input data-param="slopeHeightM" type="range" min="20" max="300" step="5" value="90" /></label>
             <label class="range-control">Ancho del talud <output id="slopeWidthM-value">160 m</output><input data-param="slopeWidthM" type="range" min="40" max="600" step="10" value="160" /></label>
             <label class="range-control">Ángulo del talud <output id="slopeAngleDeg-value">42°</output><input data-param="slopeAngleDeg" type="range" min="15" max="75" step="1" value="42" /></label>
@@ -113,6 +163,7 @@
       </section>
     </main>
     <footer>M-1 Digital Twin · MVP académico · Datos sintéticos para demostración</footer>
+    <script src="/geometry-adapters.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

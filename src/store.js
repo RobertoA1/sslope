@@ -1,4 +1,4 @@
-import { DEFAULT_SIMULATION_PARAMETERS, syntheticReadings, validateReading } from "./core/forecast-engine.js";
+import { DEFAULT_RISK_POLICY, DEFAULT_SIMULATION_PARAMETERS, syntheticReadings, validateReading } from "./core/forecast-engine.js";
 
 const SIMULATION_RANGES = {
   cohesionKpa: [20, 500], frictionAngleDeg: [5, 55], unitWeightKNm3: [10, 35], slopeAngleDeg: [15, 75], characteristicDepthM: [5, 100],
@@ -12,6 +12,16 @@ export class TwinStore {
     this.readings = syntheticReadings({ critical: false });
     this.alerts = [];
     this.simulationParameters = { ...DEFAULT_SIMULATION_PARAMETERS };
+    this.riskPolicy = { ...DEFAULT_RISK_POLICY };
+    this.geometry = {
+      current: { id: "GEO-PROC-001", source: "PROCEDURAL", name: "Talud paramétrico", scientificStatus: "DEMONSTRACION" },
+      history: []
+    };
+    this.modelStatus = [
+      { component: "FEM", status: "MODELO_REDUCIDO", detail: "Indicador físico Mohr–Coulomb simplificado; no es un solver FEM calibrado." },
+      { component: "LSTM", status: "SUSTITUTO_NO_ENTRENADO", detail: "Contrato temporal demostrativo; requiere entrenamiento y validación." },
+      { component: "PINN", status: "PROTOTIPO_FISICO", detail: "Corrección informada por física; requiere entrenamiento y validación." }
+    ];
   }
 
   addReading(input) {
@@ -47,6 +57,54 @@ export class TwinStore {
       this.simulationParameters[key] = numeric;
     }
     return { ...this.simulationParameters };
+  }
+
+  updateRiskPolicy(input) {
+    const allowed = ["riskWatch", "riskAlert", "riskCritical", "fsWatch", "fsAlert", "fsCritical", "uncertaintyWatch"];
+    for (const [key, value] of Object.entries(input)) {
+      if (!allowed.includes(key)) throw new Error(`Umbral de riesgo no permitido: ${key}`);
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric) || numeric < 0 || numeric > 2) throw new Error(`${key} debe ser numérico y estar dentro de un rango válido`);
+      this.riskPolicy[key] = numeric;
+    }
+    if (!(this.riskPolicy.riskWatch <= this.riskPolicy.riskAlert && this.riskPolicy.riskAlert <= this.riskPolicy.riskCritical)) throw new Error("Los umbrales de riesgo deben ser crecientes");
+    if (!(this.riskPolicy.fsWatch >= this.riskPolicy.fsAlert && this.riskPolicy.fsAlert >= this.riskPolicy.fsCritical)) throw new Error("Los umbrales de FS deben ser decrecientes");
+    this.riskPolicy.status = "CONFIGURADA_PENDIENTE_VALIDACION";
+    return { ...this.riskPolicy };
+  }
+
+  registerGeometry(input) {
+    const allowedSources = ["PROCEDURAL", "PHOTO_APPROXIMATION", "IMPORTED_MODEL"];
+    if (!allowedSources.includes(input.source)) throw new Error("Fuente de geometría no permitida");
+    const entry = {
+      id: `GEO-${Date.now()}`,
+      source: input.source,
+      name: String(input.name || "Geometría sin nombre").slice(0, 120),
+      format: input.format ? String(input.format).slice(0, 20) : null,
+      scientificStatus: input.scientificStatus || "PENDIENTE_VALIDACION",
+      note: String(input.note || "").slice(0, 500),
+      createdAt: new Date().toISOString()
+    };
+    this.geometry.current = entry;
+    this.geometry.history.unshift(entry);
+    this.geometry.history = this.geometry.history.slice(0, 30);
+    return entry;
+  }
+
+  getTwinStatus() {
+    const latest = this.readings.at(-1);
+    return {
+      updatedAt: new Date().toISOString(),
+      dataStatus: latest?.source === "synthetic" ? "DATOS_SINTETICOS" : "DATOS_INGRESADOS",
+      geometry: this.geometry,
+      modelStatus: this.modelStatus,
+      monitoring: {
+        readingCount: this.readings.length,
+        sensorIds: [...new Set(this.readings.map((reading) => reading.sensorId))],
+        latestReadingAt: latest?.timestamp ?? null
+      },
+      riskPolicy: this.riskPolicy
+    };
   }
 
   recordAlert(forecast) {

@@ -28,7 +28,7 @@ async function staticFile(res, requestPath) {
   if (!resolved.startsWith(publicDir)) return sendJson(res, 403, { error: "Ruta no permitida" });
   try {
     const content = await readFile(resolved);
-    const type = resolved.endsWith(".css") ? "text/css" : resolved.endsWith(".js") ? "text/javascript" : "text/html";
+    const type = resolved.endsWith(".css") ? "text/css" : resolved.endsWith(".js") ? "text/javascript" : resolved.endsWith(".csv") ? "text/csv" : resolved.endsWith(".dxf") ? "application/dxf" : "text/html";
     res.writeHead(200, { "Content-Type": `${type}; charset=utf-8` });
     res.end(content);
   } catch {
@@ -46,9 +46,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/health") return sendJson(res, 200, { status: "ok", service: "M-1 Digital Twin", version: "0.1.0" });
     if (req.method === "GET" && url.pathname === "/api/telemetry") return sendJson(res, 200, { readings: store.getReadings(url.searchParams.get("limit")) });
     if (req.method === "GET" && url.pathname === "/api/alerts") return sendJson(res, 200, { alerts: store.alerts });
+    if (req.method === "GET" && url.pathname === "/api/twin") return sendJson(res, 200, store.getTwinStatus());
     if (req.method === "GET" && url.pathname === "/api/simulation") return sendJson(res, 200, { parameters: store.simulationParameters });
     if (req.method === "GET" && url.pathname === "/api/forecast") {
-      const forecast = createForecast(store.getReadings(120), Number(url.searchParams.get("horizon") || 24), store.simulationParameters);
+      const forecast = createForecast(store.getReadings(120), Number(url.searchParams.get("horizon") || 24), store.simulationParameters, store.riskPolicy);
       store.recordAlert(forecast);
       return sendJson(res, 200, forecast);
     }
@@ -58,6 +59,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { readings: store.loadScenario(name), scenario: name });
     }
     if (req.method === "POST" && url.pathname === "/api/simulation") return sendJson(res, 200, { parameters: store.updateSimulationParameters(await getBody(req)) });
+    if (req.method === "POST" && url.pathname === "/api/risk-policy") return sendJson(res, 200, { policy: store.updateRiskPolicy(await getBody(req)) });
+    if (req.method === "POST" && url.pathname === "/api/geometry") return sendJson(res, 201, { geometry: store.registerGeometry(await getBody(req)) });
     if (req.method === "GET" && !url.pathname.startsWith("/api/")) return staticFile(res, url.pathname);
     sendJson(res, 404, { error: "Ruta no encontrada" });
   } catch (error) {

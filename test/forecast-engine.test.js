@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createForecast, syntheticReadings, validateReading } from "../src/core/forecast-engine.js";
+import { TwinStore } from "../src/store.js";
 
 test("crea un pronóstico híbrido completo", () => {
   const forecast = createForecast(syntheticReadings({ count: 48 }), 24);
@@ -45,4 +46,18 @@ test("el perfil geométrico modifica la demanda reducida de estabilidad", () => 
   const circular = createForecast(readings, 24, { geometryType: "CIRCULAR" });
   assert.ok(circular.femState.factorOfSafety > linear.femState.factorOfSafety);
   assert.equal(circular.femState.geometryDrivingFactor, 0.92);
+});
+
+test("acepta una geometría categórica sin convertirla a número", () => {
+  const store = new TwinStore();
+  const parameters = store.updateSimulationParameters({ geometryType: "SEMICIRCULAR" });
+  assert.equal(parameters.geometryType, "SEMICIRCULAR");
+});
+
+test("la política de riesgo se puede configurar sin cambiar el estado físico", () => {
+  const readings = syntheticReadings({ count: 72 });
+  const defaultRisk = createForecast(readings, 24);
+  const stricterRisk = createForecast(readings, 24, {}, { riskWatch: 0.1, riskAlert: 0.2, riskCritical: 0.3, fsWatch: 1.5, fsAlert: 1.2, fsCritical: 1, uncertaintyWatch: 0.2, status: "CONFIGURADA_PENDIENTE_VALIDACION" });
+  assert.equal(defaultRisk.femState.factorOfSafety, stricterRisk.femState.factorOfSafety);
+  assert.equal(stricterRisk.risk.policyStatus, "CONFIGURADA_PENDIENTE_VALIDACION");
 });

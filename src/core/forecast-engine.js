@@ -12,6 +12,16 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const sigmoid = (value) => 1 / (1 + Math.exp(-value));
 
 export const RISK_LEVELS = ["NORMAL", "VIGILANCIA", "ALERTA", "CRITICO"];
+export const DEFAULT_RISK_POLICY = Object.freeze({
+  status: "DEMO_NO_VALIDADA",
+  riskWatch: 0.3,
+  riskAlert: 0.55,
+  riskCritical: 0.78,
+  fsWatch: 1.3,
+  fsAlert: 1.15,
+  fsCritical: 1.0,
+  uncertaintyWatch: 0.55
+});
 
 export const DEFAULT_SIMULATION_PARAMETERS = Object.freeze({
   cohesionKpa: 280,
@@ -167,21 +177,21 @@ export function physicsInformedFusion(temporal, femState, horizonHours) {
   };
 }
 
-export function classifyRisk(riskScore, factorOfSafety, uncertainty) {
-  if (factorOfSafety < 1.0 || riskScore >= 0.78) return "CRITICO";
-  if (factorOfSafety < 1.15 || riskScore >= 0.55) return "ALERTA";
-  if (factorOfSafety < 1.3 || riskScore >= 0.3 || uncertainty >= 0.55) return "VIGILANCIA";
+export function classifyRisk(riskScore, factorOfSafety, uncertainty, policy = DEFAULT_RISK_POLICY) {
+  if (factorOfSafety < policy.fsCritical || riskScore >= policy.riskCritical) return "CRITICO";
+  if (factorOfSafety < policy.fsAlert || riskScore >= policy.riskAlert) return "ALERTA";
+  if (factorOfSafety < policy.fsWatch || riskScore >= policy.riskWatch || uncertainty >= policy.uncertaintyWatch) return "VIGILANCIA";
   return "NORMAL";
 }
 
-export function createForecast(readings, horizonHours = 24, parameters = {}) {
+export function createForecast(readings, horizonHours = 24, parameters = {}, riskPolicy = DEFAULT_RISK_POLICY) {
   if (!Number.isFinite(Number(horizonHours)) || Number(horizonHours) <= 0) throw new Error("horizonHours debe ser positivo");
   if (!readings.length) throw new Error("No existen lecturas para pronosticar");
   const femState = computeFemState(readings, parameters);
   const temporal = temporalForecast(readings, Number(horizonHours), parameters);
   const fusion = physicsInformedFusion(temporal, femState, Number(horizonHours));
   const last = readings.at(-1);
-  const level = classifyRisk(fusion.riskScore, femState.factorOfSafety, fusion.uncertainty);
+  const level = classifyRisk(fusion.riskScore, femState.factorOfSafety, fusion.uncertainty, riskPolicy);
   return {
     generatedAt: new Date().toISOString(),
     targetAt: new Date(new Date(last.timestamp).getTime() + Number(horizonHours) * 3_600_000).toISOString(),
@@ -194,7 +204,7 @@ export function createForecast(readings, horizonHours = 24, parameters = {}) {
       lower: Number(Math.max(0, last.displacementMm + fusion.predictedIncrementMm * (1 - fusion.uncertainty)).toFixed(3)),
       upper: Number((last.displacementMm + fusion.predictedIncrementMm * (1 + fusion.uncertainty)).toFixed(3))
     },
-    risk: { level, score: fusion.riskScore, uncertainty: fusion.uncertainty },
+    risk: { level, score: fusion.riskScore, uncertainty: fusion.uncertainty, policyStatus: riskPolicy.status },
     femState,
     modelDiagnostics: {
       temporalRisk: temporal.temporalRisk,
