@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>M-1 | Slope Stability Digital Twin</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">M-1 · PROTOTIPO DE INVESTIGACIÓN</p>
+        <h1>Gemelo digital de estabilidad de taludes</h1>
+        <p class="subhead">Fusión física FEM + pronóstico temporal + corrección informada por física.</p>
+      </div>
+      <div class="connection"><span class="dot"></span> Servicio activo</div>
+    </header>
+    <main>
+      <section class="control-panel" aria-label="Controles de demostración">
+        <div>
+          <label for="scenario">Escenario demostrativo</label>
+          <select id="scenario"><option value="normal">Normal</option><option value="critical">Crítico</option></select>
+        </div>
+        <div>
+          <label for="horizon">Horizonte de pronóstico</label>
+          <select id="horizon"><option value="1">1 hora</option><option value="6">6 horas</option><option value="24" selected>24 horas</option><option value="72">72 horas</option></select>
+        </div>
+        <button id="run">Actualizar gemelo</button>
+        <p id="last-update" class="small"></p>
+      </section>
+
+      <section class="hero-grid">
+        <article class="card risk-card">
+          <p class="label">Nivel de riesgo</p>
+          <p id="risk-level" class="risk-level">—</p>
+          <p id="risk-description" class="muted">Cargando estado del talud…</p>
+          <div class="risk-meter"><span id="risk-bar"></span></div>
+          <p id="risk-score" class="small"></p>
+        </article>
+        <article class="card metric"><p class="label">Factor de seguridad (FEM)</p><strong id="fs">—</strong><span>Meta operacional habitual: &gt; 1.30</span></article>
+        <article class="card metric"><p class="label">Desplazamiento previsto</p><strong id="displacement">—</strong><span id="interval">Intervalo: —</span></article>
+        <article class="card metric"><p class="label">Incertidumbre</p><strong id="uncertainty">—</strong><span id="residual">Residuo físico: —</span></article>
+      </section>
+
+      <section class="scene-layout">
+        <article class="card scene-card">
+          <div class="section-title"><div><p class="label">SIMULADOR ESPACIAL</p><h2>Talud 3D · estado del gemelo</h2></div><span id="scene-status" class="chip">CARGANDO</span></div>
+          <canvas id="scene-3d" width="960" height="480" tabindex="0" aria-label="Modelo tridimensional interactivo del talud"></canvas>
+          <div class="scene-footer"><span id="layer-legend"></span><span id="camera-mode">Cámara orbital · arrastra para rotar</span></div>
+        </article>
+        <aside class="card scene-tools">
+          <p class="label">CAPAS DEL MODELO</p>
+          <label for="scene-layer">Variable visualizada</label>
+          <select id="scene-layer"><option value="risk">Riesgo pronosticado</option><option value="displacement">Desplazamiento previsto</option><option value="pore">Presión de poros</option><option value="safety">Factor de seguridad</option><option value="uncertainty">Incertidumbre</option></select>
+          <div class="visual-toggles" aria-label="Opciones de visualización">
+            <label class="toggle"><input id="terrain-enabled" type="checkbox" checked /> <span>Forma y textura del talud</span></label>
+            <label class="toggle"><input id="materials-enabled" type="checkbox" checked /> <span>Color de materiales</span></label>
+            <label class="toggle"><input id="overlay-enabled" type="checkbox" checked /> <span>Capa analítica</span></label>
+            <label class="toggle"><input id="contrast-enabled" type="checkbox" checked /> <span>Contraste alto</span></label>
+            <label class="toggle"><input id="freecam-enabled" type="checkbox" /> <span>Vuelo libre (WASD + Q/E)</span></label>
+          </div>
+          <div class="viewpoints" aria-label="Puntos de observación del talud">
+            <p class="label">PUNTOS DE OBSERVACIÓN</p>
+            <button class="viewpoint active" data-viewpoint="overview">▣ Vista completa</button>
+            <button class="viewpoint" data-viewpoint="crest">◉ Cresta</button>
+            <button class="viewpoint" data-viewpoint="midbench">◉ Banco medio</button>
+            <button class="viewpoint" data-viewpoint="toe">◉ Pie del talud</button>
+          </div>
+          <details class="simulation-controls" open>
+            <summary>Factores geotécnicos simulables</summary>
+            <p class="control-hint">Cada ajuste recalcula el factor de seguridad, pronóstico y alerta.</p>
+            <label class="select-control">Tipo de talud<select data-param="geometryType"><option value="LINEAR">Corte recto</option><option value="BENCHED">Mina a cielo abierto con bancos</option><option value="CIRCULAR">Circular / cóncavo</option><option value="SEMICIRCULAR">Semicircular / anfiteatro</option><option value="WASTE_DUMP">Botadero / terraplén</option></select></label>
+            <label class="range-control">Altura del talud <output id="slopeHeightM-value">90 m</output><input data-param="slopeHeightM" type="range" min="20" max="300" step="5" value="90" /></label>
+            <label class="range-control">Ancho del talud <output id="slopeWidthM-value">160 m</output><input data-param="slopeWidthM" type="range" min="40" max="600" step="10" value="160" /></label>
+            <label class="range-control">Ángulo del talud <output id="slopeAngleDeg-value">42°</output><input data-param="slopeAngleDeg" type="range" min="15" max="75" step="1" value="42" /></label>
+            <label class="range-control">Cohesión <output id="cohesionKpa-value">280 kPa</output><input data-param="cohesionKpa" type="range" min="20" max="500" step="5" value="280" /></label>
+            <label class="range-control">Fricción interna <output id="frictionAngleDeg-value">31°</output><input data-param="frictionAngleDeg" type="range" min="5" max="55" step="1" value="31" /></label>
+            <label class="range-control">Presión de poros <output id="waterPressureFactor-value">100%</output><input data-param="waterPressureFactor" type="range" min="0" max="2" step="0.05" value="1" /></label>
+            <label class="range-control">Lluvia / infiltración <output id="rainfallFactor-value">100%</output><input data-param="rainfallFactor" type="range" min="0" max="3" step="0.05" value="1" /></label>
+            <label class="range-control">Meteorización <output id="weatheringFactor-value">0%</output><input data-param="weatheringFactor" type="range" min="0" max="0.9" step="0.05" value="0" /></label>
+            <label class="range-control">Sismo / voladura <output id="seismicCoefficient-value">0.00 g</output><input data-param="seismicCoefficient" type="range" min="0" max="0.5" step="0.01" value="0" /></label>
+            <label class="range-control">Sobrecarga operativa <output id="surchargeKpa-value">0 kPa</output><input data-param="surchargeKpa" type="range" min="0" max="500" step="10" value="0" /></label>
+            <label class="range-control">Drenaje <output id="drainageEfficiency-value">0%</output><input data-param="drainageEfficiency" type="range" min="0" max="0.9" step="0.05" value="0" /></label>
+            <label class="range-control">Refuerzo <output id="reinforcementKpa-value">0 kPa</output><input data-param="reinforcementKpa" type="range" min="0" max="500" step="10" value="0" /></label>
+            <label class="select-control">Material bajo suelo<select data-param="bedrockCondition"><option value="NONE">Sin roca competente</option><option value="HARD">Roca dura</option><option value="FRACTURED">Roca fracturada</option></select></label>
+            <label class="range-control">Profundidad a roca <output id="bedrockDepthM-value">30 m</output><input data-param="bedrockDepthM" type="range" min="0" max="150" step="5" value="30" /></label>
+            <label class="range-control">Discontinuidades de roca <output id="rockDiscontinuityFactor-value">0%</output><input data-param="rockDiscontinuityFactor" type="range" min="0" max="0.9" step="0.05" value="0" /></label>
+          </details>
+          <button id="reset-camera" class="secondary">Restablecer cámara</button>
+          <div class="sensor-card"><p class="label">SENSOR SELECCIONADO</p><strong id="selected-sensor">EXT-01</strong><p id="sensor-detail" class="muted">Sensor de desplazamiento principal.</p></div>
+          <div class="material-key"><p class="label">MATERIALES</p><span><i class="material-dot rock"></i>Roca competente</span><span><i class="material-dot weathered"></i>Material meteorizado</span><span><i class="material-dot soil"></i>Suelo residual</span></div>
+          <div class="model-note"><p class="label">PROCEDENCIA</p><p id="layer-source">Capa pronosticada por el modelo híbrido.</p></div>
+        </aside>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="card chart-card">
+          <div class="section-title"><div><p class="label">MONITOREO</p><h2>Desplazamiento acumulado</h2></div><span id="sensor" class="chip">—</span></div>
+          <canvas id="chart" width="900" height="300" aria-label="Serie temporal de desplazamiento"></canvas>
+          <div class="legend"><span><i class="line"></i> Telemetría</span><span><i class="dash"></i> Pronóstico</span></div>
+        </article>
+        <article class="card explanation">
+          <p class="label">EXPLICABILIDAD</p>
+          <h2>¿Por qué esta alerta?</h2>
+          <ul id="explanations"><li>Calculando los componentes del modelo…</li></ul>
+          <p class="disclaimer">El resultado es un apoyo académico a la decisión. Requiere revisión de un especialista geotécnico antes de cualquier acción operacional.</p>
+        </article>
+      </section>
+
+      <section class="card alerts">
+        <div class="section-title"><div><p class="label">TRAZABILIDAD</p><h2>Alertas recientes</h2></div></div>
+        <div id="alert-list" class="alert-list"><p class="muted">Aún no hay alertas registradas.</p></div>
+      </section>
+    </main>
+    <footer>M-1 Digital Twin · MVP académico · Datos sintéticos para demostración</footer>
+    <script src="/app.js"></script>
+  </body>
+</html>
