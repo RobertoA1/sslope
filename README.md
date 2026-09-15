@@ -9,6 +9,7 @@ MVP académico de un gemelo digital para pronóstico de estabilidad de taludes d
 Se requiere Node.js 20 o superior.
 
 ```powershell
+npm install
 npm start
 ```
 
@@ -24,15 +25,20 @@ npm test
 - Pronóstico a 1, 6, 24 o 72 horas, con intervalo de incertidumbre.
 - Factor de seguridad reducido, presión de poros, velocidad de desplazamiento y diagnóstico de consistencia física.
 - Alertas por niveles: NORMAL, VIGILANCIA, ALERTA y CRÍTICO.
-- Simulador visual 3D de bancos y bermas con perfiles recto, circular/cóncavo y semicircular/de anfiteatro; incluye dimensiones configurables, estratos de suelo/roca, sensores seleccionables y capas de riesgo, desplazamiento, presión de poros, factor de seguridad e incertidumbre.
+- Simulador WebGL 3D de bancos y bermas con perfiles recto, circular/cóncavo y semicircular/de anfiteatro; incluye dimensiones configurables, estratos de suelo/roca, sensores seleccionables, sombras, textura procedural del terreno y capas de riesgo, desplazamiento, presión de poros, factor de seguridad e incertidumbre.
+- Evento de lluvia parametrizable por intensidad y duración: genera telemetría futura demostrativa, eleva la presión de poros y el desplazamiento según infiltración/drenaje, y representa lluvia animada y humedecimiento directamente sobre el talud.
+- Desplazamiento visible en vivo mediante deformación amplificada del suelo, roca y sedimentos, fragmentos superficiales y malla de referencia sin deformar. Este modo viene activado; al desactivar **Movimiento del terreno**, el modelo queda fijo y muestra flechas vectoriales.
+- Tablero de control rectangular en cuadrícula, con parámetros avanzados plegables, vista 3D a pantalla completa y visor sincronizado en una ventana adicional.
 - Controles de simulación para ángulo, cohesión, fricción, agua, lluvia, meteorización, sismo/voladura, sobrecarga, drenaje y refuerzo; modifican el cálculo y las alertas en tiempo real.
-- Fuente de geometría integrada al Digital Twin: talud paramétrico, aproximación visual desde una foto, cuadrícula topográfica CSV XYZ, perfil DXF y previsualización local de OBJ/STL ASCII; glTF/GLB quedan registrados para el adaptador futuro.
+- Fuente de geometría integrada al Digital Twin: talud paramétrico, aproximación visual desde una foto, cuadrícula topográfica CSV XYZ, perfil DXF y carga local de OBJ, STL ASCII/binario y glTF/GLB mediante Three.js.
 - Flujo visible de estado actual → predicción → riesgo y trazabilidad de la fuente geométrica.
 - API para incorporar lecturas reales y desacoplar instrumentación, modelos científicos y frontend.
 
 ## Usar el visor 3D
 
-El visor se encuentra debajo de los indicadores principales. Usa **Vista completa** para encuadrar toda la geometría y los puntos **Cresta**, **Banco medio** o **Pie del talud** para ingresar a esas zonas como en una vista de calle. Arrastra sobre el talud para rotar la cámara —incluido hacia arriba y abajo—, usa la rueda para acercar o alejar, y usa `Shift` mientras arrastras para desplazar la vista. Selecciona una capa en el panel derecho y haz clic en un sensor para consultar su detalle. Activa **Vuelo libre** para usar `W`, `A`, `S`, `D` (avance lateral), `Q`/`E` (bajar/subir) y `Shift` (mayor velocidad). Por defecto están activadas la forma/textura del talud, los colores de material, la capa analítica y el contraste alto; cada opción se puede deshabilitar de forma independiente.
+El visor se encuentra debajo de los indicadores principales. Usa **Encuadrar modelo** o **Vista completa** para recuperar rápidamente la vista general, y los puntos **Cresta**, **Banco medio** o **Pie del talud** para acercarte a esas zonas. Arrastra para rotar, usa el botón derecho para desplazar y la rueda para acercar o alejar. Selecciona una capa en el tablero y haz clic en un sensor para consultar su detalle. Activa **Vuelo libre** para usar `W`, `A`, `S`, `D` (avance lateral), `Q`/`E` (bajar/subir) y `Shift` (mayor velocidad). **Terreno realista** controla conjuntamente la iluminación solar, sombras suaves, niebla de profundidad y marcas procedurales de suelo/roca; puede deshabilitarse para una vista técnica de alto contraste.
+
+**Simular lluvia** aplica el evento al historial del gemelo, cambia automáticamente a presión de poros e inicia la animación del desplazamiento para mostrar la reacción. **Restablecer** recupera el escenario base seleccionado. **Ampliar** ocupa la pantalla disponible y **Otra ventana** abre un visor 3D sincronizado, útil para moverlo a otra pantalla. Mientras ese visor está activo, la pantalla principal pausa su renderizado 3D, muestra el aviso correspondiente y permite cerrarlo con **Cerrar ventana y volver aquí**.
 
 La representación tridimensional actual es una geometría de demostración con resultados 2D interpolados; no afirma ser un cálculo FEM 3D. Esta distinción permite una presentación visual útil y rigurosa mientras se integra un solver FEM 3D validado en una fase posterior.
 
@@ -45,6 +51,8 @@ En **Geometría del Digital Twin**, selecciona **Modelo / datos topográficos** 
 
 El CSV actual requiere una cuadrícula regular y una cabecera `X,Y,Z` o `east_m,north_m,elevation_m`. Para levantamientos irregulares, nubes LiDAR, GeoTIFF o fotogrametría se deberá incorporar una triangulación TIN y un módulo de georreferenciación validado.
 
+Los archivos glTF deben contener sus buffers e imágenes embebidos; si emplean recursos externos, conviértelos a GLB antes de cargarlos. Los modelos se procesan localmente en el navegador y no se sube su contenido al servidor.
+
 ## API
 
 | Método | Ruta | Uso |
@@ -55,6 +63,7 @@ El CSV actual requiere una cuadrícula regular y una cabecera `X,Y,Z` o `east_m,
 | GET | `/api/forecast?horizon=24` | crear pronóstico |
 | GET | `/api/alerts` | alertas generadas |
 | POST | `/api/scenario` | cargar escenario `normal` o `critical` |
+| POST | `/api/weather-event` | simular lluvia por intensidad (`intensityMmH`) y duración (`durationHours`) y generar telemetría de respuesta |
 | GET/POST | `/api/simulation` | consultar o ajustar factores geotécnicos simulables |
 | GET | `/api/twin` | estado integrado: geometría, monitoreo y madurez de componentes científicos |
 | POST | `/api/geometry` | registrar una fuente/version de geometría |

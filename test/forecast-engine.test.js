@@ -61,3 +61,23 @@ test("la política de riesgo se puede configurar sin cambiar el estado físico",
   assert.equal(defaultRisk.femState.factorOfSafety, stricterRisk.femState.factorOfSafety);
   assert.equal(stricterRisk.risk.policyStatus, "CONFIGURADA_PENDIENTE_VALIDACION");
 });
+
+test("la simulación de lluvia genera telemetría y respuesta hidrológica", () => {
+  const store = new TwinStore();
+  const before = store.getReadings(1)[0];
+  const { event, readings } = store.simulateRainfall({ intensityMmH: 35, durationHours: 6 });
+  assert.equal(readings.length, 6);
+  assert.equal(event.totalRainfallMm, 210);
+  assert.ok(readings.at(-1).porePressureKpa > before.porePressureKpa);
+  assert.ok(readings.at(-1).displacementMm > before.displacementMm);
+});
+
+test("el drenaje reduce la respuesta ante la misma lluvia", () => {
+  const saturated = new TwinStore();
+  const drained = new TwinStore();
+  drained.updateSimulationParameters({ drainageEfficiency: 0.75 });
+  const wetEvent = saturated.simulateRainfall({ intensityMmH: 50, durationHours: 12 }).event;
+  const drainedEvent = drained.simulateRainfall({ intensityMmH: 50, durationHours: 12 }).event;
+  assert.ok(drainedEvent.porePressureIncreaseKpa < wetEvent.porePressureIncreaseKpa);
+  assert.ok(drainedEvent.displacementIncreaseMm < wetEvent.displacementIncreaseMm);
+});

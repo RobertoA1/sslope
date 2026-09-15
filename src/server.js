@@ -7,6 +7,7 @@ import { TwinStore } from "./store.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
+const threeDir = path.join(__dirname, "..", "node_modules", "three");
 const store = new TwinStore();
 const port = Number(process.env.PORT || 3000);
 
@@ -23,12 +24,14 @@ const getBody = (req) => new Promise((resolve, reject) => {
 });
 
 async function staticFile(res, requestPath) {
-  const requested = requestPath === "/" ? "/index.html" : requestPath;
-  const resolved = path.resolve(publicDir, `.${requested}`);
-  if (!resolved.startsWith(publicDir)) return sendJson(res, 403, { error: "Ruta no permitida" });
+  const isThreeAsset = requestPath.startsWith("/vendor/three/");
+  const root = isThreeAsset ? threeDir : publicDir;
+  const requested = requestPath === "/" ? "/index.html" : isThreeAsset ? requestPath.slice("/vendor/three".length) : requestPath;
+  const resolved = path.resolve(root, `.${requested}`);
+  if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) return sendJson(res, 403, { error: "Ruta no permitida" });
   try {
     const content = await readFile(resolved);
-    const type = resolved.endsWith(".css") ? "text/css" : resolved.endsWith(".js") ? "text/javascript" : resolved.endsWith(".csv") ? "text/csv" : resolved.endsWith(".dxf") ? "application/dxf" : "text/html";
+    const type = resolved.endsWith(".css") ? "text/css" : resolved.endsWith(".js") ? "text/javascript" : resolved.endsWith(".json") ? "application/json" : resolved.endsWith(".csv") ? "text/csv" : resolved.endsWith(".dxf") ? "application/dxf" : "text/html";
     res.writeHead(200, { "Content-Type": `${type}; charset=utf-8` });
     res.end(content);
   } catch {
@@ -58,6 +61,7 @@ const server = http.createServer(async (req, res) => {
       const { name } = await getBody(req);
       return sendJson(res, 200, { readings: store.loadScenario(name), scenario: name });
     }
+    if (req.method === "POST" && url.pathname === "/api/weather-event") return sendJson(res, 201, store.simulateRainfall(await getBody(req)));
     if (req.method === "POST" && url.pathname === "/api/simulation") return sendJson(res, 200, { parameters: store.updateSimulationParameters(await getBody(req)) });
     if (req.method === "POST" && url.pathname === "/api/risk-policy") return sendJson(res, 200, { policy: store.updateRiskPolicy(await getBody(req)) });
     if (req.method === "POST" && url.pathname === "/api/geometry") return sendJson(res, 201, { geometry: store.registerGeometry(await getBody(req)) });

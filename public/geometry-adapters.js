@@ -1,7 +1,13 @@
+import { Matrix4, Vector3 } from "three";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
+import { STLLoader } from "three/addons/loaders/STLLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+
 /* Geometry adapters run locally in the browser. They never claim survey-grade
  * reconstruction: a single photograph supplies only a visual approximation. */
-(function () {
-  const extensionOf = (name) => name.split(".").pop().toLowerCase();
+const extensionOf = (name) => name.split(".").pop().toLowerCase();
 
   function normaliseMesh(vertices, faces) {
     if (!vertices.length) throw new Error("El archivo no contiene vértices utilizables.");
@@ -20,28 +26,36 @@
     };
   }
 
-  function parseObj(text) {
+  function appendBufferGeometry(geometry, matrix, vertices, faces, upAxis = "Z") {
+    const position = geometry?.getAttribute("position");
+    if (!position) return;
+    const base = vertices.length, point = new Vector3();
+    for (let index = 0; index < position.count; index++) {
+      point.fromBufferAttribute(position, index).applyMatrix4(matrix);
+      vertices.push(upAxis === "Y" ? [point.x, point.z, point.y] : [point.x, point.y, point.z]);
+    }
+    const indices = geometry.getIndex();
+    if (indices) {
+      for (let index = 0; index + 2 < indices.count; index += 3) faces.push([base + indices.getX(index), base + indices.getX(index + 1), base + indices.getX(index + 2)]);
+      return;
+    }
+    for (let index = 0; index + 2 < position.count; index += 3) faces.push([base + index, base + index + 1, base + index + 2]);
+  }
+
+  function normaliseThreeObject(object, upAxis = "Z") {
     const vertices = [], faces = [];
-    text.split(/\r?\n/).forEach((line) => {
-      const parts = line.trim().split(/\s+/);
-      if (parts[0] === "v" && parts.length >= 4) vertices.push(parts.slice(1, 4).map(Number));
-      if (parts[0] === "f" && parts.length >= 4) faces.push(parts.slice(1).map((part) => Number(part.split("/")[0]) - 1));
+    object.updateMatrixWorld(true);
+    object.traverse((child) => {
+      if (child.isMesh) appendBufferGeometry(child.geometry, child.matrixWorld, vertices, faces, upAxis);
     });
+    if (!faces.length) throw new Error("El modelo no contiene superficies trianguladas utilizables.");
     return normaliseMesh(vertices, faces);
   }
 
-  function parseAsciiStl(text) {
-    const vertices = [], faces = [], lookup = new Map();
-    const indexFor = (values) => {
-      const key = values.join(",");
-      if (!lookup.has(key)) { lookup.set(key, vertices.length); vertices.push(values); }
-      return lookup.get(key);
-    };
-    const triangles = text.match(/facet[\s\S]*?endfacet/gim) || [];
-    triangles.forEach((triangle) => {
-      const points = [...triangle.matchAll(/vertex\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)/gi)].map((match) => [Number(match[1]), Number(match[2]), Number(match[3])]);
-      if (points.length === 3) faces.push(points.map(indexFor));
-    });
+  function normaliseThreeGeometry(geometry, upAxis = "Z") {
+    const vertices = [], faces = [];
+    appendBufferGeometry(geometry, new Matrix4(), vertices, faces, upAxis);
+    if (!faces.length) throw new Error("El modelo no contiene superficies trianguladas utilizables.");
     return normaliseMesh(vertices, faces);
   }
 
@@ -112,25 +126,38 @@
     return normaliseMesh(vertices, faces);
   }
 
-  async function readModel(file) {
+  export async function readModel(file) {
     const format = extensionOf(file.name);
-    if (["obj", "stl", "gltf", "csv", "dxf"].includes(format)) {
+    if (["csv", "dxf"].includes(format)) {
       const text = await file.text();
-      if (format === "obj") return { format: "OBJ", mesh: parseObj(text), note: "Malla OBJ previsualizada localmente." };
-      if (format === "stl") {
-        if (!/^solid\b/i.test(text.trim())) return { format: "STL", note: "STL binario registrado; la previsualización requiere el adaptador binario pendiente." };
-        return { format: "STL", mesh: parseAsciiStl(text), note: "Malla STL ASCII previsualizada localmente." };
-      }
       if (format === "csv") return { format: "CSV XYZ", coordinateReference: "Este · Norte · Cota (unidades del archivo)", mesh: parseCsvTerrain(text), note: "Cuadrícula topográfica XYZ convertida localmente en una malla 3D." };
-      if (format === "dxf") return { format: "DXF", coordinateReference: "X · Y de perfil (unidades del archivo)", mesh: extrudeDxfProfile(dxfProfilePoints(text)), note: "Perfil de polilínea DXF extruido localmente para la vista 3D." };
-      const gltf = JSON.parse(text);
-      return { format: "glTF", note: `glTF registrado (${gltf.meshes?.length || 0} malla(s)); la lectura de buffers/accesores queda preparada para la siguiente fase.` };
+      return { format: "DXF", coordinateReference: "X · Y de perfil (unidades del archivo)", mesh: extrudeDxfProfile(dxfProfilePoints(text)), note: "Perfil de polilínea DXF extruido localmente para la vista 3D." };
     }
-    if (format === "glb") return { format: "GLB", note: "GLB registrado; la decodificación de buffers binarios queda preparada para la siguiente fase." };
+    if (format === "obj") {
+      const object = new OBJLoader().parse(await file.text());
+      return { format: "OBJ", mesh: normaliseThreeObject(object), note: "Malla OBJ cargada localmente con Three.js." };
+    }
+    if (format === "stl") {
+      const geometry = new STLLoader().parse(await file.arrayBuffer());
+      return { format: "STL", mesh: normaliseThreeGeometry(geometry), note: "Malla STL ASCII o binaria cargada localmente con Three.js." };
+    }
+    if (["gltf", "glb"].includes(format)) {
+      let payload = await file.arrayBuffer();
+      if (format === "gltf") {
+        const json = JSON.parse(new TextDecoder().decode(payload));
+        const externalUris = [...(json.buffers || []), ...(json.images || [])].map((entry) => entry.uri).filter((uri) => uri && !uri.startsWith("data:"));
+        if (externalUris.length) throw new Error("Este glTF referencia archivos externos. Usa un GLB o un glTF con buffers e imágenes embebidos.");
+        payload = JSON.stringify(json);
+      }
+      const dracoLoader = new DRACOLoader().setDecoderPath("/vendor/three/examples/jsm/libs/draco/");
+      const loader = new GLTFLoader().setDRACOLoader(dracoLoader).setMeshoptDecoder(MeshoptDecoder);
+      const model = await loader.parseAsync(payload, "").finally(() => dracoLoader.dispose());
+      return { format: format === "glb" ? "GLB" : "glTF", mesh: normaliseThreeObject(model.scene, "Y"), note: `${format === "glb" ? "GLB" : "glTF"} cargado localmente con Three.js (${model.scene.children.length} objeto(s) raíz).` };
+    }
     throw new Error("Formato no soportado. Usa CSV XYZ, DXF, OBJ, STL, glTF o GLB.");
   }
 
-  async function approximateFromPhoto(file) {
+  export async function approximateFromPhoto(file) {
     const url = URL.createObjectURL(file);
     const image = new Image();
     await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error("No se pudo leer la fotografía.")); image.src = url; });
@@ -166,6 +193,3 @@
       note: "Aproximación visual de una sola imagen: perfil y color derivados localmente; no representa una reconstrucción 3D ni dimensiones métricas."
     };
   }
-
-  window.M1Geometry = { readModel, approximateFromPhoto };
-})();

@@ -11,6 +11,7 @@ export class TwinStore {
   constructor() {
     this.readings = syntheticReadings({ critical: false });
     this.alerts = [];
+    this.weatherEvents = [];
     this.simulationParameters = { ...DEFAULT_SIMULATION_PARAMETERS };
     this.riskPolicy = { ...DEFAULT_RISK_POLICY };
     this.geometry = {
@@ -40,7 +41,56 @@ export class TwinStore {
     if (!["normal", "critical"].includes(name)) throw new Error("Escenario válido: normal o critical");
     this.readings = syntheticReadings({ critical: name === "critical" });
     this.alerts = [];
+    this.weatherEvents = [];
     return this.getReadings();
+  }
+
+  simulateRainfall(input) {
+    const intensityMmH = Number(input.intensityMmH);
+    const durationHours = Number(input.durationHours);
+    if (!Number.isFinite(intensityMmH) || intensityMmH < 0 || intensityMmH > 150) throw new Error("intensityMmH debe estar entre 0 y 150");
+    if (!Number.isInteger(durationHours) || durationHours < 1 || durationHours > 72) throw new Error("durationHours debe ser un entero entre 1 y 72");
+    const previous = this.readings.at(-1);
+    if (!previous) throw new Error("No existen lecturas base para simular lluvia");
+    const drainage = this.simulationParameters.drainageEfficiency;
+    const infiltration = this.simulationParameters.rainfallFactor;
+    const effectiveRain = intensityMmH * infiltration * (1 - drainage * 0.72);
+    const added = [];
+    let porePressure = previous.porePressureKpa;
+    let displacement = previous.displacementMm;
+    for (let hour = 1; hour <= durationHours; hour++) {
+      const saturation = 1 - Math.exp(-hour / Math.max(2, durationHours * 0.38));
+      porePressure += effectiveRain * (0.08 + saturation * 0.12) - drainage * 0.55;
+      porePressure = Math.max(0, porePressure);
+      const pressureAcceleration = Math.max(0, porePressure - previous.porePressureKpa) * 0.0022;
+      displacement += 0.04 + effectiveRain * 0.0045 + pressureAcceleration + this.simulationParameters.weatheringFactor * 0.08;
+      added.push({
+        sensorId: previous.sensorId,
+        timestamp: new Date(new Date(previous.timestamp).getTime() + hour * 3_600_000).toISOString(),
+        displacementMm: Number(displacement.toFixed(3)),
+        porePressureKpa: Number(porePressure.toFixed(3)),
+        rainfallMmH: intensityMmH,
+        qualityFlag: "SIMULATED",
+        source: "rain-simulation"
+      });
+    }
+    this.readings.push(...added);
+    this.readings = this.readings.slice(-500);
+    const event = {
+      id: `RAIN-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      intensityMmH,
+      durationHours,
+      totalRainfallMm: Number((intensityMmH * durationHours).toFixed(1)),
+      drainageEfficiency: drainage,
+      infiltrationFactor: infiltration,
+      porePressureIncreaseKpa: Number((porePressure - previous.porePressureKpa).toFixed(2)),
+      displacementIncreaseMm: Number((displacement - previous.displacementMm).toFixed(3)),
+      scientificStatus: "SIMULACION_HIDROLOGICA_DEMOSTRATIVA"
+    };
+    this.weatherEvents.unshift(event);
+    this.weatherEvents = this.weatherEvents.slice(0, 30);
+    return { event, readings: added };
   }
 
   updateSimulationParameters(input) {
@@ -95,7 +145,7 @@ export class TwinStore {
     const latest = this.readings.at(-1);
     return {
       updatedAt: new Date().toISOString(),
-      dataStatus: latest?.source === "synthetic" ? "DATOS_SINTETICOS" : "DATOS_INGRESADOS",
+      dataStatus: latest?.source === "synthetic" ? "DATOS_SINTETICOS" : latest?.source === "rain-simulation" ? "SIMULACION_LLUVIA" : "DATOS_INGRESADOS",
       geometry: this.geometry,
       modelStatus: this.modelStatus,
       monitoring: {
@@ -103,6 +153,7 @@ export class TwinStore {
         sensorIds: [...new Set(this.readings.map((reading) => reading.sensorId))],
         latestReadingAt: latest?.timestamp ?? null
       },
+      weather: { latestEvent: this.weatherEvents[0] || null, eventCount: this.weatherEvents.length },
       riskPolicy: this.riskPolicy
     };
   }

@@ -1,3 +1,6 @@
+import { approximateFromPhoto, readModel } from "./geometry-adapters.js";
+import { SlopeScene3D } from "./slope-scene-3d.js";
+
 const $ = (selector) => document.querySelector(selector);
 const api = async (path, options) => {
   const response = await fetch(path, options);
@@ -5,7 +8,19 @@ const api = async (path, options) => {
   if (!response.ok) throw new Error(data.error || "Error de servicio");
   return data;
 };
-const scene = { yaw: -0.62, pitch: 0.52, zoom: 2.25, panX: 0, panY: 5, drag: null, hits: [], coordinateHits: [], forecast: null, readings: [], freecam: false, camera: { x: 0, y: 0, z: 0 }, geometryAsset: null, photoApproximation: null, twin: null, playback: { progress: 0, playing: false, lastFrame: 0, raf: null } };
+const emptyWeather = () => ({ active: false, rainfallMmH: 0, durationHours: 0, event: null });
+const scene = { yaw: -0.62, pitch: 0.52, zoom: 2.25, panX: 0, panY: 5, drag: null, hits: [], coordinateHits: [], forecast: null, readings: [], freecam: false, camera: { x: 0, y: 0, z: 0 }, geometryAsset: null, photoApproximation: null, twin: null, weather: emptyWeather(), playback: { progress: 0, playing: false, lastFrame: 0, lastDraw: 0, raf: null } };
+let sceneRenderer = null;
+let viewerWindow = null;
+let lastViewerPublish = 0;
+let lastPublishedForecast = null;
+let lastPublishedReadings = null;
+let lastPublishedGeometry = null;
+let lastPublishedPhoto = null;
+let externalViewerActive = false;
+let viewerCloseTimer = null;
+const isViewerWindow = new URLSearchParams(window.location.search).get("viewer") === "1";
+if (isViewerWindow) document.body.classList.add("viewer-only");
 const clamp = (v, min = 0, max = 1) => Math.min(Math.max(v, min), max);
 const slopeFootprint = (x, z, parameters = {}) => {
   const width = parameters.slopeWidthM || 160, halfWidth = width / 2, halfDepth = width * .42;
@@ -80,9 +95,10 @@ function playbackState(forecast = scene.forecast) {
   return { progress, horizonHours, elapsedHours: horizonHours * progress, baselineMm, incrementMm, displacementMm: baselineMm + incrementMm * progress };
 }
 const visualAmplification = () => Number($("#playback-amplification")?.value) || 450;
-function spatialForecastPoint(point, parameters, forecast) {
+function spatialForecastPoint(point, parameters, forecast, force = false) {
   const state = playbackState(forecast);
   if (!state.progress || !forecast) return point;
+  if (!force && !$("#material-motion-enabled")?.checked) return point;
   const width = parameters.slopeWidthM || 160, halfWidth = width / 2, halfDepth = width * .42;
   const normalizedX = clamp((point.x + halfWidth) / width), normalizedZ = clamp((point.z + halfDepth) / (halfDepth * 2));
   const type = parameters.geometryType || "LINEAR";
@@ -98,7 +114,7 @@ function spatialForecastPoint(point, parameters, forecast) {
     influence = clamp(1 - length * .6);
   }
   // El modelo entrega mm; se multiplica solo en pantalla para que el campo sea legible.
-  const visualMeters = Math.min(9, state.incrementMm * .001 * visualAmplification()) * state.progress * influence;
+  const visualMeters = Math.min(22, state.incrementMm * .001 * visualAmplification()) * state.progress * influence;
   return { x: point.x + direction.x * visualMeters, y: point.y + direction.y * visualMeters, z: point.z + direction.z * visualMeters };
 }
 function renderPlaybackUi() {
@@ -121,12 +137,16 @@ function playbackFrame(timestamp) {
   const speed = Number($("#playback-speed").value) || 1, previous = scene.playback.lastFrame || timestamp;
   scene.playback.progress = clamp(scene.playback.progress + (timestamp - previous) / (12000 / speed)); scene.playback.lastFrame = timestamp;
   if (scene.playback.progress >= 1) { scene.playback.progress = 1; stopDisplacementPlayback(); drawScene(); return; }
-  drawScene(); scene.playback.raf = requestAnimationFrame(playbackFrame);
+  if (!scene.playback.lastDraw || timestamp - scene.playback.lastDraw >= 45) {
+    scene.playback.lastDraw = timestamp;
+    drawScene();
+  }
+  scene.playback.raf = requestAnimationFrame(playbackFrame);
 }
 function playDisplacementPlayback() {
   if (!scene.forecast) return;
   if (scene.playback.progress >= 1) scene.playback.progress = 0;
-  scene.playback.playing = true; scene.playback.lastFrame = performance.now(); renderPlaybackUi(); scene.playback.raf = requestAnimationFrame(playbackFrame);
+  scene.playback.playing = true; scene.playback.lastFrame = performance.now(); scene.playback.lastDraw = 0; renderPlaybackUi(); scene.playback.raf = requestAnimationFrame(playbackFrame);
 }
 function resetDisplacementPlayback() { stopDisplacementPlayback(); scene.playback.progress = 0; renderPlaybackUi(); drawScene(); }
 function setupPlaybackControls() {
@@ -267,7 +287,130 @@ function drawCoordinateFrame(ctx, project, asset, parameters, highContrast) {
   drawCoordinateHud(ctx, info); return info;
 }
 
+function coordinateInfoForScene(parameters, geometryAsset) {
+  if (geometryAsset?.mesh?.bounds) {
+    const { min, max } = geometryAsset.mesh.bounds;
+    return {
+      system: geometryAsset.coordinateReference || "Coordenadas del modelo importado",
+      east: `${coordinateText(min[0])} → ${coordinateText(max[0])}`,
+      north: `${coordinateText(min[1])} → ${coordinateText(max[1])}`,
+      elevation: `${coordinateText(min[2])} → ${coordinateText(max[2])}`,
+      summary: `${geometryAsset.format} · extensión original ${coordinateText(max[0] - min[0])} × ${coordinateText(max[1] - min[1])} × ${coordinateText(max[2] - min[2])}`
+    };
+  }
+  const width = parameters.slopeWidthM || 160;
+  const halfWidth = width / 2;
+  const halfDepth = width * 0.42;
+  return {
+    system: "Sistema local del simulador",
+    east: `${coordinateText(-halfWidth)} → ${coordinateText(halfWidth)} m`,
+    north: `${coordinateText(-halfDepth)} → ${coordinateText(halfDepth)} m`,
+    elevation: `0 → ${parameters.slopeHeightM || 90} m`,
+    summary: `Sistema local · X ${coordinateText(-halfWidth)}–${coordinateText(halfWidth)} m · Y ${coordinateText(-halfDepth)}–${coordinateText(halfDepth)} m · Cota 0–${parameters.slopeHeightM || 90} m`
+  };
+}
+
 function drawScene() {
+  if (!sceneRenderer) return drawSceneLegacy();
+  if (!scene.forecast) return;
+  const forecast = scene.forecast;
+  const parameters = forecast.simulationParameters || {};
+  const layer = $("#scene-layer").value;
+  const meta = layerMeta(layer, forecast, scene.readings);
+  const options = {
+    realistic: $("#realism-enabled").checked,
+    terrain: $("#terrain-enabled").checked,
+    materials: $("#materials-enabled").checked,
+    overlay: $("#overlay-enabled").checked,
+    highContrast: $("#contrast-enabled").checked,
+    coordinates: $("#coordinates-enabled").checked,
+    materialMotion: $("#material-motion-enabled").checked
+  };
+  if (!externalViewerActive || isViewerWindow) {
+    sceneRenderer.render({
+      forecast,
+      readings: scene.readings,
+      geometryAsset: scene.geometryAsset,
+      photoApproximation: scene.photoApproximation,
+      layer,
+      options,
+      playback: { progress: scene.playback.progress, amplification: visualAmplification() },
+      weather: scene.weather
+    });
+    if (scene.pendingFit) {
+      sceneRenderer.fit();
+      scene.pendingFit = false;
+    }
+  }
+  renderCoordinateInspector(coordinateInfoForScene(parameters, scene.geometryAsset), options.coordinates);
+  $("#coordinate-hover").textContent = options.coordinates ? "La retícula usa la referencia espacial mostrada arriba." : "Activa la cuadrícula para inspeccionar referencias.";
+  const shapeName = { LINEAR:"RECTO", BENCHED:"BANCOS", CIRCULAR:"FOSA CIRCULAR", SEMICIRCULAR:"ANFITEATRO", WASTE_DUMP:"BOTADERO" }[parameters.geometryType] || "PARAMÉTRICO";
+  const geometryState = scene.photoApproximation ? `FOTO · ${shapeName}` : scene.geometryAsset?.mesh ? `MALLA ${scene.geometryAsset.format}` : shapeName;
+  $("#layer-legend").innerHTML = options.overlay ? `<span class="legend-gradient"></span>${meta.label} · ${meta.unit}` : "Capa analítica desactivada · solo materiales";
+  $("#layer-source").textContent = options.overlay ? meta.source : "Se visualiza la geometría y materiales del talud sin superposición analítica.";
+  $("#scene-status").textContent = `${forecast.risk.level} · ${geometryState}${options.realistic ? " · REALISTA" : ""}`;
+  $("#scene-status").className = `chip ${forecast.risk.level}`;
+  $("#camera-mode").textContent = scene.freecam ? "Vuelo libre · WASD mueve · Q/E sube/baja" : "Órbita 3D · arrastra, rueda o usa botón derecho";
+  renderPlaybackUi();
+  renderSceneEventHud();
+  publishViewerState();
+}
+
+function renderSceneEventHud() {
+  const hud = $("#scene-event-hud");
+  const parts = [];
+  if (scene.weather.active) parts.push(`🌧 LLUVIA · ${scene.weather.rainfallMmH} mm/h · ${scene.weather.durationHours} h`);
+  if (scene.playback.progress > 0.005) {
+    const mode = $("#material-motion-enabled").checked ? "DEFORMACIÓN DE MATERIALES" : "VECTORES DE DESPLAZAMIENTO";
+    parts.push(`↘ ${mode} · ${visualAmplification()}× · ${Math.round(scene.playback.progress * 100)}%`);
+  }
+  hud.hidden = parts.length === 0;
+  hud.textContent = parts.join("  |  ");
+  hud.className = `scene-event-hud${scene.weather.active ? " rain" : " displacement"}`;
+}
+
+function viewerPayload(includeGeometry = false) {
+  const payload = {
+    type: "M1_SCENE_STATE",
+    weather: scene.weather,
+    playback: { progress: scene.playback.progress, amplification: visualAmplification() },
+    layer: $("#scene-layer").value,
+    options: {
+      realistic: $("#realism-enabled").checked,
+      terrain: $("#terrain-enabled").checked,
+      materials: $("#materials-enabled").checked,
+      overlay: $("#overlay-enabled").checked,
+      highContrast: $("#contrast-enabled").checked,
+      coordinates: $("#coordinates-enabled").checked,
+      materialMotion: $("#material-motion-enabled").checked
+    }
+  };
+  const dataChanged = includeGeometry || scene.forecast !== lastPublishedForecast || scene.readings !== lastPublishedReadings;
+  if (dataChanged) {
+    payload.forecast = scene.forecast;
+    payload.readings = scene.readings.slice(-72);
+  }
+  const geometryChanged = includeGeometry || scene.geometryAsset !== lastPublishedGeometry || scene.photoApproximation !== lastPublishedPhoto;
+  if (geometryChanged) {
+    payload.geometryAsset = scene.geometryAsset;
+    payload.photoApproximation = scene.photoApproximation;
+  }
+  return payload;
+}
+
+function publishViewerState(includeGeometry = false) {
+  if (isViewerWindow || !viewerWindow || viewerWindow.closed || !scene.forecast) return;
+  const now = performance.now();
+  if (!includeGeometry && now - lastViewerPublish < 100) return;
+  lastViewerPublish = now;
+  viewerWindow.postMessage(viewerPayload(includeGeometry), window.location.origin);
+  lastPublishedForecast = scene.forecast;
+  lastPublishedReadings = scene.readings;
+  lastPublishedGeometry = scene.geometryAsset;
+  lastPublishedPhoto = scene.photoApproximation;
+}
+
+function drawSceneLegacy() {
   const canvas = $("#scene-3d"); if (!canvas || !scene.forecast) return;
   const ctx = canvas.getContext("2d"), dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
   canvas.width = Math.max(1, Math.floor(w * dpr)); canvas.height = Math.max(1, Math.floor(h * dpr)); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
@@ -322,6 +465,18 @@ function drawScene() {
     faces.push({ points: points.map((point) => spatialForecastPoint(point, parameters, forecast)), base, overlay:colorFor(value,highContrast), depth:project(spatialForecastPoint(centre, parameters, forecast)).depth });
   }
   faces.sort((a,b)=>b.depth-a.depth); faces.forEach(face=>{polygon(face.points,face.base);if(overlayEnabled)polygon(face.points,face.overlay,null,highContrast ? .67 : .28);});
+  if (!$("#material-motion-enabled").checked && temporalState.progress > .005) {
+    ctx.save(); ctx.strokeStyle="#ffca6a"; ctx.fillStyle="#ffca6a"; ctx.lineWidth=2;
+    [[-.32,-.35],[-.12,.2],[.08,-.2],[.28,.35],[.43,0]].forEach(([xRatio,zRatio])=>{
+      const start={x:xRatio*slopeWidth,y:heightAt(xRatio*slopeWidth,zRatio*halfDepth)+1.5,z:zRatio*halfDepth};
+      if(!slopeFootprint(start.x,start.z,parameters))return;
+      const a=project(start),b=project(spatialForecastPoint(start,parameters,forecast,true));
+      const angle=Math.atan2(b.y-a.y,b.x-a.x),length=Math.max(8,Math.hypot(b.x-a.x,b.y-a.y));
+      const end={x:a.x+Math.cos(angle)*length,y:a.y+Math.sin(angle)*length};
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(end.x,end.y);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(end.x,end.y);ctx.lineTo(end.x-Math.cos(angle-.55)*7,end.y-Math.sin(angle-.55)*7);ctx.lineTo(end.x-Math.cos(angle+.55)*7,end.y-Math.sin(angle+.55)*7);ctx.closePath();ctx.fill();
+    }); ctx.restore();
+  }
   if (!coordinatesEnabled) scene.coordinateHits = [];
   const coordinateInfo = coordinatesEnabled ? drawCoordinateFrame(ctx, project, scene.geometryAsset, parameters, highContrast) : null;
   renderCoordinateInspector(coordinateInfo, coordinatesEnabled);
@@ -332,7 +487,7 @@ function drawScene() {
   if (temporalState.progress > 0 || scene.playback.playing) { ctx.save(); ctx.fillStyle="#071a15dd";ctx.strokeStyle="#386157";ctx.lineWidth=1;ctx.fillRect(w-225,16,211,60);ctx.strokeRect(w-225,16,211,60);ctx.fillStyle="#73a79a";ctx.font="9px DM Mono";ctx.fillText("REPRODUCCION DEL PRONOSTICO",w-214,35);ctx.fillStyle="#e7fff8";ctx.font="11px DM Mono";ctx.fillText(`+${temporalState.elapsedHours.toFixed(1)} h / ${temporalState.horizonHours} h`,w-214,54);ctx.fillStyle="#ffca6a";ctx.font="9px DM Mono";ctx.fillText(`${temporalState.displacementMm.toFixed(2)} mm · deformacion visual x${visualAmplification()}`,w-214,68);ctx.restore(); }
   const shapeName = { LINEAR:"RECTO", BENCHED:"BANCOS", CIRCULAR:"FOSA CIRCULAR", SEMICIRCULAR:"ANFITEATRO", WASTE_DUMP:"BOTADERO" }[parameters.geometryType] || "PARAMÉTRICO";
   const geometryState = scene.photoApproximation ? `FOTO · ${shapeName}` : scene.geometryAsset?.mesh ? `MALLA ${scene.geometryAsset.format}` : shapeName;
-  $("#layer-legend").innerHTML=overlayEnabled?`<span class="legend-gradient"></span>${meta.label} · ${meta.unit}`:"Capa analítica desactivada · solo materiales"; $("#layer-source").textContent=overlayEnabled?meta.source:"Se visualiza la geometría y materiales del talud sin superposición analítica."; $("#scene-status").textContent=`${forecast.risk.level} · ${geometryState}`; $("#scene-status").className=`chip ${forecast.risk.level}`; $("#camera-mode").textContent=scene.freecam?"Vuelo libre · WASD mueve · Q/E sube/baja":"Cámara orbital · arrastra para rotar"; renderPlaybackUi();
+  $("#layer-legend").innerHTML=overlayEnabled?`<span class="legend-gradient"></span>${meta.label} · ${meta.unit}`:"Capa analítica desactivada · solo materiales"; $("#layer-source").textContent=overlayEnabled?meta.source:"Se visualiza la geometría y materiales del talud sin superposición analítica."; $("#scene-status").textContent=`${forecast.risk.level} · ${geometryState}`; $("#scene-status").className=`chip ${forecast.risk.level}`; $("#camera-mode").textContent=scene.freecam?"Vuelo libre · WASD mueve · Q/E sube/baja":"Cámara orbital · arrastra para rotar"; renderPlaybackUi();renderSceneEventHud();publishViewerState();
 }
 
 function parameterLabel(key, value) {
@@ -352,12 +507,26 @@ function applySimulationParameters(parameters) {
   });
 }
 function fitScene(parameters = scene.forecast?.simulationParameters || {}) {
+  if (sceneRenderer) {
+    scene.freecam = false;
+    scene.pendingFit = true;
+    const freecam = $("#freecam-enabled");
+    if (freecam) freecam.checked = false;
+    return;
+  }
   const width = parameters.slopeWidthM || 160, height = parameters.slopeHeightM || 90;
   scene.freecam = false; scene.camera = { x: 0, y: 0, z: 0 }; scene.yaw = -.62; scene.pitch = .48; scene.panX = 0; scene.panY = 5;
   scene.zoom = clamp(2.25 * 160 / Math.max(width, height * 1.65), .55, 2.25);
   const freecam = $("#freecam-enabled"); if (freecam) freecam.checked = false;
 }
 function goToViewpoint(name) {
+  if (sceneRenderer) {
+    scene.freecam = false;
+    $("#freecam-enabled").checked = false;
+    sceneRenderer.setViewpoint(name);
+    $("#camera-mode").textContent = "Punto de observación · usa el ratón para explorar";
+    return;
+  }
   const parameters = scene.forecast?.simulationParameters || {}, width = parameters.slopeWidthM || 160, height = parameters.slopeHeightM || 90, depth = width * .42;
   if (name === "overview") { fitScene(parameters); drawScene(); return; }
   const views = {
@@ -388,6 +557,9 @@ function setupSimulationControls() {
 }
 function renderTwinStatus(twin, forecast, readings) {
   scene.twin = twin;
+  const rain = twin.weather?.latestEvent;
+  scene.weather = rain ? { active: true, rainfallMmH: rain.intensityMmH, durationHours: rain.durationHours, event: rain } : emptyWeather();
+  renderWeatherStatus();
   const last = readings.at(-1);
   $("#state-current").textContent = last ? `${last.displacementMm.toFixed(2)} mm` : "Sin lectura";
   $("#state-detail").textContent = last ? `${last.sensorId} · ${new Date(last.timestamp).toLocaleString()} · ${twin.dataStatus.replace("_", " ")}` : "Esperando telemetría.";
@@ -409,6 +581,129 @@ function renderTwinStatus(twin, forecast, readings) {
     $("#geometry-status").textContent = `${current.name} · ${current.scientificStatus}.${localReload}`;
   }
   Object.entries(twin.riskPolicy).forEach(([key, value]) => { const input = document.querySelector(`[data-policy="${key}"]`), output = $(`#${key}-value`); if (input) input.value = value; if (output) output.textContent = Number(value).toFixed(2); });
+  drawScene();
+}
+
+function renderWeatherStatus(message = "") {
+  const panel = $(".weather-simulation");
+  panel.classList.toggle("is-raining", scene.weather.active);
+  if (message) {
+    $("#weather-status").textContent = message;
+    return;
+  }
+  const event = scene.weather.event;
+  $("#weather-status").textContent = event
+    ? `${event.totalRainfallMm} mm acumulados · presión +${event.porePressureIncreaseKpa} kPa · desplazamiento +${event.displacementIncreaseMm} mm.`
+    : "Sin evento meteorológico aplicado.";
+}
+
+function setupWeatherControls() {
+  const intensity = $("#rain-intensity");
+  intensity.addEventListener("input", () => { $("#rain-intensity-value").textContent = `${intensity.value} mm/h`; });
+  $("#simulate-rain").addEventListener("click", async () => {
+    const button = $("#simulate-rain");
+    button.disabled = true;
+    renderWeatherStatus("Calculando infiltración y respuesta del talud…");
+    try {
+      const intensityMmH = Number(intensity.value), durationHours = Number($("#rain-duration").value);
+      const result = await api("/api/weather-event", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ intensityMmH, durationHours }) });
+      scene.weather = { active: true, rainfallMmH: intensityMmH, durationHours, event: result.event };
+      $("#scene-layer").value = "pore";
+      await refresh();
+      scene.playback.progress = 0;
+      playDisplacementPlayback();
+    } catch (error) {
+      renderWeatherStatus(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+  $("#clear-weather").addEventListener("click", async () => {
+    try {
+      await api("/api/scenario", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name:$("#scenario").value }) });
+      scene.weather = emptyWeather();
+      stopDisplacementPlayback();
+      scene.playback.progress = 0;
+      await refresh();
+    } catch (error) { renderWeatherStatus(error.message); }
+  });
+}
+
+function setupSceneWindowControls() {
+  const card = $(".scene-card");
+  const setExternalViewerActive = (active) => {
+    externalViewerActive = active;
+    $("#external-viewer-notice").hidden = !active;
+    $("#popout-scene").disabled = active;
+    if (viewerCloseTimer) clearInterval(viewerCloseTimer);
+    viewerCloseTimer = null;
+    if (active) {
+      viewerCloseTimer = setInterval(() => {
+        if (!viewerWindow || viewerWindow.closed) setExternalViewerActive(false);
+      }, 600);
+    } else {
+      viewerWindow = null;
+      requestAnimationFrame(drawScene);
+    }
+  };
+  $("#fullscreen-scene").addEventListener("click", async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await card.requestFullscreen();
+    } catch (error) { $("#camera-mode").textContent = `No fue posible ampliar: ${error.message}`; }
+  });
+  document.addEventListener("fullscreenchange", () => {
+    $("#fullscreen-scene").textContent = document.fullscreenElement ? "✕ Salir" : "⛶ Ampliar";
+    requestAnimationFrame(drawScene);
+  });
+  $("#popout-scene").addEventListener("click", () => {
+    viewerWindow = window.open(`${window.location.pathname}?viewer=1`, "m1-slope-viewer", "popup,width=1500,height=950,resizable=yes");
+    if (!viewerWindow) $("#camera-mode").textContent = "El navegador bloqueó la ventana adicional; permite ventanas emergentes para este sitio.";
+  });
+  $("#close-external-viewer").addEventListener("click", () => {
+    if (viewerWindow && !viewerWindow.closed) {
+      viewerWindow.postMessage({ type:"M1_VIEWER_CLOSE" }, window.location.origin);
+      viewerWindow.close();
+    }
+    setExternalViewerActive(false);
+    window.focus();
+  });
+  window.addEventListener("message", (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (!isViewerWindow && event.data?.type === "M1_VIEWER_READY") {
+      viewerWindow = event.source;
+      setExternalViewerActive(true);
+      publishViewerState(true);
+      return;
+    }
+    if (!isViewerWindow && event.data?.type === "M1_VIEWER_CLOSED") {
+      setExternalViewerActive(false);
+      window.focus();
+      return;
+    }
+    if (isViewerWindow && event.data?.type === "M1_VIEWER_CLOSE") {
+      window.close();
+      return;
+    }
+    if (!isViewerWindow || event.data?.type !== "M1_SCENE_STATE") return;
+    const state = event.data;
+    scene.forecast = state.forecast || scene.forecast;
+    scene.readings = state.readings || scene.readings;
+    scene.weather = state.weather || scene.weather;
+    scene.playback.progress = state.playback?.progress ?? scene.playback.progress;
+    if (state.geometryAsset !== undefined) scene.geometryAsset = state.geometryAsset;
+    if (state.photoApproximation !== undefined) scene.photoApproximation = state.photoApproximation;
+    if (state.layer) $("#scene-layer").value = state.layer;
+    if (state.playback?.amplification) $("#playback-amplification").value = state.playback.amplification;
+    const optionSelectors = { realistic:"#realism-enabled", terrain:"#terrain-enabled", materials:"#materials-enabled", overlay:"#overlay-enabled", highContrast:"#contrast-enabled", coordinates:"#coordinates-enabled", materialMotion:"#material-motion-enabled" };
+    Object.entries(optionSelectors).forEach(([key, selector]) => { if (state.options?.[key] !== undefined) $(selector).checked = state.options[key]; });
+    renderWeatherStatus();
+    drawScene();
+  });
+  if (isViewerWindow && window.opener) {
+    window.opener.postMessage({ type:"M1_VIEWER_READY" }, window.location.origin);
+    window.addEventListener("beforeunload", () => window.opener?.postMessage({ type:"M1_VIEWER_CLOSED" }, window.location.origin));
+  }
 }
 async function loadGeometrySource() {
   const source = $("#geometry-source").value, file = $("#geometry-file").files[0];
@@ -424,14 +719,13 @@ async function loadGeometrySource() {
     if (source === "PHOTO_APPROXIMATION") {
       const isImage = file.type.startsWith("image/") || /\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name);
       if (!isImage) throw new Error("La aproximación visual requiere una imagen PNG, JPG, WEBP, GIF o BMP.");
-      if (!window.M1Geometry?.approximateFromPhoto) throw new Error("El lector de fotografías no se pudo iniciar. Recarga la página e inténtalo de nuevo.");
-      const approximation = await window.M1Geometry.approximateFromPhoto(file);
+      const approximation = await approximateFromPhoto(file);
       scene.photoApproximation = approximation; scene.geometryAsset = null;
       $("#photo-preview").src = approximation.previewUrl; $("#photo-preview").hidden = false;
       const result = await api("/api/geometry", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ source, name:file.name, format:file.type, scientificStatus:"APROXIMACION_NO_METRICA", note:approximation.note }) });
       $("#geometry-status").textContent = `ESCANEO COMPLETO (${approximation.width} × ${approximation.height} px; 32 muestras visuales). ${result.geometry.scientificStatus}: ${approximation.note}`; fitScene(); drawScene(); return;
     }
-    const asset = await window.M1Geometry.readModel(file);
+    const asset = await readModel(file);
     scene.geometryAsset = asset.mesh ? asset : null; scene.photoApproximation = null; $("#photo-preview").hidden = true;
     const status = asset.mesh ? "MALLA_LOCAL_PREVISUALIZADA" : "METADATOS_REGISTRADOS";
     const result = await api("/api/geometry", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ source, name:file.name, format:asset.format, scientificStatus:status, note:asset.note }) });
@@ -456,7 +750,7 @@ function setupGeometryControls() {
     $("#geometry-file").value = "";
     scene.geometryAsset = null; scene.photoApproximation = null; $("#photo-preview").hidden = true;
     if (source === "PROCEDURAL") { loadGeometrySource(); return; }
-    $("#geometry-status").textContent = source === "PHOTO_APPROXIMATION" ? "Selecciona una fotografía: se escaneará automáticamente y cambiará el relieve y color del talud." : "Selecciona un CSV XYZ, DXF, OBJ o STL ASCII: se escaneará automáticamente y su malla aparecerá en el simulador.";
+    $("#geometry-status").textContent = source === "PHOTO_APPROXIMATION" ? "Selecciona una fotografía: se escaneará automáticamente y cambiará el relieve y color del talud." : "Selecciona un CSV XYZ, DXF, OBJ, STL, glTF o GLB: se escaneará automáticamente y su malla aparecerá en el simulador.";
     fitScene(); drawScene();
   });
 }
@@ -472,15 +766,43 @@ function setupRiskPolicyControls() {
 function selectSensor(hit) { $("#selected-sensor").textContent=hit.id; $("#sensor-detail").textContent=hit.name+". "+hit.detail; drawScene(); }
 function setupSceneControls() {
   const canvas=$("#scene-3d");
+  if (sceneRenderer) {
+    let pointerStart = null;
+    canvas.addEventListener("pointerdown", (event) => { pointerStart = { x: event.clientX, y: event.clientY }; });
+    canvas.addEventListener("pointerup", (event) => {
+      if (pointerStart && Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) < 4) sceneRenderer.selectAt(event);
+      pointerStart = null;
+    });
+    $("#scene-layer").addEventListener("change", drawScene);
+    ["#realism-enabled","#material-motion-enabled","#terrain-enabled","#materials-enabled","#overlay-enabled","#contrast-enabled","#coordinates-enabled"].forEach((selector) => $(selector).addEventListener("change", drawScene));
+    $("#freecam-enabled").addEventListener("change", (event) => {
+      scene.freecam = event.target.checked;
+      canvas.focus();
+      $("#camera-mode").textContent = scene.freecam ? "Vuelo libre · WASD mueve · Q/E sube/baja" : "Órbita 3D · arrastra, rueda o usa botón derecho";
+    });
+    document.querySelectorAll("[data-viewpoint]").forEach((button) => button.addEventListener("click", () => {
+      document.querySelectorAll("[data-viewpoint]").forEach((item) => item.classList.toggle("active", item === button));
+      goToViewpoint(button.dataset.viewpoint);
+    }));
+    window.addEventListener("keydown", (event) => {
+      if (!scene.freecam || ["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName)) return;
+      if (sceneRenderer.moveFreeCamera(event.key.toLowerCase(), event.shiftKey ? 16 : 7)) event.preventDefault();
+    });
+    const resetView = () => { fitScene(); drawScene(); };
+    $("#reset-camera").addEventListener("click", resetView);
+    $("#fit-scene").addEventListener("click", resetView);
+    return;
+  }
   canvas.addEventListener("pointerdown",(event)=>{canvas.setPointerCapture(event.pointerId);scene.drag={x:event.clientX,y:event.clientY,yaw:scene.yaw,pitch:scene.pitch,panX:scene.panX,panY:scene.panY,shift:event.shiftKey,moved:false};});
   canvas.addEventListener("pointermove",(event)=>{if(!scene.drag){if(!$("#coordinates-enabled").checked){$("#coordinate-hover").textContent="Activa la cuadrícula para inspeccionar referencias.";return;}const point={x:event.offsetX,y:event.offsetY};const hit=scene.coordinateHits.reduce((closest,item)=>!closest||Math.hypot(item.p.x-point.x,item.p.y-point.y)<Math.hypot(closest.p.x-point.x,closest.p.y-point.y)?item:closest,null);$("#coordinate-hover").textContent=hit&&Math.hypot(hit.p.x-point.x,hit.p.y-point.y)<30?hit.text:"Mueve el cursor sobre una marca de la retícula.";return;}const dx=event.clientX-scene.drag.x,dy=event.clientY-scene.drag.y;scene.drag.moved||=(Math.abs(dx)+Math.abs(dy)>3);if(scene.drag.shift){scene.panX=scene.drag.panX+dx;scene.panY=scene.drag.panY+dy;}else{scene.yaw=scene.drag.yaw+dx*.009;scene.pitch=clamp(scene.drag.pitch+dy*.008,-1.15,1.15);}drawScene();});
   canvas.addEventListener("pointerup",(event)=>{const drag=scene.drag;scene.drag=null;if(drag&&!drag.moved){const point={x:event.offsetX,y:event.offsetY};const hit=scene.hits.find((entry)=>Math.hypot(entry.p.x-point.x,entry.p.y-point.y)<16);if(hit)selectSensor(hit);}});
   canvas.addEventListener("wheel",(event)=>{event.preventDefault();scene.zoom=clamp(scene.zoom-event.deltaY*.0015,.8,4.5);drawScene();},{passive:false});
-  $("#scene-layer").addEventListener("change",drawScene); ["#terrain-enabled","#materials-enabled","#overlay-enabled","#contrast-enabled","#coordinates-enabled"].forEach((selector)=>$(selector).addEventListener("change",drawScene));
+  $("#scene-layer").addEventListener("change",drawScene); ["#material-motion-enabled","#terrain-enabled","#materials-enabled","#overlay-enabled","#contrast-enabled","#coordinates-enabled"].forEach((selector)=>$(selector).addEventListener("change",drawScene));
   $("#freecam-enabled").addEventListener("change",(event)=>{scene.freecam=event.target.checked; canvas.focus(); drawScene();});
   document.querySelectorAll("[data-viewpoint]").forEach((button)=>button.addEventListener("click",()=>{document.querySelectorAll("[data-viewpoint]").forEach((item)=>item.classList.toggle("active",item===button));goToViewpoint(button.dataset.viewpoint);}));
   window.addEventListener("keydown",(event)=>{if(!scene.freecam || ["INPUT","SELECT","TEXTAREA"].includes(document.activeElement.tagName))return;const speed=event.shiftKey?16:7;const forward={x:-Math.sin(scene.yaw),z:Math.cos(scene.yaw)},right={x:Math.cos(scene.yaw),z:Math.sin(scene.yaw)};let moved=true;switch(event.key.toLowerCase()){case"w":scene.camera.x+=forward.x*speed;scene.camera.z+=forward.z*speed;break;case"s":scene.camera.x-=forward.x*speed;scene.camera.z-=forward.z*speed;break;case"a":scene.camera.x-=right.x*speed;scene.camera.z-=right.z*speed;break;case"d":scene.camera.x+=right.x*speed;scene.camera.z+=right.z*speed;break;case"q":scene.camera.y-=speed;break;case"e":scene.camera.y+=speed;break;default:moved=false;}if(moved){event.preventDefault();drawScene();}});
   $("#reset-camera").addEventListener("click",()=>{fitScene();drawScene();});
+  $("#fit-scene").addEventListener("click",()=>{fitScene();drawScene();});
 }
 
 function renderForecast(forecast, rows) {
@@ -503,4 +825,28 @@ function renderForecast(forecast, rows) {
 
 async function renderAlerts() { const { alerts } = await api("/api/alerts"); $("#alert-list").innerHTML = alerts.length ? alerts.slice(0,5).map(a=>`<div class="alert-row"><span class="pill ${a.level}">${a.level}</span><span>${a.sensorId}</span><span>${a.message}</span></div>`).join("") : '<p class="muted">Aún no hay alertas registradas.</p>'; }
 async function refresh() { try { const horizon=$("#horizon").value; const [telemetry, forecast, twin] = await Promise.all([api("/api/telemetry?limit=72"),api(`/api/forecast?horizon=${horizon}`),api("/api/twin")]);renderForecast(forecast,telemetry.readings);renderTwinStatus(twin, forecast, telemetry.readings);await renderAlerts();}catch(error){$("#risk-description").textContent=error.message;} }
-$("#run").addEventListener("click",refresh); $("#scenario").addEventListener("change",async(e)=>{await api("/api/scenario",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:e.target.value})});refresh();}); window.addEventListener("resize",()=>{drawChart(scene.readings,scene.forecast);drawScene();}); setupSceneControls(); setupPlaybackControls(); setupSimulationControls(); setupGeometryControls(); setupRiskPolicyControls(); setupReportControls(); refresh();
+try {
+  sceneRenderer = new SlopeScene3D($("#scene-3d"), selectSensor);
+  scene.pendingFit = true;
+} catch (error) {
+  console.warn("WebGL no disponible; se mantiene el visor Canvas de compatibilidad.", error);
+  $("#realism-enabled").checked = false;
+  $("#realism-enabled").disabled = true;
+}
+
+$("#run").addEventListener("click", refresh);
+$("#scenario").addEventListener("change", async (event) => {
+  await api("/api/scenario", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name:event.target.value}) });
+  scene.weather = emptyWeather();
+  refresh();
+});
+window.addEventListener("resize", () => { drawChart(scene.readings, scene.forecast); drawScene(); });
+setupSceneControls();
+setupPlaybackControls();
+setupWeatherControls();
+setupSceneWindowControls();
+setupSimulationControls();
+setupGeometryControls();
+setupRiskPolicyControls();
+setupReportControls();
+refresh();

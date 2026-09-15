@@ -51,11 +51,34 @@
 
       <section class="scene-layout">
         <article class="card scene-card">
-          <div class="section-title"><div><p class="label">SIMULADOR ESPACIAL</p><h2>Talud 3D · estado del gemelo</h2></div><span id="scene-status" class="chip">CARGANDO</span></div>
-          <canvas id="scene-3d" width="960" height="480" tabindex="0" aria-label="Modelo tridimensional interactivo del talud"></canvas>
+          <div class="section-title scene-heading">
+            <div><p class="label">SIMULADOR ESPACIAL</p><h2>Talud 3D · estado del gemelo</h2></div>
+            <div class="scene-window-actions">
+              <span id="scene-status" class="chip">CARGANDO</span>
+              <button id="fullscreen-scene" class="secondary compact" type="button">⛶ Ampliar</button>
+              <button id="popout-scene" class="secondary compact" type="button">↗ Otra ventana</button>
+            </div>
+          </div>
+          <div class="scene-viewport">
+            <canvas id="scene-3d" width="960" height="480" tabindex="0" aria-label="Modelo tridimensional interactivo del talud"></canvas>
+            <div id="scene-event-hud" class="scene-event-hud" hidden></div>
+            <div id="external-viewer-notice" class="external-viewer-notice" hidden>
+              <strong>El modelo 3D se está mostrando en otra ventana</strong>
+              <span>Los controles y la simulación permanecen sincronizados.</span>
+              <button id="close-external-viewer" type="button">Cerrar ventana y volver aquí</button>
+            </div>
+          </div>
+          <div class="scene-guide" aria-label="Guía rápida del visor">
+            <span><strong>Girar:</strong> arrastra</span>
+            <span><strong>Mover:</strong> botón derecho</span>
+            <span><strong>Zoom:</strong> rueda</span>
+            <span><strong>Inspeccionar:</strong> clic en un sensor</span>
+            <button id="fit-scene" class="secondary compact" type="button">Encuadrar modelo</button>
+          </div>
           <div class="scene-footer"><span id="layer-legend"></span><span id="coordinate-readout">Sistema local · metros</span><span id="camera-mode">Cámara orbital · arrastra para rotar</span></div>
         </article>
-        <aside class="card scene-tools">
+        <aside class="card scene-tools control-dashboard">
+          <div class="dashboard-heading"><div><p class="label">TABLERO DE CONTROL</p><h2>Simulación y visualización</h2></div><p>Ajusta el escenario desde un solo panel compacto.</p></div>
           <details class="geometry-ingestion" open>
             <summary>Geometría del Digital Twin</summary>
             <label for="geometry-source">Fuente de geometría</label>
@@ -66,20 +89,32 @@
             <img id="photo-preview" alt="Fotografía de referencia del talud" hidden />
             <p id="geometry-status" class="control-hint">Geometría procedural activa.</p>
           </details>
-          <p class="label">CAPAS DEL MODELO</p>
-          <label for="scene-layer">Variable visualizada</label>
-          <select id="scene-layer"><option value="risk">Riesgo pronosticado</option><option value="displacement">Desplazamiento previsto</option><option value="pore">Presión de poros</option><option value="safety">Factor de seguridad</option><option value="uncertainty">Incertidumbre</option></select>
+          <section class="dashboard-block layer-controls">
+            <p class="label">CAPAS DEL MODELO</p>
+            <label for="scene-layer">Variable visualizada</label>
+            <select id="scene-layer"><option value="risk">Riesgo pronosticado</option><option value="displacement">Desplazamiento previsto</option><option value="pore">Presión de poros</option><option value="safety">Factor de seguridad</option><option value="uncertainty">Incertidumbre</option></select>
+          </section>
+          <section class="weather-simulation dashboard-block" aria-label="Simulación de lluvia">
+            <p class="label">EVENTO DE LLUVIA</p>
+            <label class="range-control">Intensidad <output id="rain-intensity-value">35 mm/h</output><input id="rain-intensity" type="range" min="0" max="100" step="5" value="35" /></label>
+            <label for="rain-duration">Duración</label>
+            <select id="rain-duration"><option value="1">1 hora</option><option value="6" selected>6 horas</option><option value="12">12 horas</option><option value="24">24 horas</option><option value="48">48 horas</option></select>
+            <div class="weather-actions"><button id="simulate-rain" type="button">🌧 Simular lluvia</button><button id="clear-weather" class="secondary" type="button">Restablecer</button></div>
+            <p id="weather-status" class="control-hint">Sin evento meteorológico aplicado.</p>
+          </section>
           <section class="forecast-playback" aria-label="Reproducción temporal del desplazamiento previsto">
             <p class="label">SIMULACIÓN TEMPORAL</p>
             <div class="playback-actions"><button id="play-displacement" class="secondary" type="button">▶ Simular desplazamiento</button><button id="pause-displacement" class="secondary" type="button" disabled>❚❚ Pausar</button><button id="reset-displacement" class="secondary" type="button">↺ Reiniciar</button></div>
             <label for="playback-speed">Velocidad de reproducción</label>
             <select id="playback-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
-            <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">450×</output><input id="playback-amplification" type="range" min="100" max="900" step="50" value="450" /></label>
+            <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">1200×</output><input id="playback-amplification" type="range" min="200" max="2000" step="100" value="1200" /></label>
             <div class="playback-track" role="progressbar" aria-label="Progreso de la simulación temporal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="playback-progress"></span></div>
             <div class="playback-readout"><strong id="playback-time">t = 0.0 h</strong><span id="playback-displacement">Desplazamiento: —</span></div>
             <p class="control-hint">Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo.</p>
           </section>
           <div class="visual-toggles" aria-label="Opciones de visualización">
+            <label class="toggle realism-toggle"><input id="realism-enabled" type="checkbox" checked /> <span><strong>Terreno realista</strong><small>Luz solar, sombras suaves y marcas naturales</small></span></label>
+            <label class="toggle material-motion-toggle"><input id="material-motion-enabled" type="checkbox" checked /> <span><strong>Movimiento del terreno</strong><small>Deforma suelo, roca y sedimentos en vivo</small></span></label>
             <label class="toggle"><input id="terrain-enabled" type="checkbox" checked /> <span>Forma y textura del talud</span></label>
             <label class="toggle"><input id="materials-enabled" type="checkbox" checked /> <span>Color de materiales</span></label>
             <label class="toggle"><input id="overlay-enabled" type="checkbox" checked /> <span>Capa analítica</span></label>
@@ -116,7 +151,7 @@
             <label class="range-control">FS: alerta <output id="fsAlert-value">1.15</output><input data-policy="fsAlert" type="range" min="0.5" max="2" step="0.01" value="1.15" /></label>
             <label class="range-control">FS: crítico <output id="fsCritical-value">1.00</output><input data-policy="fsCritical" type="range" min="0.5" max="2" step="0.01" value="1.00" /></label>
           </details>
-          <details class="simulation-controls" open>
+          <details class="simulation-controls">
             <summary>Factores geotécnicos simulables</summary>
             <p class="control-hint">Cada ajuste recalcula el factor de seguridad, pronóstico y alerta.</p>
             <label class="select-control">Tipo de talud<select data-param="geometryType"><option value="LINEAR">Corte recto</option><option value="BENCHED">Mina a cielo abierto con bancos</option><option value="CIRCULAR">Fosa circular / cóncava</option><option value="SEMICIRCULAR">Semicircular / anfiteatro</option><option value="WASTE_DUMP">Botadero radial / terraplén</option></select></label>
@@ -163,7 +198,14 @@
       </section>
     </main>
     <footer>M-1 Digital Twin · MVP académico · Datos sintéticos para demostración</footer>
-    <script src="/geometry-adapters.js"></script>
-    <script src="/app.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/three/build/three.module.js",
+          "three/addons/": "/vendor/three/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="/app.js"></script>
   </body>
 </html>
