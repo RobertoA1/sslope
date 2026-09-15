@@ -9,7 +9,7 @@ const api = async (path, options) => {
   return data;
 };
 const emptyWeather = () => ({ active: false, rainfallMmH: 0, durationHours: 0, event: null });
-const scene = { yaw: -0.62, pitch: 0.52, zoom: 2.25, panX: 0, panY: 5, drag: null, hits: [], coordinateHits: [], forecast: null, readings: [], freecam: false, camera: { x: 0, y: 0, z: 0 }, geometryAsset: null, photoApproximation: null, twin: null, weather: emptyWeather(), playback: { progress: 0, playing: false, lastFrame: 0, lastDraw: 0, raf: null } };
+const scene = { yaw: -0.62, pitch: 0.52, zoom: 2.25, panX: 0, panY: 5, drag: null, hits: [], coordinateHits: [], forecast: null, readings: [], freecam: false, camera: { x: 0, y: 0, z: 0 }, geometryAsset: null, photoApproximation: null, twin: null, weather: emptyWeather(), researchExperiment: null, femRun: null, playback: { progress: 0, playing: false, lastFrame: 0, lastDraw: 0, raf: null } };
 let sceneRenderer = null;
 let viewerWindow = null;
 let lastViewerPublish = 0;
@@ -17,8 +17,10 @@ let lastPublishedForecast = null;
 let lastPublishedReadings = null;
 let lastPublishedGeometry = null;
 let lastPublishedPhoto = null;
+let lastPublishedFem = null;
 let externalViewerActive = false;
 let viewerCloseTimer = null;
+let rainfallHistory = null;
 const isViewerWindow = new URLSearchParams(window.location.search).get("viewer") === "1";
 if (isViewerWindow) document.body.classList.add("viewer-only");
 const clamp = (v, min = 0, max = 1) => Math.min(Math.max(v, min), max);
@@ -90,7 +92,13 @@ function layerMeta(layer, forecast, readings) {
 }
 
 function playbackState(forecast = scene.forecast) {
-  const progress = clamp(scene.playback.progress), horizonHours = forecast?.horizonHours || 0;
+  const progress = clamp(scene.playback.progress), horizonHours = scene.femRun?.summary?.durationHours || forecast?.horizonHours || 0;
+  if (scene.femRun) {
+    const steps = scene.femRun.timeSeries || [];
+    const index = progress <= 0 ? -1 : Math.min(steps.length - 1, Math.ceil(progress * steps.length) - 1);
+    const displacementMm = index < 0 ? 0 : steps[index].maximumRainfallInducedDisplacementMm;
+    return { progress, horizonHours, elapsedHours: horizonHours * progress, baselineMm: 0, incrementMm: scene.femRun.summary.maximumRainfallInducedDisplacementMm, displacementMm };
+  }
   const baselineMm = forecast?.currentDisplacementMm || 0, incrementMm = Math.max(0, forecast?.predictedIncrementMm ?? ((forecast?.predictedDisplacementMm || baselineMm) - baselineMm));
   return { progress, horizonHours, elapsedHours: horizonHours * progress, baselineMm, incrementMm, displacementMm: baselineMm + incrementMm * progress };
 }
@@ -246,6 +254,141 @@ function setupReportControls() {
   $("#download-pdf").addEventListener("click", () => { try { downloadReport(createPdfReport(reportModel()), "pdf"); $("#report-status").textContent = "PDF tecnico RC generado con portada, indicadores y resultados."; } catch (error) { $("#report-status").textContent = error.message; } });
   $("#download-word").addEventListener("click", () => { try { downloadReport(createWordReport(reportModel()), "rtf"); $("#report-status").textContent = "Documento Word compatible RC generado con la misma estructura tecnica."; } catch (error) { $("#report-status").textContent = error.message; } });
 }
+
+function renderResearchExperiment(experiment) {
+  if (!experiment) return;
+  scene.researchExperiment = experiment;
+  $("#research-results").innerHTML = experiment.results.map((result) => `
+    <tr class="${result.id === experiment.bestByMae ? "best" : ""}">
+      <td><strong>${result.label}</strong>${result.id === experiment.bestByMae ? "<small>Mejor MAE</small>" : ""}</td>
+      <td>${result.components}</td>
+      <td>${result.maeMm.toFixed(4)} mm</td>
+      <td>${result.rmseMm.toFixed(4)} mm</td>
+      <td>${result.r2 === null ? "—" : result.r2.toFixed(4)}</td>
+    </tr>`).join("");
+  $("#research-status").textContent = `${experiment.sampleCount} ventanas · horizonte ${experiment.horizonHours} h · datos ${experiment.datasetStatus}. ${experiment.note}`;
+  $("#download-experiment").disabled = false;
+}
+
+function renderResearchStatus(research) {
+  if (!research) return;
+  $("#research-protocol-status").textContent = research.protocol.scientificStatus.replaceAll("_", " ");
+  $("#research-objective").textContent = research.protocol.objective;
+  $("#research-components").innerHTML = research.components.map((component) => `<article><span>${component.component}</span><strong>${component.status.replaceAll("_", " ")}</strong><small>${component.detail}</small></article>`).join("");
+  renderFemStatus(research.fem2d);
+  if (research.latestExperiment) renderResearchExperiment(research.latestExperiment);
+}
+
+function renderFemRun(run) {
+  if (!run) return;
+  scene.femRun = run;
+  const summary = run.summary;
+  $("#fem-metrics").innerHTML = [
+    ["Movimiento por lluvia", `${summary.maximumRainfallInducedDisplacementMm.toFixed(4)} mm`],
+    ["Presión de poros máxima", `${summary.maximumPorePressureKpa.toFixed(2)} kPa`],
+    ["Índice Mohr–Coulomb", summary.mohrCoulombSafetyIndex === null ? "No disponible" : summary.mohrCoulombSafetyIndex.toFixed(3)],
+    ["Malla", `${run.mesh.nodeCount} nodos · ${run.mesh.elementCount} elementos`]
+  ].map(([label, value]) => `<article><small>${label}</small><strong>${value}</strong></article>`).join("");
+  $("#fem-status").textContent = `${run.rainfall.observedDailyTotalMm} mm/día del ${run.rainfall.date} · ${run.rainfall.temporalProfile.replaceAll("_", " ")} · ${summary.riskLevel} · convergencia ${summary.maximumSolverResidual.toExponential(2)}.`;
+  $("#download-fem").disabled = false;
+  $("#show-fem-3d").disabled = false;
+  $("#playback-note").textContent = "Campo nodal FEM 2D por hora. La autoescala solo afecta la geometría visible; el panel y el JSON mantienen los desplazamientos físicos en mm.";
+  stopDisplacementPlayback();
+  scene.playback.progress = 0;
+  $("#scene-layer").value = "displacement";
+  drawScene();
+  playDisplacementPlayback();
+}
+
+function renderFemStatus(status) {
+  if (!status) return;
+  const button = $("#run-fem");
+  $("#fem-method-status").textContent = status.method.scientificStatus.replaceAll("_", " ");
+  button.disabled = !status.available;
+  if (status.rainfall) {
+    const date = $("#fem-date");
+    date.min = status.rainfall.summary.startDate;
+    date.max = status.rainfall.summary.endDate;
+    if (!date.value) date.value = status.rainfall.summary.recommendedDate;
+  }
+}
+
+function setupFemControls() {
+  $("#run-fem").addEventListener("click", async () => {
+    const button = $("#run-fem");
+    button.disabled = true;
+    $("#fem-status").textContent = "Ensamblando la malla y resolviendo 24 estados horarios…";
+    try {
+      const run = await api("/api/fem/run", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ date:$("#fem-date").value, concentrationHours:Number($("#fem-rain-profile").value) }) });
+      renderFemRun(run);
+    } catch (error) { $("#fem-status").textContent = error.message; }
+    finally { button.disabled = false; }
+  });
+  $("#download-fem").addEventListener("click", () => {
+    if (!scene.femRun) return;
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(scene.femRun, null, 2)], { type:"application/json" }));
+    link.download = `${scene.femRun.id.toLowerCase()}-ta01.json`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  });
+  $("#show-fem-3d").addEventListener("click", () => {
+    if (!scene.femRun) return;
+    $("#scene-3d").scrollIntoView({ behavior:"smooth", block:"center" });
+    scene.playback.progress = 0;
+    playDisplacementPlayback();
+  });
+}
+
+function setupResearchControls() {
+  $("#run-ablation").addEventListener("click", async () => {
+    const button = $("#run-ablation");
+    button.disabled = true;
+    $("#research-status").textContent = "Ejecutando backtest temporal y comparación de componentes…";
+    try {
+      const experiment = await api("/api/research/ablation", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ horizonHours:Number($("#research-horizon").value) }) });
+      renderResearchExperiment(experiment);
+    } catch (error) { $("#research-status").textContent = error.message; }
+    finally { button.disabled = false; }
+  });
+  $("#download-experiment").addEventListener("click", () => {
+    if (!scene.researchExperiment) return;
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(scene.researchExperiment, null, 2)], { type:"application/json" }));
+    link.download = `${scene.researchExperiment.id.toLowerCase()}-ablation.json`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  });
+  $("#load-baseline").addEventListener("click", loadTemporalBaseline);
+  $("#baseline-horizon").addEventListener("change", loadTemporalBaseline);
+}
+
+async function loadTemporalBaseline() {
+  const button = $("#load-baseline");
+  button.disabled = true;
+  $("#baseline-status").textContent = "Leyendo el modelo y las métricas de prueba…";
+  try {
+    const horizon = $("#baseline-horizon").value;
+    const [baseline, result] = await Promise.all([api(`/api/research/baseline?horizon=${horizon}`), api(`/api/research/lstm?horizon=${horizon}`)]);
+    const persistence = result.metrics.test.persistence;
+    const ridge = result.metrics.test.ridgeComparable;
+    const lstm = result.metrics.test.lstm;
+    const improvement = ridge.maeMm > 0 ? (1 - lstm.maeMm / ridge.maeMm) * 100 : 0;
+    $("#baseline-metrics").innerHTML = [
+      ["MAE persistencia", `${persistence.maeMm.toFixed(8)} mm`],
+      ["MAE ridge", `${ridge.maeMm.toFixed(8)} mm`],
+      ["MAE LSTM", `${lstm.maeMm.toFixed(8)} mm`],
+      ["LSTM frente a ridge", `${improvement >= 0 ? "+" : ""}${improvement.toFixed(1)}%`]
+    ].map(([label, value]) => `<article><small>${label}</small><strong>${value}</strong></article>`).join("");
+    const corrections = result.metrics.test.physicalViolations.correctedPredictionCount;
+    const rmseComparison = lstm.rmseMm <= ridge.rmseMm ? "La LSTM también mejora RMSE." : `Ridge conserva menor RMSE (${ridge.rmseMm.toFixed(8)} frente a ${lstm.rmseMm.toFixed(8)} mm).`;
+    $("#baseline-status").textContent = `${lstm.sampleCount} ventanas comparables · LSTM de ${result.architecture.hiddenUnits} unidades y ${result.architecture.lookbackHours} h de memoria · mejor época ${result.training.bestEpoch} · ${corrections} correcciones de monotonía · 0 violaciones finales. ${rmseComparison} Ridge completo: λ=${baseline.selectedLambda}.`;
+  } catch (error) {
+    $("#baseline-status").textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
 function drawCoordinateFrame(ctx, project, asset, parameters, highContrast) {
   scene.coordinateHits = [];
   const drawLine = (points, color, dashed = false) => {
@@ -335,6 +478,7 @@ function drawScene() {
       layer,
       options,
       playback: { progress: scene.playback.progress, amplification: visualAmplification() },
+      femRun: scene.femRun,
       weather: scene.weather
     });
     if (scene.pendingFit) {
@@ -346,9 +490,9 @@ function drawScene() {
   $("#coordinate-hover").textContent = options.coordinates ? "La retícula usa la referencia espacial mostrada arriba." : "Activa la cuadrícula para inspeccionar referencias.";
   const shapeName = { LINEAR:"RECTO", BENCHED:"BANCOS", CIRCULAR:"FOSA CIRCULAR", SEMICIRCULAR:"ANFITEATRO", WASTE_DUMP:"BOTADERO" }[parameters.geometryType] || "PARAMÉTRICO";
   const geometryState = scene.photoApproximation ? `FOTO · ${shapeName}` : scene.geometryAsset?.mesh ? `MALLA ${scene.geometryAsset.format}` : shapeName;
-  $("#layer-legend").innerHTML = options.overlay ? `<span class="legend-gradient"></span>${meta.label} · ${meta.unit}` : "Capa analítica desactivada · solo materiales";
-  $("#layer-source").textContent = options.overlay ? meta.source : "Se visualiza la geometría y materiales del talud sin superposición analítica.";
-  $("#scene-status").textContent = `${forecast.risk.level} · ${geometryState}${options.realistic ? " · REALISTA" : ""}`;
+  $("#layer-legend").innerHTML = scene.femRun ? '<span class="legend-gradient"></span>FEM 2D · movimiento por lluvia · mm' : options.overlay ? `<span class="legend-gradient"></span>${meta.label} · ${meta.unit}` : "Capa analítica desactivada · solo materiales";
+  $("#layer-source").textContent = scene.femRun ? "Corte triangular CST calculado nodo a nodo; verde–rojo indica magnitud relativa dentro de la corrida." : options.overlay ? meta.source : "Se visualiza la geometría y materiales del talud sin superposición analítica.";
+  $("#scene-status").textContent = `${forecast.risk.level} · ${geometryState}${scene.femRun ? " · FEM 2D" : ""}${options.realistic ? " · REALISTA" : ""}`;
   $("#scene-status").className = `chip ${forecast.risk.level}`;
   $("#camera-mode").textContent = scene.freecam ? "Vuelo libre · WASD mueve · Q/E sube/baja" : "Órbita 3D · arrastra, rueda o usa botón derecho";
   renderPlaybackUi();
@@ -362,7 +506,7 @@ function renderSceneEventHud() {
   if (scene.weather.active) parts.push(`🌧 LLUVIA · ${scene.weather.rainfallMmH} mm/h · ${scene.weather.durationHours} h`);
   if (scene.playback.progress > 0.005) {
     const mode = $("#material-motion-enabled").checked ? "DEFORMACIÓN DE MATERIALES" : "VECTORES DE DESPLAZAMIENTO";
-    parts.push(`↘ ${mode} · ${visualAmplification()}× · ${Math.round(scene.playback.progress * 100)}%`);
+    parts.push(scene.femRun ? `↘ FEM 2D · ${mode} · AUTOESCALA VISUAL · ${Math.round(scene.playback.progress * 100)}%` : `↘ ${mode} · ${visualAmplification()}× · ${Math.round(scene.playback.progress * 100)}%`);
   }
   hud.hidden = parts.length === 0;
   hud.textContent = parts.join("  |  ");
@@ -390,6 +534,8 @@ function viewerPayload(includeGeometry = false) {
     payload.forecast = scene.forecast;
     payload.readings = scene.readings.slice(-72);
   }
+  const femChanged = includeGeometry || scene.femRun !== lastPublishedFem;
+  if (femChanged) payload.femRun = scene.femRun;
   const geometryChanged = includeGeometry || scene.geometryAsset !== lastPublishedGeometry || scene.photoApproximation !== lastPublishedPhoto;
   if (geometryChanged) {
     payload.geometryAsset = scene.geometryAsset;
@@ -408,6 +554,7 @@ function publishViewerState(includeGeometry = false) {
   lastPublishedReadings = scene.readings;
   lastPublishedGeometry = scene.geometryAsset;
   lastPublishedPhoto = scene.photoApproximation;
+  lastPublishedFem = scene.femRun;
 }
 
 function drawSceneLegacy() {
@@ -557,6 +704,7 @@ function setupSimulationControls() {
 }
 function renderTwinStatus(twin, forecast, readings) {
   scene.twin = twin;
+  renderResearchStatus(twin.research);
   const rain = twin.weather?.latestEvent;
   scene.weather = rain ? { active: true, rainfallMmH: rain.intensityMmH, durationHours: rain.durationHours, event: rain } : emptyWeather();
   renderWeatherStatus();
@@ -592,22 +740,68 @@ function renderWeatherStatus(message = "") {
     return;
   }
   const event = scene.weather.event;
-  $("#weather-status").textContent = event
-    ? `${event.totalRainfallMm} mm acumulados · presión +${event.porePressureIncreaseKpa} kPa · desplazamiento +${event.displacementIncreaseMm} mm.`
-    : "Sin evento meteorológico aplicado.";
+  if (!event) {
+    $("#weather-status").textContent = "Sin evento meteorológico aplicado.";
+    return;
+  }
+  const provenance = event.provenance || {};
+  const sourceText = provenance.sourceDate
+    ? `NASA POWER ${provenance.sourceDate}: ${provenance.observedDailyTotalMm} mm/día; perfil horario uniforme estimado. `
+    : "";
+  $("#weather-status").textContent = `${sourceText}${event.totalRainfallMm} mm aplicados · presión +${event.porePressureIncreaseKpa} kPa · desplazamiento +${event.displacementIncreaseMm} mm.`;
 }
 
 function setupWeatherControls() {
   const intensity = $("#rain-intensity");
+  const source = $("#rain-source");
+  const dateInput = $("#rain-history-date");
+  const duration = $("#rain-duration");
+  const simulateButton = $("#simulate-rain");
+  const selectedHistoricalRecord = () => rainfallHistory?.records?.find((row) => row.date === dateInput.value);
+  const renderHistoricalSelection = () => {
+    const record = selectedHistoricalRecord();
+    $("#rain-history-value").textContent = record
+      ? `${record.rainfallMmDay.toFixed(2)} mm/día · se distribuirán uniformemente en 24 h.`
+      : "No hay datos para la fecha seleccionada.";
+  };
+  const applyRainSource = () => {
+    const historical = source.value === "historical";
+    $("#manual-rain-controls").hidden = historical;
+    $("#historical-rain-controls").hidden = !historical;
+    duration.disabled = historical;
+    if (historical) duration.value = "24";
+    simulateButton.textContent = historical ? "Reproducir día" : "Simular lluvia";
+    simulateButton.disabled = historical && !selectedHistoricalRecord();
+    renderHistoricalSelection();
+  };
   intensity.addEventListener("input", () => { $("#rain-intensity-value").textContent = `${intensity.value} mm/h`; });
-  $("#simulate-rain").addEventListener("click", async () => {
-    const button = $("#simulate-rain");
+  source.addEventListener("change", applyRainSource);
+  dateInput.addEventListener("input", () => { renderHistoricalSelection(); applyRainSource(); });
+  api("/api/rainfall-history").then((history) => {
+    rainfallHistory = history.available ? history : null;
+    if (!rainfallHistory) throw new Error(history.error || "Datos históricos no disponibles");
+    dateInput.min = history.summary.startDate;
+    dateInput.max = history.summary.endDate;
+    dateInput.value = history.summary.recommendedDate;
+    renderHistoricalSelection();
+    applyRainSource();
+  }).catch((error) => {
+    source.querySelector('[value="historical"]').disabled = true;
+    $("#rain-history-value").textContent = error.message;
+  });
+  applyRainSource();
+  simulateButton.addEventListener("click", async () => {
+    const button = simulateButton;
     button.disabled = true;
     renderWeatherStatus("Calculando infiltración y respuesta del talud…");
     try {
-      const intensityMmH = Number(intensity.value), durationHours = Number($("#rain-duration").value);
-      const result = await api("/api/weather-event", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ intensityMmH, durationHours }) });
-      scene.weather = { active: true, rainfallMmH: intensityMmH, durationHours, event: result.event };
+      const historical = source.value === "historical";
+      const path = historical ? "/api/weather-event/historical" : "/api/weather-event";
+      const body = historical
+        ? { date: dateInput.value }
+        : { intensityMmH: Number(intensity.value), durationHours: Number(duration.value) };
+      const result = await api(path, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+      scene.weather = { active: result.event.totalRainfallMm > 0, rainfallMmH: result.event.intensityMmH, durationHours: result.event.durationHours, event: result.event };
       $("#scene-layer").value = "pore";
       await refresh();
       scene.playback.progress = 0;
@@ -615,7 +809,7 @@ function setupWeatherControls() {
     } catch (error) {
       renderWeatherStatus(error.message);
     } finally {
-      button.disabled = false;
+      button.disabled = source.value === "historical" && !selectedHistoricalRecord();
     }
   });
   $("#clear-weather").addEventListener("click", async () => {
@@ -691,6 +885,7 @@ function setupSceneWindowControls() {
     scene.readings = state.readings || scene.readings;
     scene.weather = state.weather || scene.weather;
     scene.playback.progress = state.playback?.progress ?? scene.playback.progress;
+    if (state.femRun !== undefined) scene.femRun = state.femRun;
     if (state.geometryAsset !== undefined) scene.geometryAsset = state.geometryAsset;
     if (state.photoApproximation !== undefined) scene.photoApproximation = state.photoApproximation;
     if (state.layer) $("#scene-layer").value = state.layer;
@@ -820,7 +1015,7 @@ function renderForecast(forecast, rows) {
     `Presión física de riesgo: ${(forecast.femState.physicsRisk*100).toFixed(0)}%; componente temporal: ${(forecast.modelDiagnostics.temporalRisk*100).toFixed(0)}%.`,
     `Incertidumbre del pronóstico: ${(forecast.risk.uncertainty*100).toFixed(1)}%.`
   ]; $("#explanations").innerHTML = statements.map((x)=>`<li>${x}</li>`).join(""); drawChart(rows, forecast);
-  stopDisplacementPlayback(); scene.playback.progress = 0; applySimulationParameters(forecast.simulationParameters); scene.forecast=forecast;scene.readings=rows;drawScene();
+  stopDisplacementPlayback(); scene.playback.progress = 0; scene.femRun = null; $("#playback-note").textContent = "Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo."; applySimulationParameters(forecast.simulationParameters); scene.forecast=forecast;scene.readings=rows;drawScene();
 }
 
 async function renderAlerts() { const { alerts } = await api("/api/alerts"); $("#alert-list").innerHTML = alerts.length ? alerts.slice(0,5).map(a=>`<div class="alert-row"><span class="pill ${a.level}">${a.level}</span><span>${a.sensorId}</span><span>${a.message}</span></div>`).join("") : '<p class="muted">Aún no hay alertas registradas.</p>'; }
@@ -849,4 +1044,7 @@ setupSimulationControls();
 setupGeometryControls();
 setupRiskPolicyControls();
 setupReportControls();
+setupResearchControls();
+setupFemControls();
+loadTemporalBaseline();
 refresh();

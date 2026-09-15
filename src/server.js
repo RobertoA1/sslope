@@ -3,12 +3,16 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createForecast } from "./core/forecast-engine.js";
+import { parseNasaPowerDailyCsv } from "./core/rainfall-history.js";
 import { TwinStore } from "./store.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
 const threeDir = path.join(__dirname, "..", "node_modules", "three");
-const store = new TwinStore();
+const rainfallDataPath = path.join(__dirname, "..", "data", "rainfall", "pasco-nasa-power-2020-2025.csv");
+const generatedDataDir = path.join(__dirname, "..", "data", "generated");
+const rainfallDataset = parseNasaPowerDailyCsv(await readFile(rainfallDataPath, "utf8"));
+const store = new TwinStore({ rainfallDataset });
 const port = Number(process.env.PORT || 3000);
 
 const sendJson = (res, status, data) => {
@@ -51,6 +55,22 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/alerts") return sendJson(res, 200, { alerts: store.alerts });
     if (req.method === "GET" && url.pathname === "/api/twin") return sendJson(res, 200, store.getTwinStatus());
     if (req.method === "GET" && url.pathname === "/api/simulation") return sendJson(res, 200, { parameters: store.simulationParameters });
+    if (req.method === "GET" && url.pathname === "/api/research") return sendJson(res, 200, store.getResearchStatus());
+    if (req.method === "GET" && url.pathname === "/api/research/baseline") {
+      const horizon = Number(url.searchParams.get("horizon") || 1);
+      if (![1, 6].includes(horizon)) throw new Error("La línea base disponible admite horizontes de 1 o 6 horas");
+      const result = JSON.parse(await readFile(path.join(generatedDataDir, `ta01-baseline-${horizon}h.json`), "utf8"));
+      return sendJson(res, 200, result);
+    }
+    if (req.method === "GET" && url.pathname === "/api/research/lstm") {
+      const horizon = Number(url.searchParams.get("horizon") || 1);
+      if (![1, 6].includes(horizon)) throw new Error("La LSTM disponible admite horizontes de 1 o 6 horas");
+      const result = JSON.parse(await readFile(path.join(generatedDataDir, "..", "models", `ta01-lstm-${horizon}h.json`), "utf8"));
+      const { model, history, ...summary } = result;
+      return sendJson(res, 200, { ...summary, modelAvailable: Boolean(model?.weights), recentTrainingHistory: history.slice(-10) });
+    }
+    if (req.method === "GET" && url.pathname === "/api/fem/status") return sendJson(res, 200, store.getFemStatus());
+    if (req.method === "GET" && url.pathname === "/api/rainfall-history") return sendJson(res, 200, store.getRainfallHistory());
     if (req.method === "GET" && url.pathname === "/api/forecast") {
       const forecast = createForecast(store.getReadings(120), Number(url.searchParams.get("horizon") || 24), store.simulationParameters, store.riskPolicy);
       store.recordAlert(forecast);
@@ -62,6 +82,9 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { readings: store.loadScenario(name), scenario: name });
     }
     if (req.method === "POST" && url.pathname === "/api/weather-event") return sendJson(res, 201, store.simulateRainfall(await getBody(req)));
+    if (req.method === "POST" && url.pathname === "/api/weather-event/historical") return sendJson(res, 201, store.simulateHistoricalRainfall(await getBody(req)));
+    if (req.method === "POST" && url.pathname === "/api/research/ablation") return sendJson(res, 201, store.runResearchAblation(await getBody(req)));
+    if (req.method === "POST" && url.pathname === "/api/fem/run") return sendJson(res, 201, store.runFemCase(await getBody(req)));
     if (req.method === "POST" && url.pathname === "/api/simulation") return sendJson(res, 200, { parameters: store.updateSimulationParameters(await getBody(req)) });
     if (req.method === "POST" && url.pathname === "/api/risk-policy") return sendJson(res, 200, { policy: store.updateRiskPolicy(await getBody(req)) });
     if (req.method === "POST" && url.pathname === "/api/geometry") return sendJson(res, 201, { geometry: store.registerGeometry(await getBody(req)) });

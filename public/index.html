@@ -96,10 +96,19 @@
           </section>
           <section class="weather-simulation dashboard-block" aria-label="Simulación de lluvia">
             <p class="label">EVENTO DE LLUVIA</p>
-            <label class="range-control">Intensidad <output id="rain-intensity-value">35 mm/h</output><input id="rain-intensity" type="range" min="0" max="100" step="5" value="35" /></label>
+            <label for="rain-source">Fuente de lluvia</label>
+            <select id="rain-source"><option value="manual">Intensidad manual</option><option value="historical">Histórico NASA POWER · Pasco</option></select>
+            <div id="manual-rain-controls" class="rain-mode-fields">
+              <label class="range-control">Intensidad <output id="rain-intensity-value">35 mm/h</output><input id="rain-intensity" type="range" min="0" max="100" step="5" value="35" /></label>
+            </div>
+            <div id="historical-rain-controls" class="rain-mode-fields" hidden>
+              <label for="rain-history-date">Día histórico</label>
+              <input id="rain-history-date" type="date" />
+              <p id="rain-history-value" class="control-hint">Cargando datos históricos…</p>
+            </div>
             <label for="rain-duration">Duración</label>
             <select id="rain-duration"><option value="1">1 hora</option><option value="6" selected>6 horas</option><option value="12">12 horas</option><option value="24">24 horas</option><option value="48">48 horas</option></select>
-            <div class="weather-actions"><button id="simulate-rain" type="button">🌧 Simular lluvia</button><button id="clear-weather" class="secondary" type="button">Restablecer</button></div>
+            <div class="weather-actions"><button id="simulate-rain" type="button">Simular lluvia</button><button id="clear-weather" class="secondary" type="button">Restablecer</button></div>
             <p id="weather-status" class="control-hint">Sin evento meteorológico aplicado.</p>
           </section>
           <section class="forecast-playback" aria-label="Reproducción temporal del desplazamiento previsto">
@@ -110,7 +119,7 @@
             <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">1200×</output><input id="playback-amplification" type="range" min="200" max="2000" step="100" value="1200" /></label>
             <div class="playback-track" role="progressbar" aria-label="Progreso de la simulación temporal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="playback-progress"></span></div>
             <div class="playback-readout"><strong id="playback-time">t = 0.0 h</strong><span id="playback-displacement">Desplazamiento: —</span></div>
-            <p class="control-hint">Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo.</p>
+            <p id="playback-note" class="control-hint">Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo.</p>
           </section>
           <div class="visual-toggles" aria-label="Opciones de visualización">
             <label class="toggle realism-toggle"><input id="realism-enabled" type="checkbox" checked /> <span><strong>Terreno realista</strong><small>Luz solar, sombras suaves y marcas naturales</small></span></label>
@@ -192,12 +201,56 @@
         </article>
       </section>
 
+      <section class="card research-panel" aria-label="Validación experimental del artículo">
+        <div class="section-title research-heading">
+          <div><p class="label">MARCO CIENTÍFICO DEL ARTÍCULO</p><h2>Evaluación FEM–LSTM–PINN</h2></div>
+          <span id="research-protocol-status" class="chip">CARGANDO</span>
+        </div>
+        <p id="research-objective" class="muted">Cargando protocolo de investigación…</p>
+        <div id="research-components" class="research-components"></div>
+        <section class="fem-runner" aria-label="Ejecución FEM 2D del caso TA-01">
+          <div class="fem-runner-heading"><div><p class="label">CASO TA-01</p><h3>Solver FEM 2D</h3></div><span id="fem-method-status" class="chip">CARGANDO</span></div>
+          <div class="fem-controls">
+            <label for="fem-date">Lluvia diaria NASA POWER<input id="fem-date" type="date" /></label>
+            <label for="fem-rain-profile">Distribución temporal<select id="fem-rain-profile"><option value="24" selected>Uniforme en 24 h</option><option value="12">Concentrada en 12 h</option><option value="6">Concentrada en 6 h</option></select></label>
+            <button id="run-fem" type="button">Ejecutar FEM 2D</button>
+            <button id="show-fem-3d" class="secondary" type="button" disabled>Ver FEM en 3D</button>
+            <button id="download-fem" class="secondary" type="button" disabled>Descargar resultado</button>
+          </div>
+          <div id="fem-metrics" class="fem-metrics"><span>Ejecuta el caso para obtener desplazamiento, presión de poros e índice de seguridad.</span></div>
+          <p id="fem-status" class="control-hint">CST en deformación plana. El índice Mohr–Coulomb posprocesado no equivale a una reducción de resistencia validada.</p>
+        </section>
+        <section class="baseline-runner" aria-label="Evaluación temporal TA-01">
+          <div class="fem-runner-heading"><div><p class="label">MODELOS TEMPORALES</p><h3>Persistencia, ridge y LSTM</h3></div><span class="chip">SEMISINTÉTICA</span></div>
+          <div class="baseline-controls">
+            <label for="baseline-horizon">Horizonte evaluado<select id="baseline-horizon"><option value="1">1 hora</option><option value="6" selected>6 horas</option></select></label>
+            <button id="load-baseline" type="button">Comparar modelos</button>
+          </div>
+          <div id="baseline-metrics" class="fem-metrics"><span>Cargando la evaluación aislada del conjunto de prueba…</span></div>
+          <p id="baseline-status" class="control-hint">La comparación usa las mismas ventanas de prueba para los tres modelos, sin mezclar escenarios entre particiones.</p>
+        </section>
+        <div class="research-controls">
+          <label for="research-horizon">Horizonte de ablación
+            <select id="research-horizon"><option value="1">1 hora</option><option value="6" selected>6 horas</option><option value="24">24 horas</option></select>
+          </label>
+          <button id="run-ablation" type="button">Ejecutar comparación</button>
+          <button id="download-experiment" class="secondary" type="button" disabled>Descargar JSON</button>
+        </div>
+        <div class="research-table-wrap">
+          <table class="research-table">
+            <thead><tr><th>Variante</th><th>Componentes</th><th>MAE</th><th>RMSE</th><th>R²</th></tr></thead>
+            <tbody id="research-results"><tr><td colspan="5">Ejecuta una comparación para generar evidencia experimental demostrativa.</td></tr></tbody>
+          </table>
+        </div>
+        <p id="research-status" class="control-hint">Los resultados del MVP no sustituyen una validación con FEM, LSTM y PINN entrenados.</p>
+      </section>
+
       <section class="card alerts">
         <div class="section-title"><div><p class="label">TRAZABILIDAD</p><h2>Alertas recientes</h2></div></div>
         <div id="alert-list" class="alert-list"><p class="muted">Aún no hay alertas registradas.</p></div>
       </section>
     </main>
-    <footer>M-1 Digital Twin · MVP académico · Datos sintéticos para demostración</footer>
+    <footer>M-1 Digital Twin · MVP académico · Datos sintéticos y reanálisis meteorológico</footer>
     <script type="importmap">
       {
         "imports": {

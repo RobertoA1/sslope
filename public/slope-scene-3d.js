@@ -15,6 +15,7 @@ import {
   LineBasicMaterial,
   LineSegments,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PCFSoftShadowMap,
   PerspectiveCamera,
@@ -234,6 +235,10 @@ export class SlopeScene3D {
     this.terrainBasePositions = null;
     this.ghostTerrain = null;
     this.displacementCuesRoot = null;
+    this.femSlice = null;
+    this.femVectorRoot = null;
+    this.femSliceNodeIds = [];
+    this.femSliceLastState = "";
     this.materialFragments = [];
     this.lastParameters = {};
     this.setupLights();
@@ -270,6 +275,10 @@ export class SlopeScene3D {
     this.terrainBasePositions = null;
     this.ghostTerrain = null;
     this.displacementCuesRoot = null;
+    this.femSlice = null;
+    this.femVectorRoot = null;
+    this.femSliceNodeIds = [];
+    this.femSliceLastState = "";
     this.materialFragments = [];
   }
 
@@ -297,6 +306,7 @@ export class SlopeScene3D {
       && this.structureState.readings === data.readings
       && this.structureState.geometryAsset === data.geometryAsset
       && this.structureState.photoApproximation === data.photoApproximation
+      && this.structureState.femRun === data.femRun
       && this.structureState.layer === data.layer
       && this.structureState.optionsKey === optionsKey
       && this.structureState.rainfallMmH === Number(data.weather?.rainfallMmH || 0);
@@ -312,6 +322,7 @@ export class SlopeScene3D {
       readings: data.readings,
       geometryAsset: data.geometryAsset,
       photoApproximation: data.photoApproximation,
+      femRun: data.femRun,
       layer: data.layer,
       optionsKey,
       rainfallMmH: Number(data.weather?.rainfallMmH || 0)
@@ -325,6 +336,7 @@ export class SlopeScene3D {
     this.sun.intensity = realistic ? 2.45 : 1.25;
     this.buildGround(data, realistic);
     this.buildTerrain(data, realistic);
+    this.buildFemSlice(data);
     if (data.options.coordinates) this.buildGrid(data);
     this.buildSensors(data);
     this.buildRain(data);
@@ -361,7 +373,7 @@ export class SlopeScene3D {
     const baseLayer = layerValue(layer, forecast, readings);
     const wetness = clamp(Number(data.weather?.rainfallMmH || 0) / 100);
     const addFace = (points, baseColor, value, normalAt = null) => {
-      const display = points.map((point) => options.materialMotion ? displacedPoint(point, parameters, forecast, playback.progress, playback.amplification) : point);
+      const display = points.map((point) => options.materialMotion && !data.femRun ? displacedPoint(point, parameters, forecast, playback.progress, playback.amplification) : point);
       for (let index = 1; index < display.length - 1; index++) {
         const sourceIndices = [0, index + 1, index];
         const edgeA = new Vector3().subVectors(new Vector3().copy(display[index + 1]), new Vector3().copy(display[0]));
@@ -480,21 +492,22 @@ export class SlopeScene3D {
     const base = this.terrainBasePositions;
     for (let offset = 0, index = 0; offset < base.length; offset += 3, index++) {
       const point = { x: base[offset], y: base[offset + 1], z: base[offset + 2] };
-      const display = data.options.materialMotion
+      const display = data.options.materialMotion && !data.femRun
         ? displacedPoint(point, parameters, data.forecast, data.playback.progress, data.playback.amplification)
         : point;
       position.setXYZ(index, display.x, display.y, display.z);
     }
     position.needsUpdate = true;
+    this.updateFemSlice(data);
     this.updatePlaybackOverlay(data);
   }
 
   updatePlaybackOverlay(data) {
     const visible = data.playback.progress > 0.005;
     const materialMotion = data.options.materialMotion;
-    if (this.ghostTerrain) this.ghostTerrain.visible = visible && materialMotion;
+    if (this.ghostTerrain) this.ghostTerrain.visible = visible && materialMotion && !data.femRun;
     this.materialFragments.forEach((fragment) => {
-      fragment.visible = visible && materialMotion;
+      fragment.visible = visible && materialMotion && !data.femRun;
       if (!fragment.visible) return;
       const base = fragment.userData.basePoint;
       const display = displacedPoint(base, data.forecast.simulationParameters || {}, data.forecast, data.playback.progress, data.playback.amplification);
@@ -504,7 +517,114 @@ export class SlopeScene3D {
     if (!this.displacementCuesRoot) return;
     disposeObject(this.displacementCuesRoot, this.preservedTextures);
     this.displacementCuesRoot.clear();
-    if (visible && !materialMotion) this.buildDisplacementCues(data);
+    if (visible && !materialMotion && !data.femRun) this.buildDisplacementCues(data);
+  }
+
+  buildFemSlice(data) {
+    const run = data.femRun;
+    if (!run?.mesh?.nodes?.length || !run.mesh.elements?.length) return;
+    const positions = [];
+    const colors = [];
+    const nodeIds = [];
+    const width = run.scenario?.slopeWidthM || 160;
+    const frontZ = width * 0.42 + 3;
+    for (const element of run.mesh.elements) {
+      for (const nodeId of element.nodeIds) {
+        const node = run.mesh.nodes[nodeId];
+        if (!node) continue;
+        positions.push(node.xM - width / 2, node.yM, frontZ);
+        colors.push(0.12, 0.62, 0.5);
+        nodeIds.push(nodeId);
+      }
+    }
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new Float32BufferAttribute(colors, 3));
+    geometry.computeVertexNormals();
+    const surface = new Mesh(geometry, new MeshStandardMaterial({
+      vertexColors: true,
+      side: DoubleSide,
+      transparent: true,
+      opacity: 0.82,
+      roughness: 0.72,
+      metalness: 0,
+      depthWrite: false
+    }));
+    const wire = new Mesh(geometry, new MeshBasicMaterial({
+      color: "#d8fff5",
+      side: DoubleSide,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false
+    }));
+    surface.renderOrder = 10;
+    wire.renderOrder = 11;
+    this.femSlice = surface;
+    this.femSliceNodeIds = nodeIds;
+    this.root.add(surface, wire);
+    this.femVectorRoot = new Group();
+    this.femVectorRoot.renderOrder = 13;
+    this.root.add(this.femVectorRoot);
+    const label = createLabel("FEM 2D · CORTE");
+    label.position.set(0, (run.scenario?.slopeHeightM || 100) + 9, frontZ);
+    this.root.add(label);
+    this.updateFemSlice(data, true);
+  }
+
+  updateFemSlice(data, force = false) {
+    if (!this.femSlice || !data.femRun) return;
+    const run = data.femRun;
+    const progress = clamp(data.playback.progress);
+    const steps = run.timeSeries || [];
+    const stepIndex = progress <= 0 ? -1 : Math.min(steps.length - 1, Math.max(0, Math.ceil(progress * steps.length) - 1));
+    const stateKey = `${stepIndex}|${data.options.materialMotion}`;
+    if (!force && stateKey === this.femSliceLastState) return;
+    this.femSliceLastState = stateKey;
+    const stepNodes = stepIndex >= 0 ? steps[stepIndex]?.nodes : null;
+    const baseNodes = run.mesh.nodes;
+    const width = run.scenario?.slopeWidthM || 160;
+    const frontZ = width * 0.42 + 3;
+    const finalMaximumMm = Math.max(run.summary?.maximumRainfallInducedDisplacementMm || 0, 1e-9);
+    // La autoescala hace legibles desplazamientos submilimétricos. El panel
+    // conserva y muestra siempre la magnitud física sin amplificar.
+    const visualScale = Math.max(data.playback.amplification || 1, Math.min(1_000_000, 6 / (finalMaximumMm / 1000)));
+    const position = this.femSlice.geometry.getAttribute("position");
+    const color = this.femSlice.geometry.getAttribute("color");
+    this.femSliceNodeIds.forEach((nodeId, vertexIndex) => {
+      const base = baseNodes[nodeId];
+      const result = stepNodes?.[nodeId] || base;
+      const deformation = data.options.materialMotion && stepNodes ? visualScale : 0;
+      position.setXYZ(
+        vertexIndex,
+        base.xM - width / 2 + (result.deltaUxMm || 0) / 1000 * deformation,
+        base.yM + (result.deltaUyMm || 0) / 1000 * deformation,
+        frontZ
+      );
+      const ratio = clamp((result.rainfallInducedDisplacementMm || 0) / finalMaximumMm);
+      const mapped = analyticalColor(ratio);
+      color.setXYZ(vertexIndex, mapped.r, mapped.g, mapped.b);
+    });
+    position.needsUpdate = true;
+    color.needsUpdate = true;
+    this.femSlice.geometry.computeVertexNormals();
+
+    if (!this.femVectorRoot) return;
+    disposeObject(this.femVectorRoot, this.preservedTextures);
+    this.femVectorRoot.clear();
+    if (data.options.materialMotion || !stepNodes) return;
+    const candidates = stepNodes
+      .filter((node) => node.rainfallInducedDisplacementMm > finalMaximumMm * 0.18)
+      .sort((a, b) => b.rainfallInducedDisplacementMm - a.rainfallInducedDisplacementMm)
+      .slice(0, 12);
+    candidates.forEach((node) => {
+      const direction = new Vector3(node.deltaUxMm || 0, node.deltaUyMm || 0, 0);
+      if (direction.lengthSq() < 1e-12) return;
+      direction.normalize();
+      const length = Math.max(3.5, node.rainfallInducedDisplacementMm / finalMaximumMm * 8);
+      const arrow = new ArrowHelper(direction, new Vector3(node.xM - width / 2, node.yM, frontZ + 0.4), length, "#ffca6a", Math.min(2.2, length * 0.3), Math.min(1.3, length * 0.18));
+      this.femVectorRoot.add(arrow);
+    });
   }
 
   buildMaterialFragments(data) {

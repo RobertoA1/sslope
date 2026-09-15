@@ -12,6 +12,11 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const sigmoid = (value) => 1 / (1 + Math.exp(-value));
 
 export const RISK_LEVELS = ["NORMAL", "VIGILANCIA", "ALERTA", "CRITICO"];
+export const MODEL_COMPONENTS = Object.freeze({
+  physical: { id: "FEM_REDUCED_MOHR_COULOMB", status: "MODELO_REDUCIDO" },
+  temporal: { id: "RECURRENT_PROXY_V1", status: "SUSTITUTO_NO_ENTRENADO" },
+  physicsInformed: { id: "PHYSICS_CORRECTION_V1", status: "PROTOTIPO_FISICO" }
+});
 export const DEFAULT_RISK_POLICY = Object.freeze({
   status: "DEMO_NO_VALIDADA",
   riskWatch: 0.3,
@@ -71,6 +76,23 @@ export function validateReading(input) {
     throw new Error("Las mediciones no pueden ser negativas");
   }
   return parsed;
+}
+
+export function assessDataQuality(readings) {
+  const accepted = readings.filter((row) => !["INVALID", "REJECTED", "MISSING"].includes(row.qualityFlag));
+  const simulatedSources = ["synthetic", "rain-simulation", "historical-rain-replay"];
+  const observed = accepted.filter((row) => !simulatedSources.includes(row.source));
+  const sourceDerivedRainfall = accepted.filter((row) => row.source === "historical-rain-replay");
+  const completeness = readings.length ? accepted.length / readings.length : 0;
+  return {
+    readingCount: readings.length,
+    acceptedCount: accepted.length,
+    completeness: Number(completeness.toFixed(3)),
+    observedShare: Number((readings.length ? observed.length / readings.length : 0).toFixed(3)),
+    sourceDerivedRainfallCount: sourceDerivedRainfall.length,
+    status: readings.length < 24 || completeness < 0.8 ? "INSUFICIENTE" : observed.length ? "APTA_PENDIENTE_VALIDACION" : sourceDerivedRainfall.length ? "DEMOSTRATIVA_SEMISINTETICA" : "DEMOSTRATIVA",
+    allowsOperationalUse: readings.length >= 24 && completeness >= 0.8 && observed.length > 0
+  };
 }
 
 /** Modelo físico reducido: aproximación Mohr-Coulomb para un perfil 2D. */
@@ -191,6 +213,7 @@ export function createForecast(readings, horizonHours = 24, parameters = {}, ris
   const temporal = temporalForecast(readings, Number(horizonHours), parameters);
   const fusion = physicsInformedFusion(temporal, femState, Number(horizonHours));
   const last = readings.at(-1);
+  const dataQuality = assessDataQuality(readings);
   const level = classifyRisk(fusion.riskScore, femState.factorOfSafety, fusion.uncertainty, riskPolicy);
   return {
     generatedAt: new Date().toISOString(),
@@ -209,7 +232,10 @@ export function createForecast(readings, horizonHours = 24, parameters = {}, ris
     modelDiagnostics: {
       temporalRisk: temporal.temporalRisk,
       physicsResidual: fusion.physicsResidual,
-      modelVersion: "m1-mvp-0.1"
+      modelVersion: "m1-mvp-0.1-research",
+      scientificStatus: "DEMOSTRACION_NO_VALIDADA",
+      components: MODEL_COMPONENTS,
+      dataQuality
     },
     simulationParameters: { ...DEFAULT_SIMULATION_PARAMETERS, ...parameters }
   };

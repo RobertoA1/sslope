@@ -7,7 +7,12 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "generate:fem": "node scripts/generate-fem-dataset.js",
+    "split:fem": "node scripts/split-fem-dataset.js",
+    "train:baseline": "node scripts/train-temporal-baseline.js",
+    "train:lstm": "python3 scripts/train-lstm.py",
+    "test:lstm": "python3 scripts/test-lstm-core.py"
   },
   "engines": {
     "node": ">=20"

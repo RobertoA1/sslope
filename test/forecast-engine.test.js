@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createForecast, syntheticReadings, validateReading } from "../src/core/forecast-engine.js";
+import { assessDataQuality, createForecast, syntheticReadings, validateReading } from "../src/core/forecast-engine.js";
 import { TwinStore } from "../src/store.js";
 
 test("crea un pronóstico híbrido completo", () => {
@@ -80,4 +80,22 @@ test("el drenaje reduce la respuesta ante la misma lluvia", () => {
   const drainedEvent = drained.simulateRainfall({ intensityMmH: 50, durationHours: 12 }).event;
   assert.ok(drainedEvent.porePressureIncreaseKpa < wetEvent.porePressureIncreaseKpa);
   assert.ok(drainedEvent.displacementIncreaseMm < wetEvent.displacementIncreaseMm);
+});
+
+test("el pronóstico expone procedencia y calidad para la investigación", () => {
+  const forecast = createForecast(syntheticReadings({ count: 48 }), 6);
+  assert.equal(forecast.modelDiagnostics.components.physical.status, "MODELO_REDUCIDO");
+  assert.equal(forecast.modelDiagnostics.dataQuality.status, "DEMOSTRATIVA");
+  assert.equal(assessDataQuality(syntheticReadings({ count: 12 })).status, "INSUFICIENTE");
+});
+
+test("la ablación compara los componentes del MVP con métricas reproducibles", () => {
+  const store = new TwinStore();
+  const experiment = store.runResearchAblation({ horizonHours: 6 });
+  assert.equal(experiment.results.length, 5);
+  assert.equal(experiment.sampleCount, 42);
+  assert.equal(experiment.datasetStatus, "SINTETICO");
+  assert.ok(experiment.results.every((result) => Number.isFinite(result.maeMm) && Number.isFinite(result.rmseMm)));
+  assert.ok(experiment.results.some((result) => result.id === experiment.bestByMae));
+  assert.equal(store.getResearchStatus().latestExperiment.id, experiment.id);
 });
