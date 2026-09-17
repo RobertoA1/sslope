@@ -1,0 +1,173 @@
+{
+  "id": "TA01-TRANSIENT-SEEP-FIELD-MESH-SENSITIVITY-V1",
+  "generatedAt": "2026-09-17T03:39:58.843579+00:00",
+  "scientificStatus": "CAMPO_HIDRAULICO_COMPARADO_SIN_CALIBRACION_NI_ACOPLAMIENTO_SSRM",
+  "geometryInputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+  "hydraulicScenario": {
+    "appliedInfiltrationFluxMPerHour": 0.00036,
+    "conductivityRatios": {
+      "ROCK": 0.05,
+      "SOIL": 1,
+      "WEATHERED": 0.25
+    },
+    "fluxCapFractionOfSaturatedConductivity": 0.01,
+    "lateralHeadM": -2.0,
+    "rainfallMmIn24Hours": 102.88,
+    "rainfallProfile": "rectangular 24 h, con rampas de 0,01 h",
+    "soilConductivityMPerHour": 0.036000000000000004,
+    "soilConductivityMPerSecond": 1e-05,
+    "specificStoragePerM": 0.0001,
+    "specificYieldByMaterial": {
+      "ROCK": 0.05,
+      "SOIL": 0.22,
+      "WEATHERED": 0.12
+    },
+    "timeUnit": "hr",
+    "unappliedRainfallMm": 94.24,
+    "unitSystem": "SI",
+    "unsaturatedModel": "vg",
+    "unsaturatedParameters": {
+      "lfH0M": -2,
+      "lfKr0": 0.01,
+      "vgAlphaPerM": 0.05,
+      "vgN": 1.5
+    }
+  },
+  "maximumTimeStepHours": 0.1,
+  "lateralHeadM": -2.0,
+  "grid": {
+    "spacingM": 2.0,
+    "interiorMarginM": 0.5,
+    "candidateCount": 6395,
+    "commonPointCount": 6395
+  },
+  "runs": [
+    {
+      "meshSizeM": 8.0,
+      "nodeCount": 820,
+      "elementCount": 1481,
+      "sourceFieldSha256": "1c999e48c9077bd19d65f11923a4e19b137c2671011f730b924e25dcf0f59a26",
+      "rmsDeltaHead24hM": 0.6182252142376085,
+      "maximumAbsoluteDeltaHead24hM": 10.123120748283498,
+      "maximumPositivePorePressureChange24hKpa": 2.022690204502215,
+      "rmsDeltaHead48hM": 0.57301450668006,
+      "maximumAbsoluteDeltaHead48hM": 8.641536192822116,
+      "maximumPositivePorePressureChange48hKpa": 1.4380711481338724
+    },
+    {
+      "meshSizeM": 6.0,
+      "nodeCount": 1131,
+      "elementCount": 2089,
+      "sourceFieldSha256": "edaa1413f6dbc42a6a2604b9f39533418b817728ae963385e01755d10448821e",
+      "rmsDeltaHead24hM": 0.6341868157927193,
+      "maximumAbsoluteDeltaHead24hM": 10.834499052803892,
+      "maximumPositivePorePressureChange24hKpa": 2.020048412350005,
+      "rmsDeltaHead48hM": 0.5839114993810363,
+      "maximumAbsoluteDeltaHead48hM": 8.96005188829659,
+      "maximumPositivePorePressureChange48hKpa": 1.4310975052195343
+    },
+    {
+      "meshSizeM": 4.0,
+      "nodeCount": 2158,
+      "elementCount": 4097,
+      "sourceFieldSha256": "9e20427c5aaba05162b29a20f3750bc8b2406543c74115160af0eac48def959f",
+      "rmsDeltaHead24hM": 0.7064388898248939,
+      "maximumAbsoluteDeltaHead24hM": 11.731689980288138,
+      "maximumPositivePorePressureChange24hKpa": 2.021514520141525,
+      "rmsDeltaHead48hM": 0.6293211554786058,
+      "maximumAbsoluteDeltaHead48hM": 9.183327309231402,
+      "maximumPositivePorePressureChange48hKpa": 1.4442173911422387
+    }
+  ],
+  "adjacentComparisons": [
+    {
+      "coarseM": 8.0,
+      "fineM": 6.0,
+      "rmsHeadDifference24hM": 0.09045229533448851,
+      "p95AbsoluteHeadDifference24hM": 0.009549693798666147,
+      "maximumAbsoluteHeadDifference24hM": 2.578579623113953,
+      "rmsPositivePorePressureDifference24hKpa": 0.0021057843729882257,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.04485063866416894,
+      "positivePressureActivePointCount24h": 2660,
+      "maximumAbsoluteHeadDifferenceInPressureActiveZone24hM": 0.004571930546806047,
+      "maximumAbsoluteHeadDifferenceOutsidePressureActiveZone24hM": 2.578579623113953,
+      "peakHeadDifferencePoint24hM": {
+        "x": -3.0,
+        "y": 97.0,
+        "distanceToGroundSurfaceM": 3.0,
+        "coarsePressureHeadM": -95.5563036380449,
+        "finePressureHeadM": -98.13488326115885
+      },
+      "peakPositivePorePressureDifferencePoint24hM": {
+        "x": 141.0,
+        "y": -5.0,
+        "distanceToGroundSurfaceM": 16.230905306415053
+      },
+      "rmsHeadDifference48hM": 0.058976576801808976,
+      "p95AbsoluteHeadDifference48hM": 0.009004678456081616,
+      "maximumAbsoluteHeadDifference48hM": 1.685802729561587,
+      "rmsPositivePorePressureDifference48hKpa": 0.0016314315657365455,
+      "maximumAbsolutePositivePorePressureDifference48hKpa": 0.029752686329031164,
+      "positivePressureActivePointCount48h": 2660,
+      "maximumAbsoluteHeadDifferenceInPressureActiveZone48hM": 0.003032893611521953,
+      "maximumAbsoluteHeadDifferenceOutsidePressureActiveZone48hM": 1.685802729561587,
+      "peakHeadDifferencePoint48hM": {
+        "x": -3.0,
+        "y": 97.0,
+        "distanceToGroundSurfaceM": 3.0,
+        "coarsePressureHeadM": -95.72622155379126,
+        "finePressureHeadM": -97.41202428335285
+      },
+      "peakPositivePorePressureDifferencePoint48hM": {
+        "x": 139.0,
+        "y": -3.0,
+        "distanceToGroundSurfaceM": 16.03162440119897
+      }
+    },
+    {
+      "coarseM": 6.0,
+      "fineM": 4.0,
+      "rmsHeadDifference24hM": 0.19404844680994013,
+      "p95AbsoluteHeadDifference24hM": 0.046544578753744376,
+      "maximumAbsoluteHeadDifference24hM": 2.501543735830751,
+      "rmsPositivePorePressureDifference24hKpa": 0.0032036260459007817,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.0472537320157258,
+      "positivePressureActivePointCount24h": 2660,
+      "maximumAbsoluteHeadDifferenceInPressureActiveZone24hM": 0.004816894191205456,
+      "maximumAbsoluteHeadDifferenceOutsidePressureActiveZone24hM": 2.501543735830751,
+      "peakHeadDifferencePoint24hM": {
+        "x": -7.0,
+        "y": 97.0,
+        "distanceToGroundSurfaceM": 3.0,
+        "coarsePressureHeadM": -95.04645495441287,
+        "finePressureHeadM": -97.54799869024362
+      },
+      "peakPositivePorePressureDifferencePoint24hM": {
+        "x": 145.0,
+        "y": -3.0,
+        "distanceToGroundSurfaceM": 12.098448640355258
+      },
+      "rmsHeadDifference48hM": 0.11951557669740637,
+      "p95AbsoluteHeadDifference48hM": 0.04776787066883902,
+      "maximumAbsoluteHeadDifference48hM": 1.6673339030140113,
+      "rmsPositivePorePressureDifference48hKpa": 0.0020370369943223886,
+      "maximumAbsolutePositivePorePressureDifference48hKpa": 0.028956961291285666,
+      "positivePressureActivePointCount48h": 2660,
+      "maximumAbsoluteHeadDifferenceInPressureActiveZone48hM": 0.0029517799481434404,
+      "maximumAbsoluteHeadDifferenceOutsidePressureActiveZone48hM": 1.6673339030140113,
+      "peakHeadDifferencePoint48hM": {
+        "x": -13.0,
+        "y": 99.0,
+        "distanceToGroundSurfaceM": 1.0,
+        "coarsePressureHeadM": -96.20610681928947,
+        "finePressureHeadM": -94.53877291627546
+      },
+      "peakPositivePorePressureDifferencePoint48hM": {
+        "x": 219.0,
+        "y": -3.0,
+        "distanceToGroundSurfaceM": 3.0
+      }
+    }
+  ],
+  "limitation": "Contrasta cambios de carga a 24/48 h sobre la misma cuadrícula interior; no calibra K, curva de retención, contornos ni escorrentía. La diferencia espacial no equivale a una tolerancia geotécnica de FoS."
+}

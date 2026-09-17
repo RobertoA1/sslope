@@ -17,6 +17,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  OrthographicCamera,
   PCFSoftShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -208,6 +209,8 @@ export class SlopeScene3D {
     this.scene.background = new Color("#9fb9b2");
     this.scene.fog = new Fog("#9fb9b2", 380, 950);
     this.camera = new PerspectiveCamera(42, 1, 0.5, 2400);
+    this.projectionMode = "PERSPECTIVE";
+    this.orthographicHalfHeight = 120;
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
@@ -288,7 +291,14 @@ export class SlopeScene3D {
     const pixelRatio = this.renderer.getPixelRatio();
     if (this.canvas.width !== Math.floor(width * pixelRatio) || this.canvas.height !== Math.floor(height * pixelRatio)) {
       this.renderer.setSize(width, height, false);
-      this.camera.aspect = width / height;
+      const aspect = width / height;
+      if (this.camera.isPerspectiveCamera) this.camera.aspect = aspect;
+      if (this.camera.isOrthographicCamera) {
+        this.camera.left = -this.orthographicHalfHeight * aspect;
+        this.camera.right = this.orthographicHalfHeight * aspect;
+        this.camera.top = this.orthographicHalfHeight;
+        this.camera.bottom = -this.orthographicHalfHeight;
+      }
       this.camera.updateProjectionMatrix();
     }
   }
@@ -758,7 +768,7 @@ export class SlopeScene3D {
     const width = parameters.slopeWidthM || 160;
     const halfDepth = width * 0.42;
     const definitions = [
-      { id: "EXT-01", name: "Extensómetro principal", x: -width * 0.06, z: -halfDepth * 0.06, detail: "Desplazamiento actual: " + forecast.currentDisplacementMm.toFixed(2) + " mm; previsto: " + forecast.predictedDisplacementMm.toFixed(2) + " mm." },
+      { id: forecast.sensorId, name: "Sensor activo", x: -width * 0.06, z: -halfDepth * 0.06, detail: "Desplazamiento actual: " + forecast.currentDisplacementMm.toFixed(2) + " mm; previsto: " + forecast.predictedDisplacementMm.toFixed(2) + " mm." },
       { id: "PZ-02", name: "Piezómetro", x: width * 0.30, z: halfDepth * 0.35, detail: "Presión de poros interpolada: " + (readings.at(-1)?.porePressureKpa || 0).toFixed(1) + " kPa." },
       { id: "INC-03", name: "Inclinómetro", x: -width * 0.45, z: halfDepth * 0.4, detail: "Velocidad derivada: " + forecast.femState.displacementRateMmH.toFixed(3) + " mm/h." }
     ];
@@ -796,10 +806,32 @@ export class SlopeScene3D {
     const centre = bounds.getCenter(new Vector3());
     const size = bounds.getSize(new Vector3());
     const distance = Math.max(size.x, size.y, size.z) * 1.65;
+    this.orthographicHalfHeight = Math.max(size.y * 0.7, size.x * 0.38, size.z * 0.55, 20);
     this.controls.target.copy(centre);
     this.camera.position.copy(centre).add(new Vector3(1.05, 0.72, 1.15).normalize().multiplyScalar(distance));
     this.camera.near = Math.max(0.2, distance / 900);
     this.camera.far = Math.max(1800, distance * 8);
+    this.camera.updateProjectionMatrix();
+    this.resize();
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  setProjection(mode) {
+    const nextMode = mode === "ORTHOGRAPHIC" ? "ORTHOGRAPHIC" : "PERSPECTIVE";
+    if (nextMode === this.projectionMode) return;
+    const position = this.camera.position.clone();
+    const up = this.camera.up.clone();
+    const near = this.camera.near;
+    const far = this.camera.far;
+    const aspect = Math.max(this.canvas.clientWidth, 1) / Math.max(this.canvas.clientHeight, 1);
+    this.camera = nextMode === "ORTHOGRAPHIC"
+      ? new OrthographicCamera(-this.orthographicHalfHeight * aspect, this.orthographicHalfHeight * aspect, this.orthographicHalfHeight, -this.orthographicHalfHeight, near, far)
+      : new PerspectiveCamera(42, aspect, near, far);
+    this.camera.position.copy(position);
+    this.camera.up.copy(up);
+    this.controls.object = this.camera;
+    this.projectionMode = nextMode;
     this.camera.updateProjectionMatrix();
     this.controls.update();
     this.renderer.render(this.scene, this.camera);

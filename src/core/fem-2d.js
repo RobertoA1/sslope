@@ -19,8 +19,8 @@ export const TA01_FEM_DEFAULTS = Object.freeze({
   waterTableM: 28,
   biotCoefficient: 0.85,
   storageCoefficient: 0.22,
-  meshX: 18,
-  meshY: 12
+  meshX: 30,
+  meshY: 20
 });
 
 export const FEM_2D_METHOD = Object.freeze({
@@ -161,6 +161,97 @@ function elementMatrices(element, nodes) {
     return value * area;
   }));
   return { area, B, D, stiffness, dofs: element.nodeIds.flatMap((nodeId) => [nodeId * 2, nodeId * 2 + 1]) };
+}
+
+export function verifyCstPatchTest() {
+  const nodes = [{ id: 0, x: 0, y: 0 }, { id: 1, x: 2, y: 0 }, { id: 2, x: 0, y: 1 }, { id: 3, x: 2, y: 1 }];
+  const material = { youngModulusKpa: 1_000_000, poissonRatio: 0.28 };
+  const elements = [
+    { id: 0, nodeIds: [0, 1, 2], material },
+    { id: 1, nodeIds: [1, 3, 2], material }
+  ];
+  const affine = { uxX: 0.0012, uxY: -0.0004, uyX: 0.0007, uyY: -0.0009, ux0: 0.003, uy0: -0.002 };
+  const expectedStrain = [affine.uxX, affine.uyY, affine.uxY + affine.uyX];
+  const elementResults = elements.map((element) => {
+    const matrices = elementMatrices(element, nodes);
+    const displacement = element.nodeIds.flatMap((nodeId) => {
+      const node = nodes[nodeId];
+      return [affine.uxX * node.x + affine.uxY * node.y + affine.ux0, affine.uyX * node.x + affine.uyY * node.y + affine.uy0];
+    });
+    const computedStrain = multiplyMatrixVector(matrices.B, displacement);
+    return { elementId: element.id, computedStrain, maximumAbsoluteError: Math.max(...computedStrain.map((value, index) => Math.abs(value - expectedStrain[index]))) };
+  });
+  return {
+    name: "CST_AFFINE_CONSTANT_STRAIN_PATCH_TEST",
+    analyticalExpectation: "Un campo de desplazamiento afín produce deformación constante exacta en todo elemento CST.",
+    expectedStrain,
+    elementResults,
+    maximumAbsoluteError: Math.max(...elementResults.map((result) => result.maximumAbsoluteError)),
+    passed: elementResults.every((result) => result.maximumAbsoluteError < 1e-12)
+  };
+}
+
+/** Comprueba ensamblaje, contornos y solver con una solución elástica afín analítica. */
+export function verifyGlobalAffineElasticityBenchmark() {
+  const meshX = 12;
+  const meshY = 8;
+  const widthM = 20;
+  const heightM = 10;
+  const strainY = 0.001;
+  const youngModulusKpa = 1_000_000;
+  const poissonRatio = 0.28;
+  const dx = widthM / meshX;
+  const dy = heightM / meshY;
+  const index = (column, row) => row * (meshX + 1) + column;
+  const nodes = [];
+  for (let row = 0; row <= meshY; row++) {
+    for (let column = 0; column <= meshX; column++) nodes.push({ id: index(column, row), x: column * dx, y: row * dy });
+  }
+  const material = { youngModulusKpa, poissonRatio, unitWeightKNm3: 0 };
+  const elements = [];
+  for (let row = 0; row < meshY; row++) {
+    for (let column = 0; column < meshX; column++) {
+      const a = index(column, row), b = index(column + 1, row), c = index(column, row + 1), d = index(column + 1, row + 1);
+      elements.push({ id: elements.length, nodeIds: [a, b, d], material });
+      elements.push({ id: elements.length, nodeIds: [a, d, c], material });
+    }
+  }
+  const prepared = prepareSystem({ nodes, elements, spacing: { dx, dy } });
+  const load = new Float64Array(prepared.freeDofs.length);
+  const addForce = (nodeId, axis, force) => {
+    const free = prepared.dofToFree[nodeId * 2 + axis];
+    if (free >= 0) load[free] += force;
+  };
+  // u=(0,εy) satisface div(σ)=0 y todos los desplazamientos impuestos.
+  // Las tracciones analíticas se integran
+  // por arista: σxx en el lado derecho y σyy en el borde superior.
+  const factor = youngModulusKpa / ((1 + poissonRatio) * (1 - 2 * poissonRatio));
+  const sigmaXX = factor * poissonRatio * strainY;
+  const sigmaYY = factor * (1 - poissonRatio) * strainY;
+  for (let row = 0; row < meshY; row++) {
+    addForce(index(meshX, row), 0, sigmaXX * dy / 2);
+    addForce(index(meshX, row + 1), 0, sigmaXX * dy / 2);
+  }
+  for (let column = 0; column < meshX; column++) {
+    addForce(index(column, meshY), 1, sigmaYY * dx / 2);
+    addForce(index(column + 1, meshY), 1, sigmaYY * dx / 2);
+  }
+  const solved = solvePcg(prepared.rows, load);
+  const displacement = fullDisplacement(prepared, solved.solution);
+  const maximumAbsoluteErrorM = nodes.reduce((maximum, node) => Math.max(maximum,
+    Math.abs(displacement[node.id * 2]),
+    Math.abs(displacement[node.id * 2 + 1] - strainY * node.y)), 0);
+  return {
+    name: "GLOBAL_AFFINE_ELASTICITY_ANALYTICAL_BENCHMARK",
+    scientificStatus: "VERIFICACION_ANALITICA_ELASTICIDAD_LINEAL_NO_VALIDACION_GEOTECNICA",
+    analyticalExpectation: "u_x=0, u_y=εy; div(σ)=0, tracciones constantes en derecha y techo; empotramiento inferior y rodillo izquierdo.",
+    meshX, meshY, nodeCount: nodes.length, elementCount: elements.length,
+    youngModulusKpa, poissonRatio, strainY, sigmaXXKpa: sigmaXX, sigmaYYKpa: sigmaYY,
+    maximumAbsoluteDisplacementErrorM: maximumAbsoluteErrorM,
+    relativeMaximumDisplacementError: maximumAbsoluteErrorM / (strainY * heightM),
+    solverRelativeResidual: solved.relativeResidual,
+    passed: solved.converged && maximumAbsoluteErrorM < 1e-7
+  };
 }
 
 function prepareSystem(mesh) {
@@ -425,6 +516,40 @@ export function runFem2D(input = {}, rainfallProfileMmH = [0]) {
       baselineSolverResidual: Number(baselineSolution.relativeResidual.toExponential(6)),
       averageSolverIterations: Number((totalIterations / rainfall.length).toFixed(2)),
       maximumSolverResidual: Number(maximumResidual.toExponential(6))
+    }
+  };
+}
+
+/** Exporta el problema incremental K Δu = Δf de TA-01 para un benchmark neuronal de forma débil. */
+export function buildTa01IncrementalEquilibrium(input = {}, cumulativeRainfallMm = 48) {
+  const rainfallMm = Number(cumulativeRainfallMm);
+  if (!Number.isFinite(rainfallMm) || rainfallMm < 0 || rainfallMm > 500) throw new Error("cumulativeRainfallMm debe estar entre 0 y 500");
+  const mesh = createTa01Mesh(input);
+  const prepared = prepareSystem(mesh);
+  const dryLoad = buildLoad(prepared, 0, mesh.scenario);
+  const wetLoad = buildLoad(prepared, rainfallMm, mesh.scenario);
+  const incrementalLoad = Float64Array.from(wetLoad, (value, index) => value - dryLoad[index]);
+  const solution = solvePcg(prepared.rows, incrementalLoad);
+  if (!solution.converged) throw new Error(`El problema incremental no convergió: ${solution.relativeResidual}`);
+  const full = fullDisplacement(prepared, solution.solution);
+  return {
+    id: "TA01-INCREMENTAL-RAIN-EQUILIBRIUM-V1",
+    scientificStatus: "FEM_LINEAL_SEMISINTETICO_NO_CALIBRADO",
+    formulation: "Equilibrio débil discreto K Δu = Δf de presión de poros, condiciones de desplazamiento homogéneas heredadas del FEM 2D",
+    cumulativeRainfallMm: rainfallMm,
+    scenario: mesh.scenario,
+    mesh: {
+      nodes: mesh.nodes.map((node) => ({ id: node.id, xM: node.x, yM: node.y })),
+      elements: mesh.elements.map((element) => ({ id: element.id, nodeIds: element.nodeIds, material: element.material.id }))
+    },
+    system: {
+      totalDofs: prepared.totalDofs,
+      freeDofs: prepared.freeDofs,
+      stiffnessRows: prepared.rows.map((row) => [...row].sort((a, b) => a[0] - b[0])),
+      incrementalLoadKn: [...incrementalLoad],
+      referenceDisplacementM: [...full],
+      pcgIterations: solution.iterations,
+      pcgRelativeResidual: solution.relativeResidual
     }
   };
 }

@@ -1,0 +1,16 @@
+services:
+  digital-twin:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+    volumes:
+      - sslope-local:/app/data/local
+    restart: unless-stopped
+    init: true
+
+volumes:
+  sslope-local:

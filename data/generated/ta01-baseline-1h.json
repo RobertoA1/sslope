@@ -1,6 +1,6 @@
 {
   "id": "TA01-RIDGE-1H-SEED20260916",
-  "generatedAt": "2026-09-15T05:56:48.668Z",
+  "generatedAt": "2026-09-15T07:07:43.171Z",
   "dataset": {
     "sourceDatasetId": "TA01-DATASET-S500-SEED20260915",
     "splitManifest": "data/generated/ta01-fem-500-split-manifest.json",
@@ -37,217 +37,217 @@
       "lambda": 0.0001,
       "validation": {
         "sampleCount": 1725,
-        "maeMm": 0.00009075,
-        "rmseMm": 0.00080974,
-        "biasMm": -0.00003364,
-        "r2": 0.996248
+        "maeMm": 0.00005892,
+        "rmseMm": 0.00049826,
+        "biasMm": -0.0000164,
+        "r2": 0.996402
       }
     },
     {
       "lambda": 0.001,
       "validation": {
         "sampleCount": 1725,
-        "maeMm": 0.00009077,
-        "rmseMm": 0.00080975,
-        "biasMm": -0.00003329,
-        "r2": 0.996247
+        "maeMm": 0.00005893,
+        "rmseMm": 0.00049834,
+        "biasMm": -0.00001627,
+        "r2": 0.996401
       }
     },
     {
       "lambda": 0.01,
       "validation": {
         "sampleCount": 1725,
-        "maeMm": 0.00009077,
-        "rmseMm": 0.00080976,
-        "biasMm": -0.00003325,
-        "r2": 0.996247
+        "maeMm": 0.00005893,
+        "rmseMm": 0.00049835,
+        "biasMm": -0.00001625,
+        "r2": 0.9964
       }
     },
     {
       "lambda": 0.1,
       "validation": {
         "sampleCount": 1725,
-        "maeMm": 0.00009078,
-        "rmseMm": 0.00080977,
-        "biasMm": -0.00003325,
-        "r2": 0.996247
+        "maeMm": 0.00005893,
+        "rmseMm": 0.00049835,
+        "biasMm": -0.00001625,
+        "r2": 0.9964
       }
     },
     {
       "lambda": 1,
       "validation": {
         "sampleCount": 1725,
-        "maeMm": 0.00009078,
-        "rmseMm": 0.00080984,
-        "biasMm": -0.0000333,
-        "r2": 0.996247
+        "maeMm": 0.00005894,
+        "rmseMm": 0.00049839,
+        "biasMm": -0.00001629,
+        "r2": 0.9964
       }
     },
     {
       "lambda": 10,
       "validation": {
         "sampleCount": 1725,
-        "maeMm": 0.00009086,
-        "rmseMm": 0.00081058,
-        "biasMm": -0.00003378,
-        "r2": 0.99624
+        "maeMm": 0.00005899,
+        "rmseMm": 0.0004988,
+        "biasMm": -0.00001659,
+        "r2": 0.996394
       }
     },
     {
       "lambda": 100,
       "validation": {
         "sampleCount": 1725,
-        "maeMm": 0.00009154,
-        "rmseMm": 0.00081855,
-        "biasMm": -0.00003813,
-        "r2": 0.996165
+        "maeMm": 0.0000595,
+        "rmseMm": 0.00050332,
+        "biasMm": -0.00001934,
+        "r2": 0.996328
       }
     }
   ],
   "model": {
     "coefficientsStandardized": {
       "intercept": 0,
-      "current_displacement_mm": 0.4974092803,
-      "current_rainfall_mm_h": -0.0662702407,
-      "cumulative_rainfall_mm": -0.5927372396,
-      "forecast_rainfall_mm": 1.0272029475,
-      "maximum_pore_pressure_kpa": 61.7383584094,
-      "mohr_coulomb_safety_index": -0.0108663396,
-      "simulation_hour": 0.0076105279,
-      "cohesion_kpa": -0.0025929807,
-      "friction_angle_deg": -0.0014428845,
-      "unit_weight_kn_m3": 0.000333181,
-      "young_modulus_mpa": -0.0273342535,
-      "log10_permeability_m_s": 0.0134469322,
-      "drainage_efficiency": -0.0219802222,
-      "water_table_m": -61.7283473022,
-      "storage_coefficient": -0.030004766
+      "current_displacement_mm": 0.5434375984,
+      "current_rainfall_mm_h": -0.0863373454,
+      "cumulative_rainfall_mm": -0.6440898783,
+      "forecast_rainfall_mm": 1.0623092897,
+      "maximum_pore_pressure_kpa": 47.4562993639,
+      "mohr_coulomb_safety_index": -0.025495244,
+      "simulation_hour": 0.0035732241,
+      "cohesion_kpa": 0.0114883384,
+      "friction_angle_deg": 0.0025243566,
+      "unit_weight_kn_m3": -0.0087296423,
+      "young_modulus_mpa": -0.0297050153,
+      "log10_permeability_m_s": 0.0149236699,
+      "drainage_efficiency": -0.0171903521,
+      "water_table_m": -47.4491592329,
+      "storage_coefficient": -0.0268962882
     },
     "featureMeans": {
-      "current_displacement_mm": 0.0002522372670807468,
-      "current_rainfall_mm_h": 0.033841677763975266,
-      "cumulative_rainfall_mm": 0.39701428571428643,
-      "forecast_rainfall_mm": 0.033841677763975266,
-      "maximum_pore_pressure_kpa": 333.2133800124216,
-      "mohr_coulomb_safety_index": 1.368743267080734,
+      "current_displacement_mm": 0.00017121987577639678,
+      "current_rainfall_mm_h": 0.032160208571428484,
+      "cumulative_rainfall_mm": 0.3773857142857159,
+      "forecast_rainfall_mm": 0.032160208571428484,
+      "maximum_pore_pressure_kpa": 351.17670967701815,
+      "mohr_coulomb_safety_index": 1.4292645093167404,
       "simulation_hour": 12,
-      "cohesion_kpa": 149.1924057142859,
-      "friction_angle_deg": 35.119274285714084,
-      "unit_weight_kn_m3": 21.96577142857112,
-      "young_modulus_mpa": 1700.7319885714621,
-      "log10_permeability_m_s": -7.794769858836862,
-      "drainage_efficiency": 0.42380057142857586,
-      "water_table_m": 37.669937142858466,
-      "storage_coefficient": 0.23633148571428797
+      "cohesion_kpa": 147.78749714285902,
+      "friction_angle_deg": 34.92057428571391,
+      "unit_weight_kn_m3": 22.001659999999713,
+      "young_modulus_mpa": 1680.7385371428657,
+      "log10_permeability_m_s": -7.794917954497873,
+      "drainage_efficiency": 0.4253016285714355,
+      "water_table_m": 37.46402857142957,
+      "storage_coefficient": 0.23499962857143097
     },
     "featureStandardDeviations": {
-      "current_displacement_mm": 0.0011776443487009386,
-      "current_rainfall_mm_h": 0.16230389643357254,
-      "cumulative_rainfall_mm": 1.9134028333610127,
-      "forecast_rainfall_mm": 0.16230389643357254,
-      "maximum_pore_pressure_kpa": 156.9436899650118,
-      "mohr_coulomb_safety_index": 0.32652818498572544,
+      "current_displacement_mm": 0.0007887503144132256,
+      "current_rainfall_mm_h": 0.15945954187791295,
+      "cumulative_rainfall_mm": 1.9024285141455957,
+      "forecast_rainfall_mm": 0.15945954187791295,
+      "maximum_pore_pressure_kpa": 156.86730674888614,
+      "mohr_coulomb_safety_index": 0.3260455533753159,
       "simulation_hour": 6.6332495807108,
-      "cohesion_kpa": 52.81003044093577,
-      "friction_angle_deg": 5.258779961623011,
-      "unit_weight_kn_m3": 2.300027479161484,
-      "young_modulus_mpa": 748.8271537913287,
-      "log10_permeability_m_s": 1.2936483940419568,
-      "drainage_efficiency": 0.24975199796418504,
-      "water_table_m": 15.998396599714559,
-      "storage_coefficient": 0.06647566347871613
+      "cohesion_kpa": 51.067118082759954,
+      "friction_angle_deg": 5.233620551660865,
+      "unit_weight_kn_m3": 2.2867032167605115,
+      "young_modulus_mpa": 743.7762937302139,
+      "log10_permeability_m_s": 1.3004058997820895,
+      "drainage_efficiency": 0.24074825139119635,
+      "water_table_m": 15.99060143992753,
+      "storage_coefficient": 0.06759209612398025
     },
-    "targetDeltaMean": 0.000021603726708074552,
-    "targetDeltaStandardDeviation": 0.00011302305370738708
+    "targetDeltaMean": 0.000014642236024844652,
+    "targetDeltaStandardDeviation": 0.00007442167890241109
   },
   "metrics": {
     "train": {
       "persistence": {
         "sampleCount": 8050,
-        "maeMm": 0.0000216,
-        "rmseMm": 0.00011507,
-        "biasMm": -0.0000216,
-        "r2": 0.991404
+        "maeMm": 0.00001464,
+        "rmseMm": 0.00007585,
+        "biasMm": -0.00001464,
+        "r2": 0.991685
       },
       "ridgeUnconstrained": {
         "sampleCount": 8050,
-        "maeMm": 0.00001404,
-        "rmseMm": 0.00005107,
+        "maeMm": 0.00000923,
+        "rmseMm": 0.00003191,
         "biasMm": 0,
-        "r2": 0.998307
+        "r2": 0.998528
       },
       "ridge": {
         "sampleCount": 8050,
-        "maeMm": 0.0000112,
-        "rmseMm": 0.00004972,
-        "biasMm": 0.00000284,
-        "r2": 0.998395
+        "maeMm": 0.00000746,
+        "rmseMm": 0.00003105,
+        "biasMm": 0.00000177,
+        "r2": 0.998607
       },
       "physicalViolations": {
-        "negativePredictionCountBeforeConstraint": 2426,
-        "decreasingPredictionCountBeforeConstraint": 3012,
-        "correctedPredictionCount": 3012,
+        "negativePredictionCountBeforeConstraint": 2477,
+        "decreasingPredictionCountBeforeConstraint": 3049,
+        "correctedPredictionCount": 3049,
         "violationsAfterConstraint": 0
       }
     },
     "validation": {
       "persistence": {
         "sampleCount": 1725,
-        "maeMm": 0.00011405,
-        "rmseMm": 0.00118372,
-        "biasMm": -0.00011405,
-        "r2": 0.991981
+        "maeMm": 0.00007504,
+        "rmseMm": 0.00074528,
+        "biasMm": -0.00007504,
+        "r2": 0.991949
       },
       "ridgeUnconstrained": {
         "sampleCount": 1725,
-        "maeMm": 0.0000941,
-        "rmseMm": 0.00080982,
-        "biasMm": -0.00003699,
-        "r2": 0.996247
+        "maeMm": 0.00006244,
+        "rmseMm": 0.00049846,
+        "biasMm": -0.00001991,
+        "r2": 0.996399
       },
       "ridge": {
         "sampleCount": 1725,
-        "maeMm": 0.00009075,
-        "rmseMm": 0.00080974,
-        "biasMm": -0.00003364,
-        "r2": 0.996248
+        "maeMm": 0.00005892,
+        "rmseMm": 0.00049826,
+        "biasMm": -0.0000164,
+        "r2": 0.996402
       },
       "physicalViolations": {
-        "negativePredictionCountBeforeConstraint": 635,
-        "decreasingPredictionCountBeforeConstraint": 750,
-        "correctedPredictionCount": 750,
+        "negativePredictionCountBeforeConstraint": 650,
+        "decreasingPredictionCountBeforeConstraint": 756,
+        "correctedPredictionCount": 756,
         "violationsAfterConstraint": 0
       }
     },
     "test": {
       "persistence": {
         "sampleCount": 1725,
-        "maeMm": 0.00005403,
-        "rmseMm": 0.0002335,
-        "biasMm": -0.00005403,
-        "r2": 0.993674
+        "maeMm": 0.00002542,
+        "rmseMm": 0.00012748,
+        "biasMm": -0.00002542,
+        "r2": 0.994409
       },
       "ridgeUnconstrained": {
         "sampleCount": 1725,
-        "maeMm": 0.00002852,
-        "rmseMm": 0.00010422,
-        "biasMm": 0.00000266,
-        "r2": 0.99874
+        "maeMm": 0.00001565,
+        "rmseMm": 0.00006478,
+        "biasMm": 0.00000515,
+        "r2": 0.998557
       },
       "ridge": {
         "sampleCount": 1725,
-        "maeMm": 0.00002549,
-        "rmseMm": 0.00010356,
-        "biasMm": 0.00000569,
-        "r2": 0.998756
+        "maeMm": 0.00001353,
+        "rmseMm": 0.00006421,
+        "biasMm": 0.00000727,
+        "r2": 0.998582
       },
       "physicalViolations": {
-        "negativePredictionCountBeforeConstraint": 526,
-        "decreasingPredictionCountBeforeConstraint": 637,
-        "correctedPredictionCount": 637,
+        "negativePredictionCountBeforeConstraint": 370,
+        "decreasingPredictionCountBeforeConstraint": 526,
+        "correctedPredictionCount": 526,
         "violationsAfterConstraint": 0
       }
     }
   },
-  "elapsedSeconds": 0.243
+  "elapsedSeconds": 0.205
 }

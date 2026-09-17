@@ -1,0 +1,67 @@
+{
+  "id": "TA01-TRANSIENT-SEEP-LOCAL-MESH-SENSITIVITY-V1",
+  "generatedAt": "2026-09-17T02:55:48.587300+00:00",
+  "scientificStatus": "SENSIBILIDAD_LOCAL_DE_MALLA_NO_VALIDACION_DEL_CAMPO_HIDRAULICO_COMPLETO",
+  "geometryInputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+  "observationPointM": {
+    "x": 4.0,
+    "y": 96.0
+  },
+  "rainfallMmIn24Hours": 102.88,
+  "appliedInfiltrationFluxMPerHour": 3.6e-06,
+  "runs": [
+    {
+      "meshSizeM": 12.0,
+      "nodeCount": 492,
+      "elementCount": 856,
+      "headChange24hM": 0.01889766939354587,
+      "headChange48hM": 0.01892284539879796,
+      "directMassClosureFraction": 0.030269287849260144
+    },
+    {
+      "meshSizeM": 8.0,
+      "nodeCount": 820,
+      "elementCount": 1481,
+      "headChange24hM": 0.0004433713352263169,
+      "headChange48hM": 0.0005107957531187424,
+      "directMassClosureFraction": 0.029526033928761842
+    },
+    {
+      "meshSizeM": 6.0,
+      "nodeCount": 1131,
+      "elementCount": 2089,
+      "headChange24hM": 3.944294200408649e-05,
+      "headChange48hM": 0.00011224047629099232,
+      "directMassClosureFraction": 0.02771836325786566
+    },
+    {
+      "meshSizeM": 4.0,
+      "nodeCount": 2158,
+      "elementCount": 4097,
+      "headChange24hM": 4.8776951992124395e-05,
+      "headChange48hM": 0.0001387816885483062,
+      "directMassClosureFraction": 0.017993469139241058
+    }
+  ],
+  "adjacentDifferences": [
+    {
+      "coarseM": 12.0,
+      "fineM": 8.0,
+      "absoluteHeadChange24hDifferenceM": 0.01845429805831955,
+      "absoluteHeadChange48hDifferenceM": 0.018412049645679218
+    },
+    {
+      "coarseM": 8.0,
+      "fineM": 6.0,
+      "absoluteHeadChange24hDifferenceM": 0.0004039283932222304,
+      "absoluteHeadChange48hDifferenceM": 0.00039855527682775005
+    },
+    {
+      "coarseM": 6.0,
+      "fineM": 4.0,
+      "absoluteHeadChange24hDifferenceM": 9.334009988037906e-06,
+      "absoluteHeadChange48hDifferenceM": 2.6541212257313873e-05
+    }
+  ],
+  "limitation": "Compara una única carga hidráulica interpolada en (4,96) m. No prueba convergencia de toda la presión de poros, nivel freático, frontera de infiltración ni FoS. El flujo aplicado y los parámetros siguen siendo supuestos."
+}

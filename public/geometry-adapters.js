@@ -126,12 +126,43 @@ const extensionOf = (name) => name.split(".").pop().toLowerCase();
     return normaliseMesh(vertices, faces);
   }
 
+  function parseGeoJsonTerrain(text) {
+    let document;
+    try { document = JSON.parse(text); } catch { throw new Error("El GeoJSON no contiene JSON válido."); }
+    const geometries = [];
+    const collect = (item) => {
+      if (!item) return;
+      if (item.type === "FeatureCollection") return item.features.forEach(collect);
+      if (item.type === "Feature") return collect(item.geometry);
+      if (item.type === "GeometryCollection") return item.geometries.forEach(collect);
+      if (["Polygon", "MultiPolygon"].includes(item.type)) geometries.push(item);
+    };
+    collect(document);
+    if (!geometries.length) throw new Error("El GeoJSON debe incluir al menos un Polygon o MultiPolygon con coordenadas X, Y, Z.");
+    const vertices = [], faces = [];
+    const addRing = (coordinates) => {
+      const ring = coordinates.map((coordinate) => coordinate.slice(0, 3)).filter((coordinate) => coordinate.length === 3 && coordinate.every(Number.isFinite));
+      if (ring.length > 2 && ring[0].every((value, index) => value === ring.at(-1)[index])) ring.pop();
+      if (ring.length < 3) return;
+      const base = vertices.length;
+      vertices.push(...ring);
+      for (let index = 1; index < ring.length - 1; index++) faces.push([base, base + index, base + index + 1]);
+    };
+    for (const geometry of geometries) {
+      const polygons = geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+      polygons.forEach((polygon) => addRing(polygon[0] || []));
+    }
+    if (!faces.length) throw new Error("Los polígonos GeoJSON necesitan al menos tres coordenadas numéricas tridimensionales.");
+    return normaliseMesh(vertices, faces);
+  }
+
   export async function readModel(file) {
     const format = extensionOf(file.name);
-    if (["csv", "dxf"].includes(format)) {
+    if (["csv", "dxf", "geojson", "json"].includes(format)) {
       const text = await file.text();
       if (format === "csv") return { format: "CSV XYZ", coordinateReference: "Este · Norte · Cota (unidades del archivo)", mesh: parseCsvTerrain(text), note: "Cuadrícula topográfica XYZ convertida localmente en una malla 3D." };
-      return { format: "DXF", coordinateReference: "X · Y de perfil (unidades del archivo)", mesh: extrudeDxfProfile(dxfProfilePoints(text)), note: "Perfil de polilínea DXF extruido localmente para la vista 3D." };
+      if (format === "dxf") return { format: "DXF", coordinateReference: "X · Y de perfil (unidades del archivo)", mesh: extrudeDxfProfile(dxfProfilePoints(text)), note: "Perfil de polilínea DXF extruido localmente para la vista 3D." };
+      return { format: "GeoJSON 3D", coordinateReference: "X · Y · Z del GeoJSON (CRS declarado por el archivo, si existe)", mesh: parseGeoJsonTerrain(text), note: "Polígonos GeoJSON 3D triangulados localmente en abanico; usa superficies convexas o previamente trianguladas para evitar ambigüedad." };
     }
     if (format === "obj") {
       const object = new OBJLoader().parse(await file.text());
@@ -154,7 +185,7 @@ const extensionOf = (name) => name.split(".").pop().toLowerCase();
       const model = await loader.parseAsync(payload, "").finally(() => dracoLoader.dispose());
       return { format: format === "glb" ? "GLB" : "glTF", mesh: normaliseThreeObject(model.scene, "Y"), note: `${format === "glb" ? "GLB" : "glTF"} cargado localmente con Three.js (${model.scene.children.length} objeto(s) raíz).` };
     }
-    throw new Error("Formato no soportado. Usa CSV XYZ, DXF, OBJ, STL, glTF o GLB.");
+    throw new Error("Formato no soportado. Usa CSV XYZ, DXF, GeoJSON 3D, OBJ, STL, glTF o GLB.");
   }
 
   export async function approximateFromPhoto(file) {

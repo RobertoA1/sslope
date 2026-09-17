@@ -77,6 +77,7 @@ export function parseNasaPowerDailyCsv(text) {
   const latitude = numberFromHeader(header, /latitude\s+(-?\d+(?:\.\d+)?)/i, "la latitud");
   const longitude = numberFromHeader(header, /longitude\s+(-?\d+(?:\.\d+)?)/i, "la longitud");
   const elevationM = numberFromHeader(header, /region\s*=\s*(-?\d+(?:\.\d+)?)\s*meters/i, "la elevación");
+  const gridMatch = header.match(/Average for\s+(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*degree lat\/lon region/i);
   const missingMatch = header.match(/missing source data[^:]*:\s*(-?\d+(?:\.\d+)?)/i);
   const missingValue = missingMatch ? Number(missingMatch[1]) : MISSING_VALUE;
   const records = [];
@@ -116,6 +117,8 @@ export function parseNasaPowerDailyCsv(text) {
       latitude,
       longitude,
       elevationM,
+      spatialResolutionDegrees: gridMatch ? { latitude: Number(gridMatch[1]), longitude: Number(gridMatch[2]) } : null,
+      spatialSupport: "REGIONAL_REANALYSIS_GRID_NOT_ON_SITE_GAUGE",
       missingValue,
       sourceUrl: "https://power.larc.nasa.gov/"
     },

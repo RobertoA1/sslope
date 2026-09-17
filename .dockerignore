@@ -1,0 +1,10 @@
+.git
+.agents
+.codex
+node_modules
+data/local
+data/generated/*-predictions.csv
+data/generated/ta01-fem-*.csv
+data/generated/ta01-fem-*-manifest.json
+scripts/__pycache__
+*.pyc

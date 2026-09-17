@@ -1,0 +1,181 @@
+{
+  "id": "TA01-TRANSIENT-SEEP-TIME-SENSITIVITY-V1",
+  "generatedAt": "2026-09-17T03:33:47.829899+00:00",
+  "scientificStatus": "SENSIBILIDAD_TEMPORAL_HIDRAULICA_NO_VALIDACION_OPERACIONAL",
+  "geometryInputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+  "hydraulicScenario": {
+    "unitSystem": "SI",
+    "timeUnit": "hr",
+    "rainfallMmIn24Hours": 102.88,
+    "rainfallProfile": "rectangular 24 h, con rampas de 0,01 h",
+    "soilConductivityMPerSecond": 1e-05,
+    "soilConductivityMPerHour": 0.036000000000000004,
+    "fluxCapFractionOfSaturatedConductivity": 0.01,
+    "appliedInfiltrationFluxMPerHour": 0.00036,
+    "unappliedRainfallMm": 94.24,
+    "lateralHeadM": -2.0,
+    "specificStoragePerM": 0.0001,
+    "specificYieldByMaterial": {
+      "SOIL": 0.22,
+      "WEATHERED": 0.12,
+      "ROCK": 0.05
+    },
+    "conductivityRatios": {
+      "SOIL": 1,
+      "WEATHERED": 0.25,
+      "ROCK": 0.05
+    },
+    "unsaturatedModel": "vg",
+    "unsaturatedParameters": {
+      "lfKr0": 0.01,
+      "lfH0M": -2,
+      "vgAlphaPerM": 0.05,
+      "vgN": 1.5
+    }
+  },
+  "mesh": {
+    "targetSizeM": 6.0,
+    "nodeCount": 1131,
+    "triangleCount": 2089
+  },
+  "runs": [
+    {
+      "maximumTimeStepHours": 12.0,
+      "largestAcceptedTimeStepHours": 3.790626602238998,
+      "acceptedStepCount": 70,
+      "massClosureFraction": 0.00906126662097912,
+      "sourceFieldSha256": "e86c58bc8bd933e4da41d940d376eeda1e6af83f59695829f6b91d9b7c6a427a",
+      "maximumPositivePorePressureChange24hKpa": 1.9942566366050478,
+      "maximumPositivePorePressureChange48hKpa": 1.440542545708905
+    },
+    {
+      "maximumTimeStepHours": 3.0,
+      "largestAcceptedTimeStepHours": 3.0,
+      "acceptedStepCount": 71,
+      "massClosureFraction": 0.009031295760189769,
+      "sourceFieldSha256": "ba3a8760fe18665d5415f6247a45b74d651b88ba031fb9266a35157ec1b87d16",
+      "maximumPositivePorePressureChange24hKpa": 1.9946370739150692,
+      "maximumPositivePorePressureChange48hKpa": 1.4401304188413788
+    },
+    {
+      "maximumTimeStepHours": 1.5,
+      "largestAcceptedTimeStepHours": 1.5,
+      "acceptedStepCount": 79,
+      "massClosureFraction": 0.008485876918448826,
+      "sourceFieldSha256": "7dc957e51dc85b041141e260467a56ac4d3c437c5933b836f355c83abe63fe3b",
+      "maximumPositivePorePressureChange24hKpa": 2.001631163416343,
+      "maximumPositivePorePressureChange48hKpa": 1.4395122521453938
+    },
+    {
+      "maximumTimeStepHours": 0.75,
+      "largestAcceptedTimeStepHours": 0.75,
+      "acceptedStepCount": 115,
+      "massClosureFraction": 0.007935696454185676,
+      "sourceFieldSha256": "2d9b68406e5ad0104749a680f25291e5afa5379afa0fbf7c1eecb0372a0ecfd9",
+      "maximumPositivePorePressureChange24hKpa": 2.008563900072731,
+      "maximumPositivePorePressureChange48hKpa": 1.4386173471038346
+    },
+    {
+      "maximumTimeStepHours": 0.375,
+      "largestAcceptedTimeStepHours": 0.375,
+      "acceptedStepCount": 166,
+      "massClosureFraction": 0.007662521526201027,
+      "sourceFieldSha256": "8d5d0a05748d3e80cd7d0ae6d3fc18dd796925096c863275903606580c195d1d",
+      "maximumPositivePorePressureChange24hKpa": 2.0119689632191435,
+      "maximumPositivePorePressureChange48hKpa": 1.4381521141515303
+    },
+    {
+      "maximumTimeStepHours": 0.1875,
+      "largestAcceptedTimeStepHours": 0.1875,
+      "acceptedStepCount": 306,
+      "massClosureFraction": 0.0075042001627036265,
+      "sourceFieldSha256": "cef85ec58f732e4dad7091d60f7f9bc855bf296741322e36d9588365924468f8",
+      "maximumPositivePorePressureChange24hKpa": 2.013915923402676,
+      "maximumPositivePorePressureChange48hKpa": 1.4381387397141694
+    },
+    {
+      "maximumTimeStepHours": 0.1,
+      "largestAcceptedTimeStepHours": 0.1,
+      "acceptedStepCount": 508,
+      "massClosureFraction": 0.007427778393969694,
+      "sourceFieldSha256": "edaa1413f6dbc42a6a2604b9f39533418b817728ae963385e01755d10448821e",
+      "maximumPositivePorePressureChange24hKpa": 2.0148817672195545,
+      "maximumPositivePorePressureChange48hKpa": 1.4377373106350433
+    }
+  ],
+  "adjacentComparisons": [
+    {
+      "coarseMaximumTimeStepHours": 12.0,
+      "fineMaximumTimeStepHours": 3.0,
+      "rmsHeadDifference24hM": 0.00022619865745914384,
+      "p95AbsoluteHeadDifference24hM": 0.00034253577341680774,
+      "maximumAbsoluteHeadDifference24hM": 0.00329454403667917,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.00038043731002135317,
+      "rmsHeadDifference48hM": 0.00012690449667742223,
+      "p95AbsoluteHeadDifference48hM": 0.00024199647658595946,
+      "maximumAbsoluteHeadDifference48hM": 0.001270754558111431,
+      "maximumAbsolutePositivePorePressureDifference48hKpa": 0.0005081494113028384
+    },
+    {
+      "coarseMaximumTimeStepHours": 3.0,
+      "fineMaximumTimeStepHours": 1.5,
+      "rmsHeadDifference24hM": 0.004044744512459482,
+      "p95AbsoluteHeadDifference24hM": 0.006113636910627385,
+      "maximumAbsoluteHeadDifference24hM": 0.0585504808645716,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.00699408950127367,
+      "rmsHeadDifference48hM": 0.002122441386101979,
+      "p95AbsoluteHeadDifference48hM": 0.002118552534829843,
+      "maximumAbsoluteHeadDifference48hM": 0.03025886472559236,
+      "maximumAbsolutePositivePorePressureDifference48hKpa": 0.0032419780099530726
+    },
+    {
+      "coarseMaximumTimeStepHours": 1.5,
+      "fineMaximumTimeStepHours": 0.75,
+      "rmsHeadDifference24hM": 0.0038944194281875463,
+      "p95AbsoluteHeadDifference24hM": 0.005914389518109631,
+      "maximumAbsoluteHeadDifference24hM": 0.05592201193177715,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.006932736656388272,
+      "rmsHeadDifference48hM": 0.002004856334216599,
+      "p95AbsoluteHeadDifference48hM": 0.0020191695068041415,
+      "maximumAbsoluteHeadDifference48hM": 0.027971056004590267,
+      "maximumAbsolutePositivePorePressureDifference48hKpa": 0.003463960824035439
+    },
+    {
+      "coarseMaximumTimeStepHours": 0.75,
+      "fineMaximumTimeStepHours": 0.375,
+      "rmsHeadDifference24hM": 0.0019016888349820014,
+      "p95AbsoluteHeadDifference24hM": 0.002886508884721972,
+      "maximumAbsoluteHeadDifference24hM": 0.02723724442681963,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.0034050631464124237,
+      "rmsHeadDifference48hM": 0.000975194630765772,
+      "p95AbsoluteHeadDifference48hM": 0.0009797216625617722,
+      "maximumAbsoluteHeadDifference48hM": 0.013518979294593336,
+      "maximumAbsolutePositivePorePressureDifference48hKpa": 0.0017103436479715128
+    },
+    {
+      "coarseMaximumTimeStepHours": 0.375,
+      "fineMaximumTimeStepHours": 0.1875,
+      "rmsHeadDifference24hM": 0.0010882574203767484,
+      "p95AbsoluteHeadDifference24hM": 0.001652292561740376,
+      "maximumAbsoluteHeadDifference24hM": 0.015564650834930305,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.0019469601835324646,
+      "rmsHeadDifference48hM": 0.0007233459384513733,
+      "p95AbsoluteHeadDifference48hM": 0.0005612864512084537,
+      "maximumAbsoluteHeadDifference48hM": 0.009610108331372658,
+      "maximumAbsolutePositivePorePressureDifference48hKpa": 0.0011079359395580468
+    },
+    {
+      "coarseMaximumTimeStepHours": 0.1875,
+      "fineMaximumTimeStepHours": 0.1,
+      "rmsHeadDifference24hM": 0.000536632205116001,
+      "p95AbsoluteHeadDifference24hM": 0.0008145997134380023,
+      "maximumAbsoluteHeadDifference24hM": 0.007671043699177815,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.0009658438168784755,
+      "rmsHeadDifference48hM": 0.00013614800725247818,
+      "p95AbsoluteHeadDifference48hM": 0.0002550660733408039,
+      "maximumAbsoluteHeadDifference48hM": 0.0019124618159001017,
+      "maximumAbsolutePositivePorePressureDifference48hKpa": 0.00040142907912610326
+    }
+  ],
+  "limitation": "Contrasta exactamente la misma malla y los mismos supuestos con distintos límites de paso adaptativo. Un error temporal pequeño no valida malla, contornos, permeabilidad, escorrentía ni respuesta geotécnica real."
+}

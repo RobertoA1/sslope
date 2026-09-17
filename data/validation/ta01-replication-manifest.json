@@ -1,0 +1,114 @@
+{
+  "id": "TA01-RESEARCH-SUPPLEMENT-V1",
+  "generatedAt": "2026-09-17T03:50:21.724Z",
+  "scientificStatus": "MATERIAL_SUPLEMENTARIO_SEMISINTETICO_NO_VALIDACION_DE_CAMPO",
+  "datasetId": "TA01-DATASET-S500-SEED20260915",
+  "split": "350 escenarios entrenamiento / 75 validación / 75 prueba, sin mezclar horas de un escenario",
+  "riskDetection": {
+    "target": "rainfall_induced_max_displacement_mm",
+    "thresholdMm": 0.00082,
+    "thresholdDefinition": "Percentil 95 calculado exclusivamente en la partición de entrenamiento",
+    "positiveClass": "desplazamiento acumulado inducido por lluvia igual o superior al umbral",
+    "limitation": "No representa una alarma minera calibrada ni una falla real; mide discriminación interna de episodios altos del FEM semisintético."
+  },
+  "outputs": [
+    "data/validation/ta01-model-comparison.csv",
+    "data/validation/ta01-ablation-summary.csv",
+    "data/validation/ta01-robustness-summary.csv",
+    "data/validation/ta01-fem-mesh-summary.csv",
+    "data/validation/ta01-risk-detection-summary.csv",
+    "data/validation/spatial-pinn-validation-summary.csv"
+  ],
+  "sources": {
+    "data/generated/ta01-fem-500-train.csv": {
+      "sha256": "c2297c5eab1ec6f37b20bf4e67c2387cb72aa5d88f47ba6584bb9cf1eb3bb010"
+    },
+    "data/generated/ta01-fem-500-test.csv": {
+      "sha256": "cdf939d4d75418f2b02983a7df2f013b09f832e31f62dbb736befbce8bfc80a3"
+    },
+    "data/models/ta01-physics-guided-1h.json": {
+      "sha256": "c4e0a39aa7dfb2c66295c2028b8973765d06a98c3966bda5d6048faf0beb2e64"
+    },
+    "data/generated/ta01-physics-guided-1h-test-predictions.csv": {
+      "sha256": "5900efdcea29bf610755f596e96e12691153d019a9cb4243182832d1aa74df2b"
+    },
+    "data/models/ta01-physics-guided-6h.json": {
+      "sha256": "588faa202e0c68af418c5a2013bcda6e7f861b425c1209fd7eb9be64fec9f352"
+    },
+    "data/generated/ta01-physics-guided-6h-test-predictions.csv": {
+      "sha256": "f6885a6a194154612600f630ca368a4a771fd22994e88065145883fb6b61c71e"
+    },
+    "data/validation/ta01-model-robustness.json": {
+      "sha256": "b7550212e2aba1d0aaecefa35b939587d73023d04e131ca6ef6b7d16a043b51c"
+    },
+    "data/validation/ta01-fem-mesh-sensitivity.json": {
+      "sha256": "de2a34d81859a019224af1671bed56d600f9e1bdf759ea3cd64e958f544fcdee"
+    },
+    "data/validation/spatial-pinn-manufactured-elasticity.json": {
+      "sha256": "7cfe0599a539c8c4e80770510192b0167a1fcd3a3085e0faefe210f6b2415d49"
+    },
+    "data/generated/ta01-spatial-equilibrium-benchmark.json": {
+      "sha256": "6b0ee3e1497e50751331dc9fe1f7aeba831487463c268e5e5f5d1a6596b134fe"
+    },
+    "data/models/ta01-spatial-pinn.json": {
+      "sha256": "8eb449feaa9446c264ff37daba930ce8b812a20fd1e0468cf1cc72519c3a98b0"
+    },
+    "data/validation/ta01-spatial-pinn-validation.json": {
+      "sha256": "9fcd62231e615c31b7bb13fca21c0d2616bda94b224b66ff9e6c61dabf22e2e1"
+    },
+    "data/validation/external-ssrm-griffiths-lane.json": {
+      "sha256": "bd4a644c21523bc52357c68255c492de8e891babed77afdb7a2f4cfa18ce5fa6"
+    },
+    "data/validation/ta01-external-ssrm-input.json": {
+      "sha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860"
+    },
+    "data/validation/ta01-external-ssrm.json": {
+      "sha256": "3c1ac3a24659ba03491e5a827e90e83cdeca683ced4427638fce7711968e26bf"
+    },
+    "data/validation/ta01-external-ssrm-mesh-sensitivity.json": {
+      "sha256": "373612a091099d25b43fbe777a94a1ef150e42c17d14f6dc4dc07f12a94864c8"
+    },
+    "data/validation/ta01-transient-seep.json": {
+      "sha256": "c6af75f408f073a9304f1488a033bc4f7a88c2921935efce69d98b5af7bd9c3f"
+    },
+    "data/validation/ta01-transient-seep-mesh-sensitivity.json": {
+      "sha256": "0b78dfa3d547bac80330a4235bc8e0d908794b77f78e672f4ae6cc1ab403e299"
+    },
+    "data/validation/ta01-transient-seep-field-sensitivity.json": {
+      "sha256": "26d96b38f90129802bfeb1e65cd641636def2f64fd03f53b3746bfc482a61681"
+    },
+    "data/validation/ta01-transient-seep-field-6m.json": {
+      "sha256": "8cb66287aaffba154a771eecb85424a4620673f3d09205e30f1326fe41b2002c"
+    },
+    "data/validation/ta01-rainfall-external-ssrm.json": {
+      "sha256": "b546110069e2c3181ef29fed5caecbe72ed1dcc45d3dcc9c731dcb1ec471d234"
+    },
+    "data/validation/ta01-transient-seep-wet-scenario-6m.json": {
+      "sha256": "87d0b7f684722aa4ec74eeed4596fec702bee050784f9f23cb376a8041ceb4de"
+    },
+    "data/validation/ta01-transient-seep-wet-scenario-field-sensitivity.json": {
+      "sha256": "d9494c0da73462bfa434b0a42973abb866e5c4d792f2708a88c8ebd88e7af4b5"
+    },
+    "data/validation/ta01-transient-seep-wet-scenario-fine-time-mesh-sensitivity.json": {
+      "sha256": "997aa3dec1b37a7848dc2a8cf15155ed603c21ef79873c203070eb977290139e"
+    },
+    "data/validation/ta01-transient-seep-wet-scenario-time-sensitivity.json": {
+      "sha256": "62aeafd079db4a23c18c11a64ed9e7cd9c8593d0c570d4cc4ac63ebb981da758"
+    },
+    "data/validation/ta01-wet-scenario-ssrm-pressure-mesh-sensitivity.json": {
+      "sha256": "2529ce1f1d3aa9bc088d93ebb5aa33c7c04805f805fe4528298eb7a8d6ab4e0f"
+    },
+    "data/validation/ta01-rainfall-wet-scenario-external-ssrm.json": {
+      "sha256": "db694c43b16b53a81c51a1a61b8e4afbe2d5c315b0d32c393d5b948d4d265c9e"
+    },
+    "data/validation/ta01-rainfall-wet-scenario-external-ssrm-mesh10.json": {
+      "sha256": "1c78ca8606166239531d3f27f987e8f4a6f24691d09d632a28a6c127febc1a82"
+    },
+    "data/validation/ta01-rainfall-wet-scenario-external-ssrm-mesh6.json": {
+      "sha256": "c38f7c8c7920a93459494f1393d7b780d5fd2e78511bf44cdf72b50b60841121"
+    },
+    "data/validation/ta01-rainfall-wet-scenario-ssrm-mesh-sensitivity.json": {
+      "sha256": "6e89accd84008d5bba714fd1fedd19e8584eb2864a38943f363978b5fa040f6b"
+    }
+  }
+}

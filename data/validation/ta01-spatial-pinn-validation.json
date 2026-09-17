@@ -1,0 +1,84 @@
+{
+  "id": "TA01-SPATIAL-PIELM-DISCRETE-EQUILIBRIUM-V1",
+  "generatedAt": "2026-09-16T14:10:02.197673+00:00",
+  "method": "PHYSICS_INFORMED_EXTREME_LEARNING_MACHINE_DISCRETE_FEM_EQUILIBRIUM",
+  "scientificStatus": "PINN_TA01_EQUILIBRIO_DISCRETO_SEMISINTETICO_NO_VALIDADO_EN_CAMPO",
+  "scope": "Un evento de lluvia TA-01, malla 30×20, equilibrio incremental K Δu = Δf del mismo solver FEM de referencia.",
+  "limitations": [
+    "El equilibrio es la forma débil discreta del FEM, no una pérdida PDE continua independiente.",
+    "La referencia FEM y las ecuaciones físicas comparten rigidez y cargas; la comparación no valida el solver FEM.",
+    "Solo evalúa un evento y una geometría TA-01; no demuestra generalización, plasticidad ni uso operacional."
+  ],
+  "benchmark": {
+    "id": "TA01-INCREMENTAL-RAIN-EQUILIBRIUM-V1",
+    "provenance": {
+      "rainfallSource": "NASA_POWER_POINT_DAILY_PRECTOTCORR",
+      "rainfallSourceDate": "2021-01-14",
+      "dailyRainfallMm": 102.88,
+      "geometryAndMaterials": "TA01_ASSUMED_NOT_FIELD_MEASURED",
+      "mechanicalResponse": "FEM2D_CST_PLANE_STRAIN_V1"
+    },
+    "cumulativeRainfallMm": 102.88,
+    "scenario": {
+      "slopeHeightM": 100,
+      "slopeWidthM": 160,
+      "benchCount": 5,
+      "benchFlatRatio": 0.28,
+      "cohesionKpa": 80,
+      "frictionAngleDeg": 32,
+      "unitWeightKNm3": 22,
+      "youngModulusMpa": 1200,
+      "poissonRatio": 0.28,
+      "permeabilityMS": 1e-07,
+      "drainageEfficiency": 0.35,
+      "waterTableM": 28,
+      "biotCoefficient": 0.85,
+      "storageCoefficient": 0.22,
+      "meshX": 30,
+      "meshY": 20
+    },
+    "pcgRelativeResidual": 9.147608233081149e-09,
+    "sha256": "6b0ee3e1497e50751331dc9fe1f7aeba831487463c268e5e5f5d1a6596b134fe"
+  },
+  "training": {
+    "seed": 20260920,
+    "activation": "gaussian_rbf",
+    "hiddenUnits": 320,
+    "trainableParameters": "pesos lineales de salida",
+    "physicsEquations": 650,
+    "sensorNodeIds": [
+      31,
+      61,
+      91,
+      122,
+      152,
+      182,
+      213,
+      243,
+      273,
+      304,
+      334,
+      365
+    ],
+    "dataWeight": 0.4,
+    "ridge": 1e-08,
+    "rank": 646,
+    "conditionNumber": 45132930.87200291
+  },
+  "verification": {
+    "nodeCount": 366,
+    "freeDofCount": 650,
+    "sensorNodeCount": 12,
+    "sensorDofCount": 20,
+    "heldOutNodeCount": 354,
+    "relativeL2DisplacementError": 0.1235294786310076,
+    "relativeL2HeldOutDisplacementError": 0.12574231776042125,
+    "meanAbsoluteHeldOutDisplacementErrorMm": 0.000827017994215503,
+    "maximumNodalDisplacementErrorMm": 0.008401896584306547,
+    "relativeEquilibriumResidual": 0.14392131968343863,
+    "maximumFixedDofErrorMm": 0.0,
+    "referenceMaximumDisplacementMm": 0.06199883775226861,
+    "predictedMaximumDisplacementMm": 0.06152974204974426,
+    "passedInternalApproximationGate": true
+  }
+}

@@ -65,13 +65,14 @@ export function validateReading(input) {
     displacementMm: Number(input.displacementMm),
     porePressureKpa: Number(input.porePressureKpa),
     rainfallMmH: Number(input.rainfallMmH),
-    qualityFlag: input.qualityFlag ?? "VALID",
-    source: input.source ?? "api"
+    qualityFlag: String(input.qualityFlag ?? "UNVERIFIED").trim().slice(0, 80),
+    source: String(input.source ?? "api-unverified").trim().slice(0, 120)
   };
   for (const key of ["displacementMm", "porePressureKpa", "rainfallMmH"]) {
     if (!Number.isFinite(parsed[key])) throw new Error(`${key} debe ser numérico`);
   }
   if (!parsed.sensorId) throw new Error("sensorId no puede estar vacío");
+  if (!parsed.source || !parsed.qualityFlag) throw new Error("source y qualityFlag no pueden estar vacíos");
   if (parsed.displacementMm < 0 || parsed.porePressureKpa < 0 || parsed.rainfallMmH < 0) {
     throw new Error("Las mediciones no pueden ser negativas");
   }
@@ -80,18 +81,43 @@ export function validateReading(input) {
 
 export function assessDataQuality(readings) {
   const accepted = readings.filter((row) => !["INVALID", "REJECTED", "MISSING"].includes(row.qualityFlag));
-  const simulatedSources = ["synthetic", "rain-simulation", "historical-rain-replay"];
-  const observed = accepted.filter((row) => !simulatedSources.includes(row.source));
+  const simulatedSources = ["synthetic", "rain-simulation", "historical-rain-replay", "template-example", "api", "api-unverified", "unknown"];
+  const declaredObserved = accepted.filter((row) => !simulatedSources.includes(row.source) && !/SIMULAT|SYNTHETIC|UNVERIFIED|NO_VERIFICAD/i.test(String(row.qualityFlag)));
   const sourceDerivedRainfall = accepted.filter((row) => row.source === "historical-rain-replay");
   const completeness = readings.length ? accepted.length / readings.length : 0;
+  const chronological = [...accepted].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const gapsHours = chronological.slice(1).map((row, index) => (new Date(row.timestamp) - new Date(chronological[index].timestamp)) / 3_600_000);
+  const maximumGapHours = gapsHours.length ? Math.max(...gapsHours) : null;
+  const latestTimestamp = chronological.at(-1)?.timestamp ?? null;
+  const latestAgeHours = latestTimestamp ? (Date.now() - new Date(latestTimestamp).getTime()) / 3_600_000 : null;
+  const duplicateTimestampCount = chronological.length - new Set(chronological.map((row) => `${row.sensorId}|${row.timestamp}`)).size;
+  const reasonCodes = [];
+  if (readings.length < 24) reasonCodes.push("MENOS_DE_24_LECTURAS");
+  if (completeness < 0.8) reasonCodes.push("COMPLETITUD_INFERIOR_80_PCT");
+  if (maximumGapHours !== null && maximumGapHours > 3) reasonCodes.push("BRECHA_TEMPORAL_SUPERIOR_3H");
+  if (duplicateTimestampCount) reasonCodes.push("MARCAS_TEMPORALES_DUPLICADAS");
+  if (latestAgeHours !== null && latestAgeHours > 3) reasonCodes.push("TELEMETRIA_DESACTUALIZADA_MAS_DE_3H");
+  if (latestAgeHours !== null && latestAgeHours < -5 / 60) reasonCodes.push("TELEMETRIA_FECHADA_EN_EL_FUTURO");
+  const observedShare = readings.length ? declaredObserved.length / readings.length : 0;
+  if (observedShare < 0.8) reasonCodes.push("TELEMETRIA_OBSERVADA_INFERIOR_80_PCT");
+  const structurallySufficient = readings.length >= 24 && completeness >= 0.8 && (maximumGapHours === null || maximumGapHours <= 3) && duplicateTimestampCount === 0;
+  const temporallyCurrent = latestAgeHours !== null && latestAgeHours <= 3 && latestAgeHours >= -5 / 60;
+  const passesQualityGate = structurallySufficient && temporallyCurrent && observedShare >= 0.8;
   return {
     readingCount: readings.length,
     acceptedCount: accepted.length,
     completeness: Number(completeness.toFixed(3)),
-    observedShare: Number((readings.length ? observed.length / readings.length : 0).toFixed(3)),
+    observedShare: Number(observedShare.toFixed(3)),
     sourceDerivedRainfallCount: sourceDerivedRainfall.length,
-    status: readings.length < 24 || completeness < 0.8 ? "INSUFICIENTE" : observed.length ? "APTA_PENDIENTE_VALIDACION" : sourceDerivedRainfall.length ? "DEMOSTRATIVA_SEMISINTETICA" : "DEMOSTRATIVA",
-    allowsOperationalUse: readings.length >= 24 && completeness >= 0.8 && observed.length > 0
+    maximumGapHours: maximumGapHours === null ? null : Number(maximumGapHours.toFixed(3)),
+    latestTimestamp,
+    latestAgeHours: latestAgeHours === null ? null : Number(latestAgeHours.toFixed(3)),
+    duplicateTimestampCount,
+    reasonCodes,
+    status: !structurallySufficient ? "INSUFICIENTE" : observedShare >= 0.8 && temporallyCurrent ? "APTA_PENDIENTE_VALIDACION" : sourceDerivedRainfall.length ? "DEMOSTRATIVA_SEMISINTETICA" : "DEMOSTRATIVA",
+    passesQualityGate,
+    allowsOperationalUse: false,
+    outputPolicy: passesQualityGate ? "DATOS_DECLARADOS_OBSERVADOS_MODELO_PENDIENTE_VALIDACION" : "SOLO_DEMOSTRACION_BLOQUEADO_PARA_DECISION_OPERACIONAL"
   };
 }
 
@@ -237,6 +263,8 @@ export function createForecast(readings, horizonHours = 24, parameters = {}, ris
       components: MODEL_COMPONENTS,
       dataQuality
     },
+    operationalDecisionAllowed: false,
+    outputPolicy: dataQuality.passesQualityGate ? "SOLO_INVESTIGACION_MODELO_NO_VALIDADO" : dataQuality.outputPolicy,
     simulationParameters: { ...DEFAULT_SIMULATION_PARAMETERS, ...parameters }
   };
 }

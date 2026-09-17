@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { createForecast } from "../src/core/forecast-engine.js";
 import { parseNasaPowerDailyCsv, rainfallRecordForDate, uniformHourlyProfile } from "../src/core/rainfall-history.js";
 import { TwinStore } from "../src/store.js";
@@ -23,10 +24,23 @@ test("interpreta un CSV diario NASA POWER y conserva su procedencia", () => {
   assert.equal(dataset.metadata.latitude, -10.68);
   assert.equal(dataset.metadata.longitude, -76.26);
   assert.equal(dataset.metadata.elevationM, 3994.12);
+  assert.deepEqual(dataset.metadata.spatialResolutionDegrees, { latitude: 0.5, longitude: 0.625 });
+  assert.equal(dataset.metadata.spatialSupport, "REGIONAL_REANALYSIS_GRID_NOT_ON_SITE_GAUGE");
   assert.equal(dataset.records.length, 2);
   assert.equal(dataset.summary.missingCount, 1);
   assert.equal(dataset.summary.recommendedDate, "2024-01-02");
   assert.deepEqual(rainfallRecordForDate(dataset, "2024-01-02"), { date: "2024-01-02", rainfallMmDay: 24 });
+});
+
+test("el archivo histórico incorporado corresponde al punto declarado de Pasco y conserva su soporte espacial", async () => {
+  const csv = await readFile(new URL("../data/rainfall/pasco-nasa-power-2020-2025.csv", import.meta.url), "utf8");
+  const dataset = parseNasaPowerDailyCsv(csv);
+  assert.equal(dataset.metadata.latitude, -10.68);
+  assert.equal(dataset.metadata.longitude, -76.26);
+  assert.deepEqual(dataset.metadata.spatialResolutionDegrees, { latitude: 0.5, longitude: 0.625 });
+  assert.equal(dataset.summary.startDate, "2020-01-01");
+  assert.equal(dataset.summary.endDate, "2025-12-31");
+  assert.ok(dataset.summary.recordCount > 2000);
 });
 
 test("el perfil horario estimado conserva exactamente el total diario", () => {
@@ -49,5 +63,5 @@ test("reproduce lluvia histórica sin presentarla como telemetría horaria obser
   const forecast = createForecast(store.getReadings(120), 6);
   assert.equal(forecast.modelDiagnostics.dataQuality.status, "DEMOSTRATIVA_SEMISINTETICA");
   assert.equal(forecast.modelDiagnostics.dataQuality.observedShare, 0);
-  assert.equal(forecast.modelDiagnostics.dataQuality.allowsOperationalUse, false);
+  assert.equal(forecast.modelDiagnostics.dataQuality.passesQualityGate, false);
 });

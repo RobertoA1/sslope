@@ -12,10 +12,26 @@
     "split:fem": "node scripts/split-fem-dataset.js",
     "train:baseline": "node scripts/train-temporal-baseline.js",
     "train:lstm": "python3 scripts/train-lstm.py",
-    "test:lstm": "python3 scripts/test-lstm-core.py"
+    "test:lstm": "python3 scripts/test-lstm-core.py",
+    "train:physics": "python3 scripts/train-physics-guided.py",
+    "test:physics": "python3 scripts/test-physics-guided-core.py",
+    "validate:fem": "node scripts/validate-fem-mesh.js",
+    "validate:robustness": "python3 scripts/evaluate-model-robustness.py",
+    "report:research": "node scripts/generate-research-summary.js",
+    "train:spatial-pinn": "python3 scripts/train-spatial-pinn.py",
+    "test:spatial-pinn": "python3 scripts/test-spatial-pinn-core.py",
+    "export:ta01-spatial-benchmark": "node scripts/export-ta01-spatial-benchmark.js",
+    "train:ta01-spatial-pinn": "python3 scripts/train-ta01-spatial-pinn.py",
+    "test:ta01-spatial-pinn": "python3 scripts/test-ta01-spatial-pinn.py",
+    "validate:external-ssrm": "python3 scripts/validate-external-ssrm.py",
+    "export:ta01-ssrm-input": "node scripts/export-ta01-ssrm-input.js",
+    "validate:ta01-external-ssrm": "python3 scripts/validate-ta01-external-ssrm.py",
+    "test:ta01-transient-gate": "python3 scripts/test-ta01-transient-gate.py",
+    "test:ta01-rainfall-ssrm": "python3 scripts/test-ta01-rainfall-ssrm.py",
+    "test:ta01-wet-scenario": "python3 scripts/test-ta01-wet-scenario.py"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "dependencies": {
     "three": "^0.180.0"

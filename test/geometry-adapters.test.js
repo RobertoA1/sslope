@@ -55,3 +55,16 @@ test("Three.js carga glTF con datos embebidos", async () => {
   assert.equal(result.format, "glTF");
   assert.equal(result.mesh.faces.length, 1);
 });
+
+test("carga una superficie poligonal GeoJSON con coordenadas 3D", async () => {
+  const geojson = JSON.stringify({
+    type: "Feature",
+    geometry: { type: "Polygon", coordinates: [[[0, 0, 10], [10, 0, 8], [10, 10, 3], [0, 10, 6], [0, 0, 10]]] },
+    properties: { name: "talud" }
+  });
+  const result = await readModel(textFile("talud.geojson", geojson));
+  assert.equal(result.format, "GeoJSON 3D");
+  assert.equal(result.mesh.vertices.length, 4);
+  assert.equal(result.mesh.faces.length, 2);
+  assert.match(result.note, /triangulados/);
+});

@@ -1,0 +1,9 @@
+horizon_hours,model,threshold_mm,threshold_definition,sample_count,true_positive,false_positive,false_negative,true_negative,precision,recall,f1,false_alarm_rate,mean_anticipation_hours
+1,PERSISTENCE,0.00082,percentil_95_desplazamiento_entrenamiento,1350,59,0,4,1287,1,0.936508,0.967213,0,-0.8
+1,RIDGE,0.00082,percentil_95_desplazamiento_entrenamiento,1350,62,0,1,1287,1,0.984127,0.992,0,-0.2
+1,LSTM,0.00082,percentil_95_desplazamiento_entrenamiento,1350,62,0,1,1287,1,0.984127,0.992,0,-0.2
+1,HYBRID_PHYSICS_GUIDED,0.00082,percentil_95_desplazamiento_entrenamiento,1350,62,0,1,1287,1,0.984127,0.992,0,-0.2
+6,PERSISTENCE,0.00082,percentil_95_desplazamiento_entrenamiento,975,38,0,15,922,1,0.716981,0.835165,0,-3.25
+6,RIDGE,0.00082,percentil_95_desplazamiento_entrenamiento,975,48,6,5,916,0.888889,0.90566,0.897196,0.006508,-1
+6,LSTM,0.00082,percentil_95_desplazamiento_entrenamiento,975,51,0,2,922,1,0.962264,0.980769,0,-0.4
+6,HYBRID_PHYSICS_GUIDED,0.00082,percentil_95_desplazamiento_entrenamiento,975,51,1,2,921,0.980769,0.962264,0.971429,0.001085,-0.2

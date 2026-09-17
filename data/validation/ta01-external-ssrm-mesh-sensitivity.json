@@ -1,0 +1,47 @@
+{
+  "id": "TA01-EXTERNAL-SSRM-MESH-SENSITIVITY-V1",
+  "generatedAt": "2026-09-17T02:34:25.561638+00:00",
+  "scientificStatus": "SENSIBILIDAD_DE_MALLA_SSRM_EXTERNO_SECO_NO_CALIBRADO",
+  "inputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+  "solver": {
+    "name": "XSLOPE",
+    "version": "0.5.2",
+    "failureCriterion": "hybrid",
+    "elementOrder": "tri6"
+  },
+  "runs": [
+    {
+      "meshSizeM": 10.0,
+      "nodeCount": 2189,
+      "elementCount": 1026,
+      "factorOfSafety": 1.408203125,
+      "finalInterval": [
+        1.3984375,
+        1.41796875
+      ]
+    },
+    {
+      "meshSizeM": 8.0,
+      "nodeCount": 3120,
+      "elementCount": 1481,
+      "factorOfSafety": 1.408203125,
+      "finalInterval": [
+        1.3984375,
+        1.41796875
+      ]
+    },
+    {
+      "meshSizeM": 6.0,
+      "nodeCount": 4350,
+      "elementCount": 2089,
+      "factorOfSafety": 1.427734375,
+      "finalInterval": [
+        1.41796875,
+        1.4375
+      ]
+    }
+  ],
+  "factorOfSafetySpread": 0.01953125,
+  "maximumFinalIntervalWidth": 0.01953125,
+  "limitation": "Tres mallas cuya dispersión es comparable al ancho de un intervalo SSRM son una comprobación preliminar, no una demostración matemática de convergencia. Falta variar dominio/contornos y comprobar presiones de poros transitorias y datos de campo."
+}

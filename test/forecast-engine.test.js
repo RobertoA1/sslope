@@ -86,7 +86,47 @@ test("el pronóstico expone procedencia y calidad para la investigación", () =>
   const forecast = createForecast(syntheticReadings({ count: 48 }), 6);
   assert.equal(forecast.modelDiagnostics.components.physical.status, "MODELO_REDUCIDO");
   assert.equal(forecast.modelDiagnostics.dataQuality.status, "DEMOSTRATIVA");
+  assert.equal(forecast.operationalDecisionAllowed, false);
+  assert.equal(forecast.outputPolicy, "SOLO_DEMOSTRACION_BLOQUEADO_PARA_DECISION_OPERACIONAL");
   assert.equal(assessDataQuality(syntheticReadings({ count: 12 })).status, "INSUFICIENTE");
+});
+
+test("la calidad detecta duplicados y distingue telemetría observada", () => {
+  const observed = syntheticReadings({ count: 30 }).map((row) => ({ ...row, source: "inclinometer" }));
+  assert.equal(assessDataQuality(observed).passesQualityGate, true);
+  assert.equal(assessDataQuality(observed).allowsOperationalUse, false);
+  const forecast = createForecast(observed, 6);
+  assert.equal(forecast.operationalDecisionAllowed, false);
+  assert.equal(forecast.outputPolicy, "SOLO_INVESTIGACION_MODELO_NO_VALIDADO");
+  const quality = assessDataQuality([...observed, { ...observed.at(-1) }]);
+  assert.equal(quality.passesQualityGate, false);
+  assert.ok(quality.reasonCodes.includes("MARCAS_TEMPORALES_DUPLICADAS"));
+});
+
+test("una lectura declarada real no convierte un historial sintético en apto", () => {
+  const mixed = syntheticReadings({ count: 30 });
+  mixed[29] = { ...mixed[29], source: "inclinometer" };
+  assert.equal(assessDataQuality(mixed).passesQualityGate, false);
+  assert.ok(assessDataQuality(mixed).reasonCodes.includes("TELEMETRIA_OBSERVADA_INFERIOR_80_PCT"));
+});
+
+test("una fuente implícita o una bandera simulada no se cuenta como observación", () => {
+  const base = syntheticReadings({ count: 30 });
+  const implicit = base.map((row) => validateReading({ ...row, source: undefined, qualityFlag: undefined }));
+  assert.equal(assessDataQuality(implicit).observedShare, 0);
+  const simulatedFlag = base.map((row) => ({ ...row, source: "inclinometer", qualityFlag: "SIMULATED" }));
+  assert.equal(assessDataQuality(simulatedFlag).observedShare, 0);
+});
+
+test("telemetría declarada real pero antigua no supera la puerta de calidad", () => {
+  const old = syntheticReadings({ count: 30 }).map((row) => ({
+    ...row,
+    timestamp: new Date(new Date(row.timestamp).getTime() - 48 * 3_600_000).toISOString(),
+    source: "inclinometer"
+  }));
+  const quality = assessDataQuality(old);
+  assert.equal(quality.passesQualityGate, false);
+  assert.ok(quality.reasonCodes.includes("TELEMETRIA_DESACTUALIZADA_MAS_DE_3H"));
 });
 
 test("la ablación compara los componentes del MVP con métricas reproducibles", () => {
@@ -98,4 +138,22 @@ test("la ablación compara los componentes del MVP con métricas reproducibles",
   assert.ok(experiment.results.every((result) => Number.isFinite(result.maeMm) && Number.isFinite(result.rmseMm)));
   assert.ok(experiment.results.some((result) => result.id === experiment.bestByMae));
   assert.equal(store.getResearchStatus().latestExperiment.id, experiment.id);
+});
+
+test("el historial no duplica alertas idénticas dentro de quince minutos", () => {
+  const store = new TwinStore();
+  const forecast = createForecast(store.getReadings(72), 24);
+  forecast.risk.level = "ALERTA";
+  assert.ok(store.recordAlert(forecast));
+  assert.equal(store.recordAlert({ ...forecast, generatedAt: new Date(new Date(forecast.generatedAt).getTime() + 60_000).toISOString() }), null);
+  assert.equal(store.alerts.length, 1);
+});
+
+test("una lectura antigua no genera una nueva alerta", () => {
+  const store = new TwinStore();
+  const old = syntheticReadings({ count: 48 }).map((row) => ({ ...row, timestamp: new Date(new Date(row.timestamp).getTime() - 48 * 3_600_000).toISOString() }));
+  const forecast = createForecast(old, 24);
+  forecast.risk.level = "ALERTA";
+  assert.equal(store.recordAlert(forecast), null);
+  assert.equal(store.alerts.length, 0);
 });

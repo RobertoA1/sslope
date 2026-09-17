@@ -1,0 +1,400 @@
+{
+  "id": "TA01-MODEL-ROBUSTNESS-V1",
+  "generatedAt": "2026-09-15T12:14:57.877443+00:00",
+  "seed": 20260918,
+  "scientificStatus": "ROBUSTEZ_INTERNA_EN_TEST_SEMISINTETICO_NO_DATOS_DE_CAMPO",
+  "method": "Perturbaciones aplicadas solo a entradas de test; ruido relativo a desviación de entrenamiento e imputación con media de entrenamiento",
+  "limitations": [
+    "MCAR no representa todas las fallas reales de sensores",
+    "El retraso usa arrastre de la última observación y no modela comunicaciones completas",
+    "Las estaciones son una clasificación mensual simplificada",
+    "No se reentrena bajo perturbación",
+    "Los objetivos provienen del FEM semisintético"
+  ],
+  "results": [
+    {
+      "horizonHours": 1,
+      "lstmModelId": "TA01-LSTM-1H-SEED20260916",
+      "hybridModelId": "TA01-PHYSICS-GUIDED-1H-SEED20260917",
+      "conditions": [
+        {
+          "id": "CLEAN",
+          "kind": "NONE",
+          "level": 0.0,
+          "lstm": {
+            "sampleCount": 1350,
+            "maeMm": 6.73e-06,
+            "rmseMm": 3.67e-05,
+            "biasMm": -5.24e-06,
+            "r2": 0.999629,
+            "maeIncreasePercent": 0.0
+          },
+          "hybrid": {
+            "sampleCount": 1350,
+            "maeMm": 6.23e-06,
+            "rmseMm": 3.354e-05,
+            "biasMm": -4.11e-06,
+            "r2": 0.999691,
+            "maeIncreasePercent": 0.0
+          }
+        },
+        {
+          "id": "NOISE_1PCT_STD",
+          "kind": "GAUSSIAN_NOISE",
+          "level": 0.01,
+          "lstm": {
+            "sampleCount": 1350,
+            "maeMm": 6.78e-06,
+            "rmseMm": 3.671e-05,
+            "biasMm": -5.19e-06,
+            "r2": 0.999629,
+            "maeIncreasePercent": 0.74
+          },
+          "hybrid": {
+            "sampleCount": 1350,
+            "maeMm": 8.18e-06,
+            "rmseMm": 3.332e-05,
+            "biasMm": -3.12e-06,
+            "r2": 0.999694,
+            "maeIncreasePercent": 31.3
+          }
+        },
+        {
+          "id": "NOISE_5PCT_STD",
+          "kind": "GAUSSIAN_NOISE",
+          "level": 0.05,
+          "lstm": {
+            "sampleCount": 1350,
+            "maeMm": 7.36e-06,
+            "rmseMm": 3.687e-05,
+            "biasMm": -4.83e-06,
+            "r2": 0.999626,
+            "maeIncreasePercent": 9.36
+          },
+          "hybrid": {
+            "sampleCount": 1350,
+            "maeMm": 8.36e-06,
+            "rmseMm": 3.384e-05,
+            "biasMm": -3.09e-06,
+            "r2": 0.999685,
+            "maeIncreasePercent": 34.19
+          }
+        },
+        {
+          "id": "MISSING_10PCT",
+          "kind": "MCAR_MEAN_IMPUTATION",
+          "level": 0.1,
+          "lstm": {
+            "sampleCount": 1350,
+            "maeMm": 1.147e-05,
+            "rmseMm": 5.126e-05,
+            "biasMm": -4.28e-06,
+            "r2": 0.999277,
+            "maeIncreasePercent": 70.43
+          },
+          "hybrid": {
+            "sampleCount": 1350,
+            "maeMm": 1.131e-05,
+            "rmseMm": 4.973e-05,
+            "biasMm": -3.39e-06,
+            "r2": 0.99932,
+            "maeIncreasePercent": 81.54
+          }
+        },
+        {
+          "id": "MISSING_30PCT",
+          "kind": "MCAR_MEAN_IMPUTATION",
+          "level": 0.3,
+          "lstm": {
+            "sampleCount": 1350,
+            "maeMm": 1.584e-05,
+            "rmseMm": 5.582e-05,
+            "biasMm": -3.51e-06,
+            "r2": 0.999143,
+            "maeIncreasePercent": 135.36
+          },
+          "hybrid": {
+            "sampleCount": 1350,
+            "maeMm": 1.58e-05,
+            "rmseMm": 5.472e-05,
+            "biasMm": -2.88e-06,
+            "r2": 0.999176,
+            "maeIncreasePercent": 153.61
+          }
+        },
+        {
+          "id": "SENSOR_DELAY_1H",
+          "kind": "LAST_OBSERVATION_CARRIED_FORWARD",
+          "level": 1,
+          "lstm": {
+            "sampleCount": 1350,
+            "maeMm": 6.71e-06,
+            "rmseMm": 3.608e-05,
+            "biasMm": -5.29e-06,
+            "r2": 0.999642,
+            "maeIncreasePercent": -0.3
+          },
+          "hybrid": {
+            "sampleCount": 1350,
+            "maeMm": 6.21e-06,
+            "rmseMm": 3.354e-05,
+            "biasMm": -4.26e-06,
+            "r2": 0.999691,
+            "maeIncreasePercent": -0.32
+          }
+        },
+        {
+          "id": "SENSOR_DELAY_3H",
+          "kind": "LAST_OBSERVATION_CARRIED_FORWARD",
+          "level": 3,
+          "lstm": {
+            "sampleCount": 1350,
+            "maeMm": 6.89e-06,
+            "rmseMm": 3.649e-05,
+            "biasMm": -5.39e-06,
+            "r2": 0.999634,
+            "maeIncreasePercent": 2.38
+          },
+          "hybrid": {
+            "sampleCount": 1350,
+            "maeMm": 6.47e-06,
+            "rmseMm": 3.446e-05,
+            "biasMm": -4.46e-06,
+            "r2": 0.999673,
+            "maeIncreasePercent": 3.85
+          }
+        }
+      ],
+      "seasonalBreakdown": [
+        {
+          "season": "WET_NOV_APR",
+          "definition": "Clasificación climatológica simplificada por mes de la fecha NASA POWER",
+          "lstm": {
+            "sampleCount": 792,
+            "maeMm": 1.037e-05,
+            "rmseMm": 4.782e-05,
+            "biasMm": -8.41e-06,
+            "r2": 0.999622
+          },
+          "hybrid": {
+            "sampleCount": 792,
+            "maeMm": 9.7e-06,
+            "rmseMm": 4.372e-05,
+            "biasMm": -6.99e-06,
+            "r2": 0.999684
+          }
+        },
+        {
+          "season": "DRY_MAY_OCT",
+          "definition": "Clasificación climatológica simplificada por mes de la fecha NASA POWER",
+          "lstm": {
+            "sampleCount": 558,
+            "maeMm": 1.56e-06,
+            "rmseMm": 3.65e-06,
+            "biasMm": -7.3e-07,
+            "r2": 0.999378
+          },
+          "hybrid": {
+            "sampleCount": 558,
+            "maeMm": 1.3e-06,
+            "rmseMm": 2.85e-06,
+            "biasMm": -2e-08,
+            "r2": 0.99962
+          }
+        }
+      ]
+    },
+    {
+      "horizonHours": 6,
+      "lstmModelId": "TA01-LSTM-6H-SEED20260916",
+      "hybridModelId": "TA01-PHYSICS-GUIDED-6H-SEED20260917",
+      "conditions": [
+        {
+          "id": "CLEAN",
+          "kind": "NONE",
+          "level": 0.0,
+          "lstm": {
+            "sampleCount": 975,
+            "maeMm": 5.466e-05,
+            "rmseMm": 0.00028869,
+            "biasMm": -3.626e-05,
+            "r2": 0.981993,
+            "maeIncreasePercent": 0.0
+          },
+          "hybrid": {
+            "sampleCount": 975,
+            "maeMm": 5.128e-05,
+            "rmseMm": 0.00027034,
+            "biasMm": -3.401e-05,
+            "r2": 0.984209,
+            "maeIncreasePercent": 0.0
+          }
+        },
+        {
+          "id": "NOISE_1PCT_STD",
+          "kind": "GAUSSIAN_NOISE",
+          "level": 0.01,
+          "lstm": {
+            "sampleCount": 975,
+            "maeMm": 5.471e-05,
+            "rmseMm": 0.00028867,
+            "biasMm": -3.637e-05,
+            "r2": 0.981995,
+            "maeIncreasePercent": 0.09
+          },
+          "hybrid": {
+            "sampleCount": 975,
+            "maeMm": 6.447e-05,
+            "rmseMm": 0.00026915,
+            "biasMm": -2.822e-05,
+            "r2": 0.984347,
+            "maeIncreasePercent": 25.72
+          }
+        },
+        {
+          "id": "NOISE_5PCT_STD",
+          "kind": "GAUSSIAN_NOISE",
+          "level": 0.05,
+          "lstm": {
+            "sampleCount": 975,
+            "maeMm": 5.826e-05,
+            "rmseMm": 0.00028946,
+            "biasMm": -3.464e-05,
+            "r2": 0.981896,
+            "maeIncreasePercent": 6.59
+          },
+          "hybrid": {
+            "sampleCount": 975,
+            "maeMm": 6.59e-05,
+            "rmseMm": 0.00027149,
+            "biasMm": -2.631e-05,
+            "r2": 0.984074,
+            "maeIncreasePercent": 28.51
+          }
+        },
+        {
+          "id": "MISSING_10PCT",
+          "kind": "MCAR_MEAN_IMPUTATION",
+          "level": 0.1,
+          "lstm": {
+            "sampleCount": 975,
+            "maeMm": 7.932e-05,
+            "rmseMm": 0.00031266,
+            "biasMm": -2.685e-05,
+            "r2": 0.978878,
+            "maeIncreasePercent": 45.12
+          },
+          "hybrid": {
+            "sampleCount": 975,
+            "maeMm": 7.727e-05,
+            "rmseMm": 0.0002969,
+            "biasMm": -2.485e-05,
+            "r2": 0.980954,
+            "maeIncreasePercent": 50.68
+          }
+        },
+        {
+          "id": "MISSING_30PCT",
+          "kind": "MCAR_MEAN_IMPUTATION",
+          "level": 0.3,
+          "lstm": {
+            "sampleCount": 975,
+            "maeMm": 0.0001035,
+            "rmseMm": 0.00033918,
+            "biasMm": -2.027e-05,
+            "r2": 0.975142,
+            "maeIncreasePercent": 89.35
+          },
+          "hybrid": {
+            "sampleCount": 975,
+            "maeMm": 0.00010102,
+            "rmseMm": 0.0003285,
+            "biasMm": -1.975e-05,
+            "r2": 0.976683,
+            "maeIncreasePercent": 97.0
+          }
+        },
+        {
+          "id": "SENSOR_DELAY_1H",
+          "kind": "LAST_OBSERVATION_CARRIED_FORWARD",
+          "level": 1,
+          "lstm": {
+            "sampleCount": 975,
+            "maeMm": 5.411e-05,
+            "rmseMm": 0.00028671,
+            "biasMm": -3.641e-05,
+            "r2": 0.982238,
+            "maeIncreasePercent": -1.01
+          },
+          "hybrid": {
+            "sampleCount": 975,
+            "maeMm": 5.124e-05,
+            "rmseMm": 0.000273,
+            "biasMm": -3.492e-05,
+            "r2": 0.983897,
+            "maeIncreasePercent": -0.08
+          }
+        },
+        {
+          "id": "SENSOR_DELAY_3H",
+          "kind": "LAST_OBSERVATION_CARRIED_FORWARD",
+          "level": 3,
+          "lstm": {
+            "sampleCount": 975,
+            "maeMm": 5.368e-05,
+            "rmseMm": 0.00028351,
+            "biasMm": -3.477e-05,
+            "r2": 0.982632,
+            "maeIncreasePercent": -1.79
+          },
+          "hybrid": {
+            "sampleCount": 975,
+            "maeMm": 5.141e-05,
+            "rmseMm": 0.00027376,
+            "biasMm": -3.418e-05,
+            "r2": 0.983807,
+            "maeIncreasePercent": 0.25
+          }
+        }
+      ],
+      "seasonalBreakdown": [
+        {
+          "season": "WET_NOV_APR",
+          "definition": "Clasificación climatológica simplificada por mes de la fecha NASA POWER",
+          "lstm": {
+            "sampleCount": 572,
+            "maeMm": 8.414e-05,
+            "rmseMm": 0.00037645,
+            "biasMm": -6.599e-05,
+            "r2": 0.981562
+          },
+          "hybrid": {
+            "sampleCount": 572,
+            "maeMm": 7.915e-05,
+            "rmseMm": 0.00035244,
+            "biasMm": -6.248e-05,
+            "r2": 0.983838
+          }
+        },
+        {
+          "season": "DRY_MAY_OCT",
+          "definition": "Clasificación climatológica simplificada por mes de la fecha NASA POWER",
+          "lstm": {
+            "sampleCount": 403,
+            "maeMm": 1.282e-05,
+            "rmseMm": 2.212e-05,
+            "biasMm": 5.93e-06,
+            "r2": 0.982103
+          },
+          "hybrid": {
+            "sampleCount": 403,
+            "maeMm": 1.172e-05,
+            "rmseMm": 2.261e-05,
+            "biasMm": 6.42e-06,
+            "r2": 0.981306
+          }
+        }
+      ]
+    }
+  ]
+}

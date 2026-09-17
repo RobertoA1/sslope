@@ -1,0 +1,98 @@
+{
+  "id": "TA01-PROJECTED-SSRM-PORE-PRESSURE-MESH-SENSITIVITY-V1",
+  "generatedAt": "2026-09-17T03:41:39.404314+00:00",
+  "scientificStatus": "PROYECCION_NODAL_SSRM_EXTERNA_NO_VALIDACION_OPERACIONAL",
+  "geometryInputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+  "hydraulicScenario": {
+    "unitSystem": "SI",
+    "timeUnit": "hr",
+    "rainfallMmIn24Hours": 102.88,
+    "rainfallProfile": "rectangular 24 h, con rampas de 0,01 h",
+    "soilConductivityMPerSecond": 1e-05,
+    "soilConductivityMPerHour": 0.036000000000000004,
+    "fluxCapFractionOfSaturatedConductivity": 0.01,
+    "appliedInfiltrationFluxMPerHour": 0.00036,
+    "unappliedRainfallMm": 94.24,
+    "lateralHeadM": -2.0,
+    "specificStoragePerM": 0.0001,
+    "specificYieldByMaterial": {
+      "SOIL": 0.22,
+      "WEATHERED": 0.12,
+      "ROCK": 0.05
+    },
+    "conductivityRatios": {
+      "SOIL": 1,
+      "WEATHERED": 0.25,
+      "ROCK": 0.05
+    },
+    "unsaturatedModel": "vg",
+    "unsaturatedParameters": {
+      "lfKr0": 0.01,
+      "lfH0M": -2,
+      "vgAlphaPerM": 0.05,
+      "vgN": 1.5
+    }
+  },
+  "maximumTimeStepHours": 0.1,
+  "mechanicalMesh": {
+    "targetSizeM": 8.0,
+    "nodeCount": 3120,
+    "elementCount": 1481
+  },
+  "runs": [
+    {
+      "hydraulicMeshSizeM": 8.0,
+      "sourceFieldSha256": "1c999e48c9077bd19d65f11923a4e19b137c2671011f730b924e25dcf0f59a26",
+      "sourceNodeCount": 820,
+      "maximumBoundaryResidualM": 7.105427357601002e-15,
+      "boundaryInterpolationNodeCount": 17,
+      "maximumPositivePorePressureChange24hKpa": 2.0288786793792415,
+      "positivePressureNodeCount24h": 1246
+    },
+    {
+      "hydraulicMeshSizeM": 6.0,
+      "sourceFieldSha256": "edaa1413f6dbc42a6a2604b9f39533418b817728ae963385e01755d10448821e",
+      "sourceNodeCount": 1131,
+      "maximumBoundaryResidualM": 7.105427357601002e-15,
+      "boundaryInterpolationNodeCount": 23,
+      "maximumPositivePorePressureChange24hKpa": 2.025372777962758,
+      "positivePressureNodeCount24h": 1246
+    },
+    {
+      "hydraulicMeshSizeM": 4.0,
+      "sourceFieldSha256": "9e20427c5aaba05162b29a20f3750bc8b2406543c74115160af0eac48def959f",
+      "sourceNodeCount": 2158,
+      "maximumBoundaryResidualM": 7.105427357601002e-15,
+      "boundaryInterpolationNodeCount": 28,
+      "maximumPositivePorePressureChange24hKpa": 2.033726985431978,
+      "positivePressureNodeCount24h": 1246
+    }
+  ],
+  "adjacentComparisons": [
+    {
+      "coarseHydraulicMeshM": 8.0,
+      "fineHydraulicMeshM": 6.0,
+      "rmsPositivePorePressureDifference24hKpa": 0.0026330706502366696,
+      "p95AbsolutePositivePorePressureDifference24hKpa": 0.004074560017639322,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.04232937321770969,
+      "peakDifferenceMechanicalNode": {
+        "index": 1393,
+        "x": 136.55851213247206,
+        "y": -2.164368368059573
+      }
+    },
+    {
+      "coarseHydraulicMeshM": 6.0,
+      "fineHydraulicMeshM": 4.0,
+      "rmsPositivePorePressureDifference24hKpa": 0.0033319638756799975,
+      "p95AbsolutePositivePorePressureDifference24hKpa": 0.007983560692913725,
+      "maximumAbsolutePositivePorePressureDifference24hKpa": 0.04593155152539574,
+      "peakDifferenceMechanicalNode": {
+        "index": 948,
+        "x": 161.875,
+        "y": -1.9152107899227766
+      }
+    }
+  ],
+  "limitation": "Compara presiones positivas proyectadas a una malla mecánica común; no calcula FoS para cada campo, no valida SSRM frente a observaciones ni demuestra independencia de la malla mecánica."
+}

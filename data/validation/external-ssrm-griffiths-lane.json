@@ -1,0 +1,44 @@
+{
+  "id": "EXTERNAL-SSRM-GRIFFITHS-LANE-EXAMPLE-1-V1",
+  "generatedAt": "2026-09-16T14:27:26.088331+00:00",
+  "scientificStatus": "BENCHMARK_PUBLICADO_REPRODUCIDO_CON_SOLVER_EXTERNO_NO_VALIDACION_FEM_TA01",
+  "source": {
+    "paper": "https://inside.mines.edu/~vgriffit/pubs/All_J_Pubs/41.pdf",
+    "sample": "https://xslope.org/en/latest/fem/files/xslope_griffiths1.xslz",
+    "sampleInputSha256": "99fd0557747b534bb7ff7768986bbd9149ee337dc1528cd78a9c72261aa94f94",
+    "sampleMeshSha256": "91d73a3a9f66bd7eb15e6e4e2e062b797faef22d19c249ea66007ccc8320dee0",
+    "sourceUnits": "ft, psf, pcf"
+  },
+  "solver": {
+    "name": "XSLOPE",
+    "version": "0.5.2",
+    "method": "Mohr-Coulomb elastoplástico SSRM",
+    "failureCriterion": "hybrid",
+    "elementOrder": "quadratic"
+  },
+  "case": {
+    "heightFt": 50,
+    "slopeHorizontalToVertical": 2,
+    "cohesionPsf": 312.5,
+    "frictionAngleDeg": 20,
+    "unitWeightPcf": 125,
+    "dry": true,
+    "nodeCount": 1503,
+    "elementCount": 466
+  },
+  "published": {
+    "lastConvergedTrial": 1.35,
+    "firstFailedTrial": 1.4,
+    "reportedFactorOfSafety": 1.4,
+    "interpretation": "El artículo informa 1,4 como primer ensayo fallido en una malla de factores discretos."
+  },
+  "result": {
+    "factorOfSafety": 1.371875,
+    "finalInterval": [
+      1.36875,
+      1.375
+    ],
+    "withinPublishedTrialBracket": true
+  },
+  "limitation": "Este resultado reproduce una referencia con XSLOPE, no con el FEM lineal propio. No valida TA-01, la lluvia, la PINN ni datos de campo."
+}

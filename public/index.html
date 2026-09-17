@@ -11,9 +11,9 @@
       <div>
         <p class="eyebrow">M-1 · PROTOTIPO DE INVESTIGACIÓN</p>
         <h1>Gemelo digital de estabilidad de taludes</h1>
-        <p class="subhead">Fusión física FEM + pronóstico temporal + corrección informada por física.</p>
+        <p class="subhead">Explora escenarios geotécnicos; FEM 2D y modelos temporales se evalúan por separado en el caso TA-01.</p>
       </div>
-      <div class="connection"><span class="dot"></span> Servicio activo</div>
+      <div id="connection-status" class="connection"><span class="dot"></span> Servicio activo</div>
     </header>
     <main>
       <section class="control-panel" aria-label="Controles de demostración">
@@ -25,19 +25,23 @@
           <label for="horizon">Horizonte de pronóstico</label>
           <select id="horizon"><option value="1">1 hora</option><option value="6">6 horas</option><option value="24" selected>24 horas</option><option value="72">72 horas</option></select>
         </div>
+        <div>
+          <label for="active-sensor">Sensor activo</label>
+          <select id="active-sensor"><option value="EXT-01">EXT-01</option></select>
+        </div>
         <button id="run">Actualizar gemelo</button>
         <p id="last-update" class="small"></p>
       </section>
 
       <section class="hero-grid">
         <article class="card risk-card">
-          <p class="label">Nivel de riesgo</p>
+          <p class="label">Riesgo orientativo · no operacional</p>
           <p id="risk-level" class="risk-level">—</p>
           <p id="risk-description" class="muted">Cargando estado del talud…</p>
           <div class="risk-meter"><span id="risk-bar"></span></div>
           <p id="risk-score" class="small"></p>
         </article>
-        <article class="card metric"><p class="label">Factor de seguridad (FEM)</p><strong id="fs">—</strong><span>Meta operacional habitual: &gt; 1.30</span></article>
+        <article class="card metric"><p class="label">Índice de seguridad reducido</p><strong id="fs">—</strong><span>Referencia de demostración: &gt; 1.30; no es un FoS de diseño</span></article>
         <article class="card metric"><p class="label">Desplazamiento previsto</p><strong id="displacement">—</strong><span id="interval">Intervalo: —</span></article>
         <article class="card metric"><p class="label">Incertidumbre</p><strong id="uncertainty">—</strong><span id="residual">Residuo físico: —</span></article>
       </section>
@@ -83,16 +87,31 @@
             <summary>Geometría del Digital Twin</summary>
             <label for="geometry-source">Fuente de geometría</label>
             <select id="geometry-source"><option value="PROCEDURAL">Talud paramétrico</option><option value="PHOTO_APPROXIMATION">Aproximación desde fotografía</option><option value="IMPORTED_MODEL">Modelo / datos topográficos</option></select>
-            <input id="geometry-file" type="file" accept="image/*,.csv,.dxf,.obj,.stl,.gltf,.glb" />
+            <input id="geometry-file" type="file" accept="image/*,.csv,.dxf,.geojson,.json,.obj,.stl,.gltf,.glb" />
             <button id="load-geometry" class="secondary">Escanear / aplicar fuente</button>
             <p class="control-hint">Pruebas: <a href="/samples/talud-circular-xyz.csv" download>CSV XYZ</a> · <a href="/samples/perfil-talud-bancado.dxf" download>DXF de perfil</a></p>
             <img id="photo-preview" alt="Fotografía de referencia del talud" hidden />
             <p id="geometry-status" class="control-hint">Geometría procedural activa.</p>
           </details>
+          <details class="telemetry-ingestion" open>
+            <summary>Telemetría de campo</summary>
+            <label for="telemetry-file">Lecturas CSV o JSON</label>
+            <input id="telemetry-file" type="file" accept="text/csv,application/json,.csv,.json" />
+            <div class="telemetry-import-actions">
+              <button id="import-telemetry" class="secondary" type="button" disabled>Importar lecturas</button>
+              <a href="/samples/telemetry-import-template.csv" download>Descargar plantilla CSV</a>
+            </div>
+            <p id="telemetry-import-status" class="control-hint">Máximo 5000 lecturas y 8 MB. La plantilla es demostrativa: cambia la fuente y la calidad al usar sensores reales.</p>
+          </details>
           <section class="dashboard-block layer-controls">
             <p class="label">CAPAS DEL MODELO</p>
             <label for="scene-layer">Variable visualizada</label>
-            <select id="scene-layer"><option value="risk">Riesgo pronosticado</option><option value="displacement">Desplazamiento previsto</option><option value="pore">Presión de poros</option><option value="safety">Factor de seguridad</option><option value="uncertainty">Incertidumbre</option></select>
+            <select id="scene-layer"><option value="risk">Riesgo pronosticado</option><option value="displacement">Desplazamiento previsto</option><option value="pore">Presión de poros</option><option value="safety">Índice de seguridad reducido</option><option value="uncertainty">Incertidumbre</option></select>
+          </section>
+          <section class="dashboard-block camera-projection">
+            <p class="label">CÁMARA</p>
+            <label for="camera-projection">Proyección</label>
+            <select id="camera-projection"><option value="PERSPECTIVE" selected>Perspectiva 3D</option><option value="ORTHOGRAPHIC">Ortográfica técnica</option></select>
           </section>
           <section class="weather-simulation dashboard-block" aria-label="Simulación de lluvia">
             <p class="label">EVENTO DE LLUVIA</p>
@@ -118,6 +137,7 @@
             <select id="playback-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
             <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">1200×</output><input id="playback-amplification" type="range" min="200" max="2000" step="100" value="1200" /></label>
             <div class="playback-track" role="progressbar" aria-label="Progreso de la simulación temporal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="playback-progress"></span></div>
+            <label class="playback-seek-label" for="playback-seek">Hora visible<input id="playback-seek" type="range" min="0" max="100" step="1" value="0" /></label>
             <div class="playback-readout"><strong id="playback-time">t = 0.0 h</strong><span id="playback-displacement">Desplazamiento: —</span></div>
             <p id="playback-note" class="control-hint">Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo.</p>
           </section>
@@ -156,13 +176,13 @@
             <label class="range-control">Índice: vigilancia <output id="riskWatch-value">0.30</output><input data-policy="riskWatch" type="range" min="0" max="1" step="0.01" value="0.30" /></label>
             <label class="range-control">Índice: alerta <output id="riskAlert-value">0.55</output><input data-policy="riskAlert" type="range" min="0" max="1" step="0.01" value="0.55" /></label>
             <label class="range-control">Índice: crítico <output id="riskCritical-value">0.78</output><input data-policy="riskCritical" type="range" min="0" max="1" step="0.01" value="0.78" /></label>
-            <label class="range-control">FS: vigilancia <output id="fsWatch-value">1.30</output><input data-policy="fsWatch" type="range" min="0.5" max="2" step="0.01" value="1.30" /></label>
-            <label class="range-control">FS: alerta <output id="fsAlert-value">1.15</output><input data-policy="fsAlert" type="range" min="0.5" max="2" step="0.01" value="1.15" /></label>
-            <label class="range-control">FS: crítico <output id="fsCritical-value">1.00</output><input data-policy="fsCritical" type="range" min="0.5" max="2" step="0.01" value="1.00" /></label>
+            <label class="range-control">Índice reducido: vigilancia <output id="fsWatch-value">1.30</output><input data-policy="fsWatch" type="range" min="0.5" max="2" step="0.01" value="1.30" /></label>
+            <label class="range-control">Índice reducido: alerta <output id="fsAlert-value">1.15</output><input data-policy="fsAlert" type="range" min="0.5" max="2" step="0.01" value="1.15" /></label>
+            <label class="range-control">Índice reducido: crítico <output id="fsCritical-value">1.00</output><input data-policy="fsCritical" type="range" min="0.5" max="2" step="0.01" value="1.00" /></label>
           </details>
           <details class="simulation-controls">
             <summary>Factores geotécnicos simulables</summary>
-            <p class="control-hint">Cada ajuste recalcula el factor de seguridad, pronóstico y alerta.</p>
+            <p class="control-hint">Cada ajuste recalcula el índice reducido, pronóstico y nivel de riesgo demostrativo. No es un FoS de diseño.</p>
             <label class="select-control">Tipo de talud<select data-param="geometryType"><option value="LINEAR">Corte recto</option><option value="BENCHED">Mina a cielo abierto con bancos</option><option value="CIRCULAR">Fosa circular / cóncava</option><option value="SEMICIRCULAR">Semicircular / anfiteatro</option><option value="WASTE_DUMP">Botadero radial / terraplén</option></select></label>
             <label class="range-control">Altura del talud <output id="slopeHeightM-value">90 m</output><input data-param="slopeHeightM" type="range" min="20" max="300" step="5" value="90" /></label>
             <label class="range-control">Ancho del talud <output id="slopeWidthM-value">160 m</output><input data-param="slopeWidthM" type="range" min="40" max="600" step="10" value="160" /></label>
@@ -208,41 +228,49 @@
         </div>
         <p id="research-objective" class="muted">Cargando protocolo de investigación…</p>
         <div id="research-components" class="research-components"></div>
+        <div id="validation-evidence" class="validation-evidence"><span>Cargando verificación de malla y robustez…</span></div>
         <section class="fem-runner" aria-label="Ejecución FEM 2D del caso TA-01">
           <div class="fem-runner-heading"><div><p class="label">CASO TA-01</p><h3>Solver FEM 2D</h3></div><span id="fem-method-status" class="chip">CARGANDO</span></div>
           <div class="fem-controls">
             <label for="fem-date">Lluvia diaria NASA POWER<input id="fem-date" type="date" /></label>
             <label for="fem-rain-profile">Distribución temporal<select id="fem-rain-profile"><option value="24" selected>Uniforme en 24 h</option><option value="12">Concentrada en 12 h</option><option value="6">Concentrada en 6 h</option></select></label>
+            <label for="fem-lstm-horizon">Pronóstico IA<select id="fem-lstm-horizon"><option value="1">1 hora</option><option value="6" selected>6 horas</option></select></label>
             <button id="run-fem" type="button">Ejecutar FEM 2D</button>
             <button id="show-fem-3d" class="secondary" type="button" disabled>Ver FEM en 3D</button>
             <button id="download-fem" class="secondary" type="button" disabled>Descargar resultado</button>
           </div>
+          <div class="fem-import-controls">
+            <label for="external-fem-file">Resultado de otro solver<input id="external-fem-file" type="file" accept="application/json,.json" /></label>
+            <button id="import-fem" class="secondary" type="button">Importar FEM JSON</button>
+            <a href="/samples/external-fem-example.json" download>Descargar ejemplo</a>
+          </div>
           <div id="fem-metrics" class="fem-metrics"><span>Ejecuta el caso para obtener desplazamiento, presión de poros e índice de seguridad.</span></div>
-          <p id="fem-status" class="control-hint">CST en deformación plana. El índice Mohr–Coulomb posprocesado no equivale a una reducción de resistencia validada.</p>
+          <div id="fem-lstm-result" class="fem-lstm-result"><span>Los pronósticos LSTM e híbrido físico aparecerán automáticamente después de ejecutar el FEM.</span></div>
+          <p id="fem-status" class="control-hint">CST en deformación plana. También puedes importar un resultado externo; se validará el contrato, no su exactitud científica.</p>
         </section>
         <section class="baseline-runner" aria-label="Evaluación temporal TA-01">
-          <div class="fem-runner-heading"><div><p class="label">MODELOS TEMPORALES</p><h3>Persistencia, ridge y LSTM</h3></div><span class="chip">SEMISINTÉTICA</span></div>
+          <div class="fem-runner-heading"><div><p class="label">MODELOS TEMPORALES</p><h3>Persistencia, ridge, LSTM e híbrido físico</h3></div><span class="chip">SEMISINTÉTICA</span></div>
           <div class="baseline-controls">
             <label for="baseline-horizon">Horizonte evaluado<select id="baseline-horizon"><option value="1">1 hora</option><option value="6" selected>6 horas</option></select></label>
             <button id="load-baseline" type="button">Comparar modelos</button>
           </div>
           <div id="baseline-metrics" class="fem-metrics"><span>Cargando la evaluación aislada del conjunto de prueba…</span></div>
-          <p id="baseline-status" class="control-hint">La comparación usa las mismas ventanas de prueba para los tres modelos, sin mezclar escenarios entre particiones.</p>
+          <p id="baseline-status" class="control-hint">La comparación usa las mismas ventanas de prueba para todos los modelos, sin mezclar escenarios entre particiones.</p>
         </section>
         <div class="research-controls">
           <label for="research-horizon">Horizonte de ablación
-            <select id="research-horizon"><option value="1">1 hora</option><option value="6" selected>6 horas</option><option value="24">24 horas</option></select>
+            <select id="research-horizon"><option value="1">1 hora</option><option value="6" selected>6 horas</option></select>
           </label>
-          <button id="run-ablation" type="button">Ejecutar comparación</button>
+          <button id="run-ablation" type="button">Ver ablación entrenada</button>
           <button id="download-experiment" class="secondary" type="button" disabled>Descargar JSON</button>
         </div>
         <div class="research-table-wrap">
           <table class="research-table">
             <thead><tr><th>Variante</th><th>Componentes</th><th>MAE</th><th>RMSE</th><th>R²</th></tr></thead>
-            <tbody id="research-results"><tr><td colspan="5">Ejecuta una comparación para generar evidencia experimental demostrativa.</td></tr></tbody>
+            <tbody id="research-results"><tr><td colspan="5">Consulta la ablación entrenada para medir el aporte de cada componente.</td></tr></tbody>
           </table>
         </div>
-        <p id="research-status" class="control-hint">Los resultados del MVP no sustituyen una validación con FEM, LSTM y PINN entrenados.</p>
+        <p id="research-status" class="control-hint">La ablación usa escenarios FEM semisintéticos reservados para prueba; no sustituye datos de campo ni una PINN espacial.</p>
       </section>
 
       <section class="card alerts">

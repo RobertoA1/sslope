@@ -1,0 +1,37 @@
+{
+  "id": "EXTERNAL-SSRM-TA01-EXTENDED-DRY-V1",
+  "generatedAt": "2026-09-16T22:12:30.616848+00:00",
+  "scientificStatus": "SSRM_EXTERNO_SECO_NO_CALIBRADO",
+  "source": {
+    "input": "data/validation/ta01-external-ssrm-input.json",
+    "inputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860"
+  },
+  "solver": {
+    "name": "XSLOPE",
+    "version": "0.5.2",
+    "method": "Mohr-Coulomb elastoplástico SSRM",
+    "failureCriterion": "hybrid",
+    "elementOrder": "tri6"
+  },
+  "case": {
+    "nodeCount": 3120,
+    "elementCount": 1481,
+    "meshSizeM": 8.0,
+    "materialZones": [
+      "SOIL",
+      "WEATHERED",
+      "ROCK"
+    ],
+    "domainAreaM2": 25648.0,
+    "surfacePoints": 48,
+    "dry": true
+  },
+  "result": {
+    "factorOfSafety": 1.408203125,
+    "finalInterval": [
+      1.3984375,
+      1.41796875
+    ]
+  },
+  "limitation": "Variante seca extendida para SSRM externo; la malla, el dominio y la ley constitutiva difieren del FEM lineal TA-01. No es una predicción operativa. Un único tamaño de malla tampoco demuestra convergencia espacial."
+}

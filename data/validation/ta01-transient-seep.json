@@ -1,0 +1,121 @@
+{
+  "id": "TA01-TRANSIENT-SEEP-ASSUMED-V1",
+  "generatedAt": "2026-09-17T02:55:17.739167+00:00",
+  "scientificStatus": "FILTRACION_TRANSITORIA_EXTERNA_PARAMETROS_SUPUESTOS_NO_CALIBRADA",
+  "source": {
+    "geometryInputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860"
+  },
+  "solver": {
+    "name": "XSLOPE",
+    "version": "0.5.2",
+    "method": "FEM seepage transitorio",
+    "elementOrder": "tri3"
+  },
+  "assumptions": {
+    "unitSystem": "SI",
+    "timeUnit": "hr",
+    "rainfallMmIn24Hours": 102.88,
+    "rainfallProfile": "rectangular 24 h, con rampas de 0,01 h",
+    "soilConductivityMPerHour": 0.00035999999999999997,
+    "fluxCapFractionOfSaturatedConductivity": 0.01,
+    "appliedInfiltrationFluxMPerHour": 3.6e-06,
+    "unappliedRainfallMm": 102.7936,
+    "lateralHeadM": -20.0,
+    "specificStoragePerM": 0.0001,
+    "specificYieldByMaterial": {
+      "SOIL": 0.22,
+      "WEATHERED": 0.12,
+      "ROCK": 0.05
+    },
+    "conductivityRatios": {
+      "SOIL": 1,
+      "WEATHERED": 0.25,
+      "ROCK": 0.05
+    },
+    "unsaturatedModel": "vg",
+    "unsaturatedParameters": {
+      "lfKr0": 0.01,
+      "lfH0M": -2,
+      "vgAlphaPerM": 0.05,
+      "vgN": 1.5
+    }
+  },
+  "mesh": {
+    "targetSizeM": 6.0,
+    "nodeCount": 1131,
+    "elementCount": 2089,
+    "nearSurfaceSamplingDistanceM": 5.0,
+    "observationPointM": {
+      "x": 4.0,
+      "y": 96.0
+    }
+  },
+  "result": {
+    "converged": true,
+    "frames": [
+      {
+        "hour": 0.0,
+        "maximumPorePressureKpa": 196.20000000000002,
+        "meanNearSurfaceHeadM": -20.0,
+        "meanNearSurfacePressureHeadM": -69.96811996701562,
+        "observationHeadM": -20.0,
+        "positivePressureNodeCount": 283
+      },
+      {
+        "hour": 0.01,
+        "maximumPorePressureKpa": 196.20000000000022,
+        "meanNearSurfaceHeadM": -19.99999076479634,
+        "meanNearSurfacePressureHeadM": -69.96811073181198,
+        "observationHeadM": -19.999999999996472,
+        "positivePressureNodeCount": 283
+      },
+      {
+        "hour": 12.0,
+        "maximumPorePressureKpa": 196.20000000000053,
+        "meanNearSurfaceHeadM": -19.98146035881071,
+        "meanNearSurfacePressureHeadM": -69.94958032582633,
+        "observationHeadM": -19.999989839258298,
+        "positivePressureNodeCount": 283
+      },
+      {
+        "hour": 24.0,
+        "maximumPorePressureKpa": 196.20000000000067,
+        "meanNearSurfaceHeadM": -19.962933716672097,
+        "meanNearSurfacePressureHeadM": -69.93105368368774,
+        "observationHeadM": -19.999960557057996,
+        "positivePressureNodeCount": 283
+      },
+      {
+        "hour": 24.01,
+        "maximumPorePressureKpa": 196.2000000000007,
+        "meanNearSurfaceHeadM": -19.96293373662351,
+        "meanNearSurfacePressureHeadM": -69.93105370363915,
+        "observationHeadM": -19.999960526690167,
+        "positivePressureNodeCount": 283
+      },
+      {
+        "hour": 36.0,
+        "maximumPorePressureKpa": 196.2000000000006,
+        "meanNearSurfaceHeadM": -19.962957624125238,
+        "meanNearSurfacePressureHeadM": -69.93107759114086,
+        "observationHeadM": -19.99992413756928,
+        "positivePressureNodeCount": 283
+      },
+      {
+        "hour": 48.0,
+        "maximumPorePressureKpa": 196.20000000000064,
+        "meanNearSurfaceHeadM": -19.962981466976977,
+        "meanNearSurfacePressureHeadM": -69.93110143399261,
+        "observationHeadM": -19.99988775952371,
+        "positivePressureNodeCount": 283
+      }
+    ],
+    "massBalance": {
+      "finalClosureFraction": 0.0017161234039632584,
+      "cumulativeInflowM2": 0.022231177835979672,
+      "storedChangeM2": 0.021614965973071776
+    },
+    "acceptedStepCount": 70
+  },
+  "limitation": "Experimento hidráulico separado. Los parámetros y contornos son supuestos, el total diario no fija una lluvia horaria real. La lluvia no aplicada por el tope de flujo no se resuelve como escorrentía. El campo solo puede alimentar un SSRM externo condicional; no alimenta el FEM propio. No es predicción operacional. Solo se escribe si cierra masa con error relativo <=5%."
+}

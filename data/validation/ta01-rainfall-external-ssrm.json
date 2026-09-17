@@ -1,0 +1,56 @@
+{
+  "id": "TA01-EXTERNAL-SSRM-TRANSIENT-SEEP-24H-V1",
+  "generatedAt": "2026-09-17T03:14:25.157239+00:00",
+  "scientificStatus": "ACOPLAMIENTO_SSRM_EXTERNO_CONDICIONAL_NO_CALIBRADO",
+  "source": {
+    "geometryInputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+    "seepFieldSha256": "0eb4f1ed23af7e57be05deea46b12798c7d7e8049cb2438c1728f6bdd4c8d707"
+  },
+  "solver": {
+    "name": "XSLOPE",
+    "version": "0.5.2",
+    "method": "Mohr-Coulomb SSRM",
+    "failureCriterion": "hybrid",
+    "elementOrder": "tri6",
+    "tolerance": 0.02
+  },
+  "hydrology": {
+    "hour": 24,
+    "rainfallMm": 102.88,
+    "appliedInfiltrationMm": 0.08639999999999759,
+    "lateralHeadM": -20.0,
+    "massClosureFraction": 0.02771836325786566
+  },
+  "projection": {
+    "targetMeshSizeM": 8.0,
+    "nodeCount": 3120,
+    "elementCount": 1481,
+    "sourceTri3Nodes": 1131,
+    "maximumAbsoluteDeltaHead24hM": 0.21340589878970473,
+    "maximumPositivePorePressureChange24hKpa": 1.9482193636122247e-11,
+    "boundaryInterpolationNodeCount": 23,
+    "maximumBoundaryResidualM": 7.105427357601002e-15
+  },
+  "results": {
+    "baseline": {
+      "factorOfSafety": 1.408203125,
+      "finalInterval": [
+        1.3984375,
+        1.41796875
+      ]
+    },
+    "hour24": {
+      "factorOfSafety": 1.408203125,
+      "finalInterval": [
+        1.3984375,
+        1.41796875
+      ]
+    }
+  },
+  "comparison": {
+    "factorOfSafetyDifference": 0.0,
+    "finalIntervalsOverlap": true,
+    "resolvedBeyondTolerance": false
+  },
+  "limitation": "Acoplamiento experimental entre filtración tri3 y estabilidad tri6 en geometría extendida. Parámetros hidráulicos, contornos y escorrentía no calibrados; el campo hidráulico no demuestra convergencia espacial completa. No debe usarse como alerta ni como predicción de una mina."
+}

@@ -1,0 +1,83 @@
+{
+  "id": "TA01-RAINFALL-EXTERNAL-SSRM-MECHANICAL-MESH-SENSITIVITY-V1",
+  "generatedAt": "2026-09-17T03:48:57.980707+00:00",
+  "scientificStatus": "SENSIBILIDAD_SSRM_EXTERNO_HUMEDO_NO_CALIBRADO",
+  "source": {
+    "geometryInputSha256": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+    "seepFieldSha256": "e86c58bc8bd933e4da41d940d376eeda1e6af83f59695829f6b91d9b7c6a427a"
+  },
+  "solver": {
+    "name": "XSLOPE",
+    "version": "0.5.2",
+    "failureCriterion": "hybrid",
+    "elementOrder": "tri6",
+    "tolerance": 0.02
+  },
+  "hydrology": {
+    "appliedInfiltrationMm": 8.64,
+    "hour": 24,
+    "lateralHeadM": -2.0,
+    "massClosureFraction": 0.00906126662097912,
+    "rainfallMm": 102.88
+  },
+  "runs": [
+    {
+      "mechanicalMeshSizeM": 10.0,
+      "nodeCount": 2189,
+      "elementCount": 1026,
+      "maximumPositivePorePressureChange24hKpa": 1.9990295313090574,
+      "baselineFactorOfSafety": 1.408203125,
+      "baselineFinalInterval": [
+        1.3984375,
+        1.41796875
+      ],
+      "hour24FactorOfSafety": 1.408203125,
+      "hour24FinalInterval": [
+        1.3984375,
+        1.41796875
+      ],
+      "factorOfSafetyDifference": 0.0,
+      "resolvedBeyondTolerance": false
+    },
+    {
+      "mechanicalMeshSizeM": 8.0,
+      "nodeCount": 3120,
+      "elementCount": 1481,
+      "maximumPositivePorePressureChange24hKpa": 2.0058081393907212,
+      "baselineFactorOfSafety": 1.408203125,
+      "baselineFinalInterval": [
+        1.3984375,
+        1.41796875
+      ],
+      "hour24FactorOfSafety": 1.408203125,
+      "hour24FinalInterval": [
+        1.3984375,
+        1.41796875
+      ],
+      "factorOfSafetyDifference": 0.0,
+      "resolvedBeyondTolerance": false
+    },
+    {
+      "mechanicalMeshSizeM": 6.0,
+      "nodeCount": 4350,
+      "elementCount": 2089,
+      "maximumPositivePorePressureChange24hKpa": 2.0702495616438923,
+      "baselineFactorOfSafety": 1.427734375,
+      "baselineFinalInterval": [
+        1.41796875,
+        1.4375
+      ],
+      "hour24FactorOfSafety": 1.427734375,
+      "hour24FinalInterval": [
+        1.41796875,
+        1.4375
+      ],
+      "factorOfSafetyDifference": 0.0,
+      "resolvedBeyondTolerance": false
+    }
+  ],
+  "baselineFactorOfSafetySpread": 0.01953125,
+  "hour24FactorOfSafetySpread": 0.01953125,
+  "maximumFinalIntervalWidth": 0.01953125,
+  "limitation": "Contrasta tres mallas mecánicas con una sola malla hidráulica de origen, parámetros supuestos y FoS de resolución 0,02. No demuestra convergencia mecánica, variación de dominio ni calibración de campo."
+}

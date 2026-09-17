@@ -1,0 +1,2 @@
+model_id,method,evaluation_point_count,maximum_displacement_error,relative_l2_displacement_error,maximum_boundary_error,rms_equilibrium_residual,relative_rms_equilibrium_residual,passed
+SPATIAL-PINN-ELM-MANUFACTURED-ELASTICITY-V1,PHYSICS_INFORMED_EXTREME_LEARNING_MACHINE,2601,7.192613284111352e-10,1.7193162531545243e-7,7.192613284111352e-10,3.996695626417926e-8,0.000010823062894173779,true

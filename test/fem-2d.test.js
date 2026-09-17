@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { runFem2D } from "../src/core/fem-2d.js";
+import { buildTa01IncrementalEquilibrium, runFem2D, verifyCstPatchTest, verifyGlobalAffineElasticityBenchmark } from "../src/core/fem-2d.js";
 import { parseNasaPowerDailyCsv } from "../src/core/rainfall-history.js";
 import { generateTa01Dataset, runTa01FemCase, ta01DatasetToCsv } from "../src/core/study-case-ta01.js";
 
@@ -29,6 +29,50 @@ test("el FEM 2D converge y separa gravedad de respuesta inducida por lluvia", ()
   assert.equal(wet.timeSeries.length, 24);
   assert.equal(wet.timeSeries.at(-1).nodes.length, wet.mesh.nodeCount);
   assert.ok(wet.timeSeries.at(-1).nodes.some((node) => node.rainfallInducedDisplacementMm > 0));
+  const tolerance = 1e-8;
+  for (const node of wet.timeSeries.at(-1).nodes) {
+    if (Math.abs(node.yM) <= tolerance) {
+      assert.equal(node.uxMm, 0);
+      assert.equal(node.uyMm, 0);
+    } else if (Math.abs(node.xM) <= tolerance) {
+      assert.equal(node.uxMm, 0);
+    }
+  }
+});
+
+test("la respuesta inducida crece al acumular lluvia en un mismo escenario", () => {
+  const result = runFem2D({ meshX: 8, meshY: 6 }, Array(12).fill(2));
+  for (let index = 1; index < result.timeSeries.length; index++) {
+    assert.ok(result.timeSeries[index].maximumRainfallInducedDisplacementMm >= result.timeSeries[index - 1].maximumRainfallInducedDisplacementMm);
+    assert.ok(result.timeSeries[index].maximumPorePressureKpa >= result.timeSeries[index - 1].maximumPorePressureKpa);
+  }
+});
+
+test("el elemento CST reproduce exactamente un campo afín de deformación constante", () => {
+  const patch = verifyCstPatchTest();
+  assert.equal(patch.passed, true);
+  assert.ok(patch.maximumAbsoluteError < 1e-12);
+  assert.equal(patch.elementResults.length, 2);
+});
+
+test("el ensamblaje y solver FEM reproducen una solución elástica analítica global", () => {
+  const benchmark = verifyGlobalAffineElasticityBenchmark();
+  assert.equal(benchmark.passed, true);
+  assert.ok(benchmark.maximumAbsoluteDisplacementErrorM < 1e-7);
+  assert.ok(benchmark.solverRelativeResidual < 1e-8);
+  assert.equal(benchmark.elementCount, benchmark.meshX * benchmark.meshY * 2);
+});
+
+test("el equilibrio incremental reproduce el campo FEM inducido por lluvia", () => {
+  const scenario = { meshX: 10, meshY: 7 };
+  const benchmark = buildTa01IncrementalEquilibrium(scenario, 48);
+  const run = runFem2D(scenario, [48]);
+  assert.equal(benchmark.system.freeDofs.length, benchmark.system.stiffnessRows.length);
+  assert.ok(benchmark.system.pcgRelativeResidual < 1e-8);
+  for (const node of run.timeSeries[0].nodes) {
+    assert.ok(Math.abs(benchmark.system.referenceDisplacementM[node.id * 2] * 1000 - node.deltaUxMm) < 1e-4);
+    assert.ok(Math.abs(benchmark.system.referenceDisplacementM[node.id * 2 + 1] * 1000 - node.deltaUyMm) < 1e-4);
+  }
 });
 
 test("el caso TA-01 conserva el total diario y documenta el perfil estimado", () => {

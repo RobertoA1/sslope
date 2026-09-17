@@ -1,0 +1,204 @@
+{
+  "id": "TA01-FEM-MESH-SENSITIVITY-V1",
+  "generatedAt": "2026-09-16T14:14:44.692Z",
+  "method": "Refinamiento estructurado del mismo caso de lluvia; referencia interna = malla 48×32",
+  "scientificStatus": "VERIFICACION_INTERNA_DE_MALLA_NO_BENCHMARK_PUBLICADO_NO_CALIBRADO",
+  "scenario": {
+    "totalRainfallMm": 48,
+    "durationHours": 24,
+    "otherParameters": "TA01_FEM_DEFAULTS"
+  },
+  "analyticalPatchTest": {
+    "name": "CST_AFFINE_CONSTANT_STRAIN_PATCH_TEST",
+    "analyticalExpectation": "Un campo de desplazamiento afín produce deformación constante exacta en todo elemento CST.",
+    "expectedStrain": [
+      0.0012,
+      -0.0009,
+      0.0003
+    ],
+    "elementResults": [
+      {
+        "elementId": 0,
+        "computedStrain": [
+          0.0012000000000000001,
+          -0.0008999999999999998,
+          0.0002999999999999999
+        ],
+        "maximumAbsoluteError": 2.168404344971009e-19
+      },
+      {
+        "elementId": 1,
+        "computedStrain": [
+          0.0011999999999999997,
+          -0.0009,
+          0.00029999999999999884
+        ],
+        "maximumAbsoluteError": 1.1384122811097797e-18
+      }
+    ],
+    "maximumAbsoluteError": 1.1384122811097797e-18,
+    "passed": true
+  },
+  "analyticalGlobalBenchmark": {
+    "name": "GLOBAL_AFFINE_ELASTICITY_ANALYTICAL_BENCHMARK",
+    "scientificStatus": "VERIFICACION_ANALITICA_ELASTICIDAD_LINEAL_NO_VALIDACION_GEOTECNICA",
+    "analyticalExpectation": "u_x=0, u_y=εy; div(σ)=0, tracciones constantes en derecha y techo; empotramiento inferior y rodillo izquierdo.",
+    "meshX": 12,
+    "meshY": 8,
+    "nodeCount": 117,
+    "elementCount": 192,
+    "youngModulusKpa": 1000000,
+    "poissonRatio": 0.28,
+    "strainY": 0.001,
+    "sigmaXXKpa": 497.15909090909105,
+    "sigmaYYKpa": 1278.409090909091,
+    "maximumAbsoluteDisplacementErrorM": 1.6248752343628325e-11,
+    "relativeMaximumDisplacementError": 1.6248752343628325e-9,
+    "solverRelativeResidual": 8.539207945206125e-9,
+    "passed": true
+  },
+  "referenceMesh": {
+    "meshX": 48,
+    "meshY": 32,
+    "nodeCount": 897,
+    "elementCount": 1629
+  },
+  "defaultMeshAssessment": {
+    "meshX": 30,
+    "meshY": 20,
+    "displacementDifferencePercent": 2.13,
+    "porePressureDifferencePercent": 2.31,
+    "safetyIndexDifferencePercent": 2.05
+  },
+  "acceptanceGuide": "La malla por defecto es adecuada solo para el prototipo si las magnitudes principales no cambian materialmente frente a la referencia interna. No es evidencia de exactitud contra una solución analítica o software certificado.",
+  "runs": [
+    {
+      "meshX": 8,
+      "meshY": 6,
+      "nodeCount": 41,
+      "elementCount": 52,
+      "maximumRainfallInducedDisplacementMm": 0.05338,
+      "maximumPorePressureKpa": 220.9372,
+      "mohrCoulombSafetyIndex": 1.0924,
+      "maximumSolverResidual": 4.128139e-9,
+      "elapsedMs": 72.706,
+      "relativeDifferenceAgainstFinest": {
+        "displacement": 0.805819,
+        "porePressure": 0.167001,
+        "safetyIndex": 0.041075
+      }
+    },
+    {
+      "meshX": 12,
+      "meshY": 8,
+      "nodeCount": 73,
+      "elementCount": 103,
+      "maximumRainfallInducedDisplacementMm": 0.03997,
+      "maximumPorePressureKpa": 234.5748,
+      "mohrCoulombSafetyIndex": 1.0685,
+      "maximumSolverResidual": 9.551164e-9,
+      "elapsedMs": 221.143,
+      "relativeDifferenceAgainstFinest": {
+        "displacement": 0.352165,
+        "porePressure": 0.115583,
+        "safetyIndex": 0.018298
+      }
+    },
+    {
+      "meshX": 18,
+      "meshY": 12,
+      "nodeCount": 147,
+      "elementCount": 231,
+      "maximumRainfallInducedDisplacementMm": 0.0397,
+      "maximumPorePressureKpa": 248.1998,
+      "mohrCoulombSafetyIndex": 1.0638,
+      "maximumSolverResidual": 9.995534e-9,
+      "elapsedMs": 506.347,
+      "relativeDifferenceAgainstFinest": {
+        "displacement": 0.343031,
+        "porePressure": 0.064213,
+        "safetyIndex": 0.013819
+      }
+    },
+    {
+      "meshX": 24,
+      "meshY": 16,
+      "nodeCount": 247,
+      "elementCount": 410,
+      "maximumRainfallInducedDisplacementMm": 0.03538,
+      "maximumPorePressureKpa": 255.0123,
+      "mohrCoulombSafetyIndex": 1.0745,
+      "maximumSolverResidual": 9.981666e-9,
+      "elapsedMs": 845.378,
+      "relativeDifferenceAgainstFinest": {
+        "displacement": 0.196888,
+        "porePressure": 0.038528,
+        "safetyIndex": 0.024016
+      }
+    },
+    {
+      "meshX": 30,
+      "meshY": 20,
+      "nodeCount": 366,
+      "elementCount": 630,
+      "maximumRainfallInducedDisplacementMm": 0.02893,
+      "maximumPorePressureKpa": 259.0998,
+      "mohrCoulombSafetyIndex": 1.0708,
+      "maximumSolverResidual": 9.952993e-9,
+      "elapsedMs": 1385.536,
+      "relativeDifferenceAgainstFinest": {
+        "displacement": 0.021313,
+        "porePressure": 0.023117,
+        "safetyIndex": 0.02049
+      }
+    },
+    {
+      "meshX": 36,
+      "meshY": 24,
+      "nodeCount": 521,
+      "elementCount": 918,
+      "maximumRainfallInducedDisplacementMm": 0.03207,
+      "maximumPorePressureKpa": 261.8248,
+      "mohrCoulombSafetyIndex": 1.0587,
+      "maximumSolverResidual": 9.537999e-9,
+      "elapsedMs": 2883.079,
+      "relativeDifferenceAgainstFinest": {
+        "displacement": 0.084912,
+        "porePressure": 0.012843,
+        "safetyIndex": 0.008958
+      }
+    },
+    {
+      "meshX": 42,
+      "meshY": 28,
+      "nodeCount": 697,
+      "elementCount": 1249,
+      "maximumRainfallInducedDisplacementMm": 0.03175,
+      "maximumPorePressureKpa": 263.7712,
+      "mohrCoulombSafetyIndex": 1.0509,
+      "maximumSolverResidual": 8.862969e-9,
+      "elapsedMs": 4830.6,
+      "relativeDifferenceAgainstFinest": {
+        "displacement": 0.074087,
+        "porePressure": 0.005504,
+        "safetyIndex": 0.001525
+      }
+    },
+    {
+      "meshX": 48,
+      "meshY": 32,
+      "nodeCount": 897,
+      "elementCount": 1629,
+      "maximumRainfallInducedDisplacementMm": 0.02956,
+      "maximumPorePressureKpa": 265.2311,
+      "mohrCoulombSafetyIndex": 1.0493,
+      "maximumSolverResidual": 9.11788e-9,
+      "elapsedMs": 7666.396,
+      "relativeDifferenceAgainstFinest": {
+        "displacement": 0,
+        "porePressure": 0,
+        "safetyIndex": 0
+      }
+    }
+  ]
+}

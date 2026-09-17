@@ -1,0 +1,18 @@
+{
+  "id": "FEM-EXTERNAL-DEMO-001",
+  "source": {
+    "software": "Solver FEM de ejemplo",
+    "model": "Sección triangular demostrativa",
+    "formulation": "Declarada por el archivo de origen",
+    "coordinateReference": "Sistema local"
+  },
+  "units": { "length": "m", "displacement": "mm", "porePressure": "kPa" },
+  "rainfall": { "totalMm": 24, "date": "2026-09-15", "temporalProfile": "EXTERNAL", "source": "Ejemplo" },
+  "convergence": { "converged": true, "relativeResidual": 1e-8 },
+  "nodes": [
+    { "id": 0, "x": 0, "y": 0, "ux": 0, "uy": 0, "porePressure": 20 },
+    { "id": 1, "x": 100, "y": 0, "ux": 0.8, "uy": -0.3, "porePressure": 55 },
+    { "id": 2, "x": 0, "y": 80, "ux": 0.2, "uy": -0.5, "porePressure": 35 }
+  ],
+  "elements": [{ "id": 0, "nodeIds": [0, 1, 2], "material": "EXTERNAL" }]
+}
