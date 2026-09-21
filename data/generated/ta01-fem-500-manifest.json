@@ -85,7 +85,7 @@
       0.35
     ]
   },
-  "splitRule": "Separar entrenamiento, validación y prueba por scenario_id; nunca por filas aleatorias.",
+  "splitRule": "Separar entrenamiento, validación y prueba por fecha de lluvia; ningún scenario_id ni sourceDate puede cruzar particiones.",
   "targetRecommendation": "rainfall_induced_max_displacement_mm",
   "scientificStatus": "SEMI_SINTETICO_NO_CALIBRADO",
   "scenarios": [

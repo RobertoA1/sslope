@@ -1,6 +1,7 @@
 import { approximateFromPhoto, readModel } from "./geometry-adapters.js";
 import { SlopeScene3D } from "./slope-scene-3d.js";
 import { parseTelemetryFile } from "./telemetry-import.js";
+import { amplificationFromSlider, sliderFromAmplification } from "./displacement-scale.js";
 
 const $ = (selector) => document.querySelector(selector);
 const api = async (path, options) => {
@@ -103,7 +104,7 @@ function playbackState(forecast = scene.forecast) {
   const baselineMm = forecast?.currentDisplacementMm || 0, incrementMm = Math.max(0, forecast?.predictedIncrementMm ?? ((forecast?.predictedDisplacementMm || baselineMm) - baselineMm));
   return { progress, horizonHours, elapsedHours: horizonHours * progress, baselineMm, incrementMm, displacementMm: baselineMm + incrementMm * progress };
 }
-const visualAmplification = () => Number($("#playback-amplification")?.value) || 450;
+const visualAmplification = () => amplificationFromSlider($("#playback-amplification")?.value);
 function spatialForecastPoint(point, parameters, forecast, force = false) {
   const state = playbackState(forecast);
   if (!state.progress || !forecast) return point;
@@ -135,6 +136,14 @@ function renderPlaybackUi() {
   $("#playback-progress").style.width = `${percent}%`; track.setAttribute("aria-valuenow", String(percent));
   $("#playback-seek").value = String(percent);
   $("#playback-amplification-value").textContent = `${visualAmplification()}×`;
+  $("#playback-scale-1x").disabled = visualAmplification() === 1;
+  $("#playback-note").textContent = scene.femRun
+    ? visualAmplification() === 1
+      ? "Campo nodal FEM 2D por hora a 1×, sin amplificación. El panel y el JSON muestran los desplazamientos calculados en mm."
+      : "Campo nodal FEM 2D por hora con autoescala visual. El panel y el JSON mantienen los desplazamientos calculados en mm."
+    : visualAmplification() === 1
+      ? "Visualización espacial interpolada del pronóstico a 1×, sin amplificar su magnitud. No representa una falla FEM nodo a nodo."
+      : "Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo.";
   $("#play-displacement").textContent = state.progress > 0 && state.progress < 1 && !scene.playback.playing ? "▶ Reanudar simulación" : "▶ Simular desplazamiento";
   $("#play-displacement").disabled = scene.playback.playing; $("#pause-displacement").disabled = !scene.playback.playing;
 }
@@ -172,6 +181,11 @@ function setupPlaybackControls() {
     drawScene();
   });
   $("#playback-amplification").addEventListener("input", () => { renderPlaybackUi(); drawScene(); });
+  $("#playback-scale-1x").addEventListener("click", () => {
+    $("#playback-amplification").value = "0";
+    renderPlaybackUi();
+    drawScene();
+  });
 }
 
 const coordinateText = (value) => Math.abs(value) >= 1000 ? Math.round(value).toLocaleString("es-PE") : Number(value.toFixed(1)).toString();
@@ -306,6 +320,7 @@ async function loadScientificValidation() {
     container.innerHTML = `
       <article><small>Malla FEM por defecto</small><strong>${assessment.meshX}×${assessment.meshY}</strong><span>${assessment.displacementDifferencePercent.toFixed(2)}% frente a 48×32</span></article>
       <article><small>FEM · solución analítica global</small><strong>${mesh.analyticalGlobalBenchmark.maximumAbsoluteDisplacementErrorM.toExponential(2)} m</strong><span>error máximo del campo afín; verifica ensamblaje, contornos y solver elástico</span></article>
+      ${mesh.analyticalBiotPressureBenchmark ? `<article><small>FEM · presión uniforme de Biot</small><strong>${mesh.analyticalBiotPressureBenchmark.maximumAbsoluteDisplacementErrorM.toExponential(2)} m</strong><span>error máximo del campo afín con 120 kPa; verifica la carga mecánica de agua, no la infiltración real</span></article>` : ""}
       <article><small>Ruido 5% de σ</small><strong>+${noise1.toFixed(1)}% / +${noise6.toFixed(1)}%</strong><span>MAE híbrido a 1 h / 6 h</span></article>
       <article class="warning"><small>30% de datos faltantes</small><strong>+${missing1.toFixed(1)}% / +${missing6.toFixed(1)}%</strong><span>requiere control de calidad e imputación</span></article>
       <article><small>Retraso de sensores 3 h</small><strong>+${delay1.toFixed(1)}% / +${delay6.toFixed(1)}%</strong><span>arrastre de última observación</span></article>
@@ -341,7 +356,6 @@ function renderFemRun(run) {
   renderFemLstmForecast(run.lstmForecasts?.[$("#fem-lstm-horizon").value], run.physicsGuidedForecasts?.[$("#fem-lstm-horizon").value]);
   $("#download-fem").disabled = false;
   $("#show-fem-3d").disabled = false;
-  $("#playback-note").textContent = "Campo nodal FEM 2D por hora. La autoescala solo afecta la geometría visible; el panel y el JSON mantienen los desplazamientos físicos en mm.";
   stopDisplacementPlayback();
   scene.playback.progress = 0;
   $("#scene-layer").value = "displacement";
@@ -455,6 +469,7 @@ function setupResearchControls() {
   });
   $("#load-baseline").addEventListener("click", loadTemporalBaseline);
   $("#baseline-horizon").addEventListener("change", loadTemporalBaseline);
+  $("#baseline-protocol").addEventListener("change", loadTemporalBaseline);
 }
 
 async function loadTemporalBaseline() {
@@ -463,6 +478,25 @@ async function loadTemporalBaseline() {
   $("#baseline-status").textContent = "Leyendo el modelo y las métricas de prueba…";
   try {
     const horizon = $("#baseline-horizon").value;
+    if ($("#baseline-protocol").value.startsWith("chronological-")) {
+      const testYear = Number($("#baseline-protocol").value.slice(-4));
+      const evaluation = await api(`/api/research/chronological?horizon=${horizon}&testYear=${testYear}`);
+      const { persistence, ridgeComparable: ridge, lstm, pinn: guided, uncertainty } = evaluation.metrics;
+      $("#baseline-metrics").innerHTML = [
+        ["MAE persistencia", `${persistence.maeMm.toFixed(8)} mm`],
+        ["MAE ridge", `${ridge.maeMm.toFixed(8)} mm`],
+        ["MAE LSTM", `${lstm.maeMm.toFixed(8)} mm`],
+        ["MAE híbrido físico", `${guided.maeMm.toFixed(8)} mm`],
+        ["RMSE híbrido", `${guided.rmseMm.toFixed(8)} mm`]
+      ].map(([label, value]) => `<article><small>${label}</small><strong>${value}</strong></article>`).join("");
+      const improvement = lstm.maeMm > 0 ? (1 - guided.maeMm / lstm.maeMm) * 100 : 0;
+      const interval = evaluation.pairedBootstrap?.confidenceInterval95Mm;
+      const intervalNote = interval ? ` IC 95% pareado por fecha para MAE(LSTM)−MAE(híbrido): [${interval[0].toExponential(2)}, ${interval[1].toExponential(2)}] mm${interval[0] <= 0 && interval[1] >= 0 ? "; incluye cero, sin ventaja concluyente" : ""}.` : "";
+      const selection = evaluation.validationSelection;
+      const selectionNote = selection ? ` La selección por validación (${selection.selectedOnValidation === "LSTM" ? "LSTM" : "híbrido"}) ${selection.selectionMatchesTest ? "coincidió" : "no coincidió"} con el menor MAE de prueba.` : "";
+      $("#baseline-status").textContent = `Prueba cronológica ${testYear} · ${guided.sampleCount} ventanas comparables · entrenamiento 2020–${testYear - 2} (${evaluation.scenarioCounts.train} escenarios), validación ${testYear - 1} (${evaluation.scenarioCounts.validation}) y prueba ${testYear} (${evaluation.scenarioCounts.test}). El híbrido ${improvement >= 0 ? "mejora" : "empeora"} el MAE observado ${Math.abs(improvement).toFixed(1)}% frente a LSTM.${intervalNote}${selectionNote} Cobertura ${(uncertainty.empiricalCoverage * 100).toFixed(1)}% para intervalo nominal 95%. Desplazamientos FEM semisintéticos: no es validación de mina.`;
+      return;
+    }
     const [baseline, result, physics] = await Promise.all([api(`/api/research/baseline?horizon=${horizon}`), api(`/api/research/lstm?horizon=${horizon}`), api(`/api/research/physics-guided?horizon=${horizon}`)]);
     const persistence = result.metrics.test.persistence;
     const ridge = result.metrics.test.ridgeComparable;
@@ -606,7 +640,7 @@ function renderSceneEventHud() {
   if (scene.weather.active) parts.push(`🌧 LLUVIA · ${scene.weather.rainfallMmH} mm/h · ${scene.weather.durationHours} h`);
   if (scene.playback.progress > 0.005) {
     const mode = $("#material-motion-enabled").checked ? "DEFORMACIÓN DE MATERIALES" : "VECTORES DE DESPLAZAMIENTO";
-    parts.push(scene.femRun ? `↘ FEM 2D · ${mode} · AUTOESCALA VISUAL · ${Math.round(scene.playback.progress * 100)}%` : `↘ ${mode} · ${visualAmplification()}× · ${Math.round(scene.playback.progress * 100)}%`);
+    parts.push(scene.femRun ? `↘ FEM 2D · ${mode} · ${visualAmplification() === 1 ? "ESCALA 1×" : "AUTOESCALA VISUAL"} · ${Math.round(scene.playback.progress * 100)}%` : `↘ ${mode} · ${visualAmplification()}× · ${Math.round(scene.playback.progress * 100)}%`);
   }
   const guided = scene.femRun?.physicsGuidedForecasts?.[$("#fem-lstm-horizon")?.value];
   if (guided) parts.push(`IA +${guided.horizonHours} h · objetivo h${guided.targetHour} · ${guided.predictedDisplacementMm.toFixed(4)} mm`);
@@ -1002,7 +1036,7 @@ function setupSceneWindowControls() {
       $("#camera-projection").value = state.projection;
       sceneRenderer?.setProjection(state.projection);
     }
-    if (state.playback?.amplification) $("#playback-amplification").value = state.playback.amplification;
+    if (state.playback?.amplification !== undefined) $("#playback-amplification").value = sliderFromAmplification(state.playback.amplification);
     const optionSelectors = { realistic:"#realism-enabled", terrain:"#terrain-enabled", materials:"#materials-enabled", overlay:"#overlay-enabled", highContrast:"#contrast-enabled", coordinates:"#coordinates-enabled", materialMotion:"#material-motion-enabled" };
     Object.entries(optionSelectors).forEach(([key, selector]) => { if (state.options?.[key] !== undefined) $(selector).checked = state.options[key]; });
     renderWeatherStatus();
@@ -1169,7 +1203,7 @@ function renderForecast(forecast, rows) {
     `Presión física de riesgo: ${(forecast.femState.physicsRisk*100).toFixed(0)}%; componente temporal: ${(forecast.modelDiagnostics.temporalRisk*100).toFixed(0)}%.`,
     `Incertidumbre del pronóstico: ${(forecast.risk.uncertainty*100).toFixed(1)}%.`
   ]; $("#explanations").innerHTML = statements.map((x)=>`<li>${x}</li>`).join(""); drawChart(rows, forecast);
-  stopDisplacementPlayback(); scene.playback.progress = 0; scene.femRun = null; $("#playback-note").textContent = "Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo."; applySimulationParameters(forecast.simulationParameters); scene.forecast=forecast;scene.readings=rows;drawScene();
+  stopDisplacementPlayback(); scene.playback.progress = 0; scene.femRun = null; applySimulationParameters(forecast.simulationParameters); scene.forecast=forecast;scene.readings=rows;drawScene();
 }
 
 async function renderAlerts() {

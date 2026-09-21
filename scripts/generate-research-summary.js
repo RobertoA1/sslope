@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { summarizeValidationSelection } from "../src/core/model-selection.js";
 
 const projectDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const outputDir = path.join(projectDir, "data", "validation");
@@ -71,20 +72,166 @@ const meanAnticipation = (rows, predictionColumn, threshold) => {
 
 const sha256 = async (relative) => createHash("sha256").update(await readFile(source(relative))).digest("hex");
 
+const bootstrapChronologicalMaeDifference = (predictionRows, dateByScenario, seed = 20260917, draws = 5000) => {
+  const groups = new Map();
+  for (const row of predictionRows) {
+    const date = dateByScenario.get(row.scenario_id);
+    if (!date) throw new Error(`No se encontró fecha de prueba para ${row.scenario_id}`);
+    const actual = Number(row.actual_displacement_mm);
+    const lstm = Number(row.lstm_prediction_mm);
+    const hybrid = Number(row.physics_guided_prediction_mm);
+    if (![actual, lstm, hybrid].every(Number.isFinite)) throw new Error("Predicciones cronológicas no numéricas");
+    const group = groups.get(date) || { count: 0, lstmAbsoluteError: 0, hybridAbsoluteError: 0 };
+    group.count += 1;
+    group.lstmAbsoluteError += Math.abs(actual - lstm);
+    group.hybridAbsoluteError += Math.abs(actual - hybrid);
+    groups.set(date, group);
+  }
+  const blocks = [...groups.values()];
+  let state = seed >>> 0;
+  const random = () => {
+    state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+  const differences = [];
+  for (let draw = 0; draw < draws; draw++) {
+    let count = 0, errorDifference = 0;
+    for (let index = 0; index < blocks.length; index++) {
+      const block = blocks[Math.floor(random() * blocks.length)];
+      count += block.count;
+      errorDifference += block.lstmAbsoluteError - block.hybridAbsoluteError;
+    }
+    differences.push(errorDifference / count);
+  }
+  differences.sort((a, b) => a - b);
+  const totalCount = blocks.reduce((sum, group) => sum + group.count, 0);
+  const totalDifference = blocks.reduce((sum, group) => sum + group.lstmAbsoluteError - group.hybridAbsoluteError, 0) / totalCount;
+  return {
+    unit: "mm",
+    estimand: "MAE_LSTM_MINUS_MAE_HYBRID",
+    positiveMeans: "HYBRID_LOWER_MAE",
+    dateBlockCount: blocks.length,
+    sampleCount: totalCount,
+    bootstrapDraws: draws,
+    seed,
+    observedDifferenceMm: totalDifference,
+    confidenceInterval95Mm: [differences[Math.floor(0.025 * draws)], differences[Math.floor(0.975 * draws)]],
+    probabilityPositiveInBootstrap: differences.filter((value) => value > 0).length / draws
+  };
+};
+
+const chronologicalSegmentRows = (horizonHours, predictionRows, scenarioMetadata) => {
+  const segments = [
+    ["RAIN_DRY_0", (row) => row.rainfallMm === 0],
+    ["RAIN_LOW_GT_0_LT_1", (row) => row.rainfallMm > 0 && row.rainfallMm < 1],
+    ["RAIN_MODERATE_GE_1_LT_5", (row) => row.rainfallMm >= 1 && row.rainfallMm < 5],
+    ["RAIN_HIGH_GE_5", (row) => row.rainfallMm >= 5],
+    ["TARGET_ZERO", (row) => row.actual === 0],
+    ["TARGET_POSITIVE", (row) => row.actual > 0]
+  ];
+  const predictions = predictionRows.map((row) => {
+    const metadata = scenarioMetadata.get(row.scenario_id);
+    if (!metadata) throw new Error(`Faltan metadatos cronológicos de ${row.scenario_id}`);
+    return {
+      scenarioId: row.scenario_id,
+      sourceDate: metadata.sourceDate,
+      rainfallMm: metadata.rainfallMm,
+      actual: Number(row.actual_displacement_mm),
+      PERSISTENCE: Number(row.persistence_prediction_mm),
+      RIDGE: Number(row.ridge_prediction_mm),
+      LSTM: Number(row.lstm_prediction_mm),
+      HYBRID_PHYSICS_GUIDED: Number(row.physics_guided_prediction_mm)
+    };
+  });
+  return segments.flatMap(([segment, predicate]) => {
+    const selected = predictions.filter(predicate);
+    if (!selected.length) return [];
+    const scenarioCount = new Set(selected.map((row) => row.scenarioId)).size;
+    const sourceDateCount = new Set(selected.map((row) => row.sourceDate)).size;
+    return ["PERSISTENCE", "RIDGE", "LSTM", "HYBRID_PHYSICS_GUIDED"].map((model) => {
+      const errors = selected.map((row) => row[model] - row.actual);
+      return {
+        horizon_hours: horizonHours,
+        segment,
+        model,
+        scenario_count: scenarioCount,
+        source_date_count: sourceDateCount,
+        sample_count: selected.length,
+        mae_mm: errors.reduce((sum, error) => sum + Math.abs(error), 0) / errors.length,
+        rmse_mm: Math.sqrt(errors.reduce((sum, error) => sum + error * error, 0) / errors.length),
+        bias_mm: errors.reduce((sum, error) => sum + error, 0) / errors.length
+      };
+    });
+  });
+};
+
 await mkdir(outputDir, { recursive: true });
 const trainRows = parseCsv(await readFile(source("data/generated/ta01-fem-500-train.csv"), "utf8"));
 const trainingDisplacements = trainRows.map((row) => Number(row.rainfall_induced_max_displacement_mm)).sort((a, b) => a - b);
 const thresholdIndex = Math.min(trainingDisplacements.length - 1, Math.ceil(trainingDisplacements.length * 0.95) - 1);
 const displacementThresholdMm = trainingDisplacements[thresholdIndex];
 const comparison = [];
+const chronologicalComparison = [];
+const rollingComparison = [];
+const rollingSelection = [];
 const ablation = [];
 const detection = [];
-const sourceFiles = ["data/generated/ta01-fem-500-train.csv", "data/generated/ta01-fem-500-test.csv"];
+const splitManifest = JSON.parse(await readFile(source("data/generated/ta01-fem-500-split-manifest.json"), "utf8"));
+const chronologicalSplitManifest = JSON.parse(await readFile(source("data/generated/ta01-fem-500-chronological-split-manifest.json"), "utf8"));
+const earlierFoldSplitManifest = JSON.parse(await readFile(source("data/generated/ta01-fem-500-backtest-2024-split-manifest.json"), "utf8"));
+const chronologicalTestRows = parseCsv(await readFile(source("data/generated/ta01-fem-500-chronological-test.csv"), "utf8"));
+const chronologicalDateByScenario = new Map(chronologicalTestRows.map((row) => [row.scenario_id, row.source_date]));
+const chronologicalScenarioMetadata = new Map(chronologicalTestRows.map((row) => [row.scenario_id, { sourceDate: row.source_date, rainfallMm: Number(row.observed_daily_rainfall_mm) }]));
+const chronologicalBootstrap = [];
+const rollingBootstrap = [];
+const chronologicalSegments = [];
+const sourceFiles = [
+  "data/rainfall/pasco-nasa-power-2020-2025.csv",
+  "data/generated/ta01-fem-500.csv",
+  "data/generated/ta01-fem-500-manifest.json",
+  "data/generated/ta01-fem-500-split-manifest.json",
+  "data/generated/ta01-fem-500-train.csv",
+  "data/generated/ta01-fem-500-validation.csv",
+  "data/generated/ta01-fem-500-test.csv",
+  "data/generated/ta01-fem-500-chronological-split-manifest.json",
+  "data/generated/ta01-fem-500-chronological-train.csv",
+  "data/generated/ta01-fem-500-chronological-validation.csv",
+  "data/generated/ta01-fem-500-chronological-test.csv",
+  "data/generated/ta01-fem-500-backtest-2024-split-manifest.json",
+  "data/generated/ta01-fem-500-backtest-2024-train.csv",
+  "data/generated/ta01-fem-500-backtest-2024-validation.csv",
+  "data/generated/ta01-fem-500-backtest-2024-test.csv",
+  "src/core/fem-2d.js",
+  "src/core/study-case-ta01.js",
+  "src/core/temporal-baseline.js",
+  "src/core/model-selection.js",
+  "scripts/generate-fem-dataset.js",
+  "scripts/split-fem-dataset.js",
+  "scripts/split-fem-chronological.js",
+  "scripts/train-temporal-baseline.js",
+  "scripts/train-lstm.py",
+  "scripts/train-physics-guided.py",
+  "scripts/generate-research-summary.js"
+];
 
 for (const horizonHours of [1, 6]) {
   const modelRelative = `data/models/ta01-physics-guided-${horizonHours}h.json`;
   const predictionRelative = `data/generated/ta01-physics-guided-${horizonHours}h-test-predictions.csv`;
-  sourceFiles.push(modelRelative, predictionRelative);
+  const chronologicalModelRelative = `data/models/ta01-chronological-physics-guided-${horizonHours}h.json`;
+  sourceFiles.push(
+    `data/generated/ta01-baseline-${horizonHours}h.json`,
+    `data/generated/ta01-baseline-${horizonHours}h-test-predictions.csv`,
+    `data/models/ta01-lstm-${horizonHours}h.json`,
+    `data/generated/ta01-lstm-${horizonHours}h-test-predictions.csv`,
+    modelRelative,
+    predictionRelative,
+    `data/generated/ta01-chronological-baseline-${horizonHours}h.json`,
+    `data/generated/ta01-chronological-baseline-${horizonHours}h-test-predictions.csv`,
+    `data/models/ta01-chronological-lstm-${horizonHours}h.json`,
+    `data/generated/ta01-chronological-lstm-${horizonHours}h-test-predictions.csv`,
+    chronologicalModelRelative,
+    `data/generated/ta01-chronological-physics-guided-${horizonHours}h-test-predictions.csv`
+  );
   const artifact = JSON.parse(await readFile(source(modelRelative), "utf8"));
   const test = artifact.metrics.test;
   comparison.push(
@@ -93,6 +240,26 @@ for (const horizonHours of [1, 6]) {
     metricRow(horizonHours, "LSTM", test.lstm),
     metricRow(horizonHours, "HYBRID_PHYSICS_GUIDED", test.pinn)
   );
+  const chronologicalArtifact = JSON.parse(await readFile(source(chronologicalModelRelative), "utf8"));
+  rollingSelection.push(summarizeValidationSelection(chronologicalArtifact, 2025, horizonHours));
+  const chronologicalTest = chronologicalArtifact.metrics.test;
+  chronologicalComparison.push(
+    metricRow(horizonHours, "PERSISTENCE", chronologicalTest.persistence),
+    metricRow(horizonHours, "RIDGE", chronologicalTest.ridgeComparable),
+    metricRow(horizonHours, "LSTM", chronologicalTest.lstm),
+    metricRow(horizonHours, "HYBRID_PHYSICS_GUIDED", chronologicalTest.pinn)
+  );
+  rollingComparison.push(...[
+    metricRow(horizonHours, "PERSISTENCE", chronologicalTest.persistence),
+    metricRow(horizonHours, "RIDGE", chronologicalTest.ridgeComparable),
+    metricRow(horizonHours, "LSTM", chronologicalTest.lstm),
+    metricRow(horizonHours, "HYBRID_PHYSICS_GUIDED", chronologicalTest.pinn)
+  ].map((row) => ({ test_year: 2025, ...row })));
+  const chronologicalPredictions = parseCsv(await readFile(source(`data/generated/ta01-chronological-physics-guided-${horizonHours}h-test-predictions.csv`), "utf8"));
+  const futureBootstrap = { horizonHours, ...bootstrapChronologicalMaeDifference(chronologicalPredictions, chronologicalDateByScenario, 20260917 + horizonHours) };
+  chronologicalBootstrap.push(futureBootstrap);
+  rollingBootstrap.push({ testYear: 2025, ...futureBootstrap });
+  chronologicalSegments.push(...chronologicalSegmentRows(horizonHours, chronologicalPredictions, chronologicalScenarioMetadata));
   ablation.push(...artifact.ablation.variants.map((variant) => ({
     horizon_hours: horizonHours,
     variant_id: variant.id,
@@ -125,6 +292,35 @@ for (const horizonHours of [1, 6]) {
     });
   }
 }
+
+const earlierFoldTestRows = parseCsv(await readFile(source("data/generated/ta01-fem-500-backtest-2024-test.csv"), "utf8"));
+const earlierFoldDateByScenario = new Map(earlierFoldTestRows.map((row) => [row.scenario_id, row.source_date]));
+for (const horizonHours of [1, 6]) {
+  const modelRelative = `data/models/ta01-backtest-2024-physics-guided-${horizonHours}h.json`;
+  const predictionRelative = `data/generated/ta01-backtest-2024-physics-guided-${horizonHours}h-test-predictions.csv`;
+  sourceFiles.push(
+    `data/generated/ta01-backtest-2024-baseline-${horizonHours}h.json`,
+    `data/generated/ta01-backtest-2024-baseline-${horizonHours}h-test-predictions.csv`,
+    `data/models/ta01-backtest-2024-lstm-${horizonHours}h.json`,
+    `data/generated/ta01-backtest-2024-lstm-${horizonHours}h-test-predictions.csv`,
+    modelRelative,
+    predictionRelative
+  );
+  const artifact = JSON.parse(await readFile(source(modelRelative), "utf8"));
+  rollingSelection.push(summarizeValidationSelection(artifact, 2024, horizonHours));
+  const test = artifact.metrics.test;
+  rollingComparison.push(...[
+    metricRow(horizonHours, "PERSISTENCE", test.persistence),
+    metricRow(horizonHours, "RIDGE", test.ridgeComparable),
+    metricRow(horizonHours, "LSTM", test.lstm),
+    metricRow(horizonHours, "HYBRID_PHYSICS_GUIDED", test.pinn)
+  ].map((row) => ({ test_year: 2024, ...row })));
+  const predictions = parseCsv(await readFile(source(predictionRelative), "utf8"));
+  rollingBootstrap.push({ testYear: 2024, horizonHours, ...bootstrapChronologicalMaeDifference(predictions, earlierFoldDateByScenario, 20260924 + horizonHours) });
+}
+rollingComparison.sort((a, b) => a.test_year - b.test_year || a.horizon_hours - b.horizon_hours);
+rollingBootstrap.sort((a, b) => a.testYear - b.testYear || a.horizonHours - b.horizonHours);
+rollingSelection.sort((a, b) => a.testYear - b.testYear || a.horizonHours - b.horizonHours);
 
 const robustnessArtifact = JSON.parse(await readFile(source("data/validation/ta01-model-robustness.json"), "utf8"));
 const robustness = robustnessArtifact.results.flatMap((result) => [
@@ -178,6 +374,12 @@ const spatial = [{
 
 await Promise.all([
   writeFile(path.join(outputDir, "ta01-model-comparison.csv"), csv(comparison)),
+  writeFile(path.join(outputDir, "ta01-chronological-model-comparison.csv"), csv(chronologicalComparison)),
+  writeFile(path.join(outputDir, "ta01-chronological-bootstrap.json"), `${JSON.stringify({ method: "PAIRED_SOURCE_DATE_BLOCK_BOOTSTRAP", status: "SEMISYNTHETIC_SINGLE_GEOMETRY", comparisons: chronologicalBootstrap }, null, 2)}\n`),
+  writeFile(path.join(outputDir, "ta01-chronological-stratified.csv"), csv(chronologicalSegments)),
+  writeFile(path.join(outputDir, "ta01-rolling-origin-model-comparison.csv"), csv(rollingComparison)),
+  writeFile(path.join(outputDir, "ta01-rolling-origin-bootstrap.json"), `${JSON.stringify({ method: "PAIRED_SOURCE_DATE_BLOCK_BOOTSTRAP", status: "SEMISYNTHETIC_SINGLE_GEOMETRY", comparisons: rollingBootstrap }, null, 2)}\n`),
+  writeFile(path.join(outputDir, "ta01-rolling-model-selection.csv"), csv(rollingSelection)),
   writeFile(path.join(outputDir, "ta01-ablation-summary.csv"), csv(ablation)),
   writeFile(path.join(outputDir, "ta01-robustness-summary.csv"), csv(robustness)),
   writeFile(path.join(outputDir, "ta01-fem-mesh-summary.csv"), csv(mesh)),
@@ -216,7 +418,20 @@ const manifest = {
   generatedAt: new Date().toISOString(),
   scientificStatus: "MATERIAL_SUPLEMENTARIO_SEMISINTETICO_NO_VALIDACION_DE_CAMPO",
   datasetId: "TA01-DATASET-S500-SEED20260915",
-  split: "350 escenarios entrenamiento / 75 validación / 75 prueba, sin mezclar horas de un escenario",
+  split: `${splitManifest.summaries.train.scenarioCount} escenarios entrenamiento / ${splitManifest.summaries.validation.scenarioCount} validación / ${splitManifest.summaries.test.scenarioCount} prueba, sin mezclar fechas de lluvia; no es un holdout cronológico`,
+  splitMethod: splitManifest.method,
+  sourceDateCounts: splitManifest.sourceDateCounts,
+  chronologicalHoldout: {
+    method: chronologicalSplitManifest.method,
+    cutoffs: chronologicalSplitManifest.cutoffs,
+    scenarioCounts: Object.fromEntries(["train", "validation", "test"].map((name) => [name, chronologicalSplitManifest.summaries[name].scenarioCount])),
+    sourceDateCounts: chronologicalSplitManifest.sourceDateCounts,
+    limitation: "Prueba futura en 2025 para el mismo FEM y geometría TA-01; no son desplazamientos observados ni validación de mina."
+  },
+  rollingOrigin: [
+    { testYear: 2024, cutoffs: earlierFoldSplitManifest.cutoffs, scenarioCounts: Object.fromEntries(["train", "validation", "test"].map((name) => [name, earlierFoldSplitManifest.summaries[name].scenarioCount])), excludedFutureScenarios: earlierFoldSplitManifest.excludedScenarioIds?.length || 0 },
+    { testYear: 2025, cutoffs: chronologicalSplitManifest.cutoffs, scenarioCounts: Object.fromEntries(["train", "validation", "test"].map((name) => [name, chronologicalSplitManifest.summaries[name].scenarioCount])), excludedFutureScenarios: chronologicalSplitManifest.excludedScenarioIds?.length || 0 }
+  ],
   riskDetection: {
     target: "rainfall_induced_max_displacement_mm",
     thresholdMm: displacementThresholdMm,
@@ -226,6 +441,12 @@ const manifest = {
   },
   outputs: [
     "data/validation/ta01-model-comparison.csv",
+    "data/validation/ta01-chronological-model-comparison.csv",
+    "data/validation/ta01-chronological-bootstrap.json",
+    "data/validation/ta01-chronological-stratified.csv",
+    "data/validation/ta01-rolling-origin-model-comparison.csv",
+    "data/validation/ta01-rolling-origin-bootstrap.json",
+    "data/validation/ta01-rolling-model-selection.csv",
     "data/validation/ta01-ablation-summary.csv",
     "data/validation/ta01-robustness-summary.csv",
     "data/validation/ta01-fem-mesh-summary.csv",

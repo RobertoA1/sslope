@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { runFem2D, verifyCstPatchTest, verifyGlobalAffineElasticityBenchmark } from "../src/core/fem-2d.js";
+import { runFem2D, verifyCstPatchTest, verifyGlobalAffineBiotPressureBenchmark, verifyGlobalAffineElasticityBenchmark } from "../src/core/fem-2d.js";
 
 const projectDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const meshes = [
@@ -53,6 +53,7 @@ const artifact = {
   },
   analyticalPatchTest: verifyCstPatchTest(),
   analyticalGlobalBenchmark: verifyGlobalAffineElasticityBenchmark(),
+  analyticalBiotPressureBenchmark: verifyGlobalAffineBiotPressureBenchmark(),
   referenceMesh: { meshX: reference.meshX, meshY: reference.meshY, nodeCount: reference.nodeCount, elementCount: reference.elementCount },
   defaultMeshAssessment: {
     meshX: defaultRun.meshX,

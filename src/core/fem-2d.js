@@ -191,8 +191,8 @@ export function verifyCstPatchTest() {
   };
 }
 
-/** Comprueba ensamblaje, contornos y solver con una solución elástica afín analítica. */
-export function verifyGlobalAffineElasticityBenchmark() {
+/** Comprueba ensamblaje, contornos y carga de Biot con una solución afín analítica. */
+function verifyGlobalAffineBenchmark(porePressureKpa, biotCoefficient) {
   const meshX = 12;
   const meshY = 8;
   const widthM = 20;
@@ -218,23 +218,26 @@ export function verifyGlobalAffineElasticityBenchmark() {
   }
   const prepared = prepareSystem({ nodes, elements, spacing: { dx, dy } });
   const load = new Float64Array(prepared.freeDofs.length);
+  addBiotInitialStressLoad(prepared, load, () => porePressureKpa, biotCoefficient);
   const addForce = (nodeId, axis, force) => {
     const free = prepared.dofToFree[nodeId * 2 + axis];
     if (free >= 0) load[free] += force;
   };
   // u=(0,εy) satisface div(σ)=0 y todos los desplazamientos impuestos.
-  // Las tracciones analíticas se integran
-  // por arista: σxx en el lado derecho y σyy en el borde superior.
+  // La tracción externa corresponde a σ_total = Dε − αpI; la contribución
+  // de αpI entra por separado en el vector de cargas de Biot.
   const factor = youngModulusKpa / ((1 + poissonRatio) * (1 - 2 * poissonRatio));
   const sigmaXX = factor * poissonRatio * strainY;
   const sigmaYY = factor * (1 - poissonRatio) * strainY;
+  const rightBoundaryTractionKpa = sigmaXX - biotCoefficient * porePressureKpa;
+  const topBoundaryTractionKpa = sigmaYY - biotCoefficient * porePressureKpa;
   for (let row = 0; row < meshY; row++) {
-    addForce(index(meshX, row), 0, sigmaXX * dy / 2);
-    addForce(index(meshX, row + 1), 0, sigmaXX * dy / 2);
+    addForce(index(meshX, row), 0, rightBoundaryTractionKpa * dy / 2);
+    addForce(index(meshX, row + 1), 0, rightBoundaryTractionKpa * dy / 2);
   }
   for (let column = 0; column < meshX; column++) {
-    addForce(index(column, meshY), 1, sigmaYY * dx / 2);
-    addForce(index(column + 1, meshY), 1, sigmaYY * dx / 2);
+    addForce(index(column, meshY), 1, topBoundaryTractionKpa * dx / 2);
+    addForce(index(column + 1, meshY), 1, topBoundaryTractionKpa * dx / 2);
   }
   const solved = solvePcg(prepared.rows, load);
   const displacement = fullDisplacement(prepared, solved.solution);
@@ -242,16 +245,25 @@ export function verifyGlobalAffineElasticityBenchmark() {
     Math.abs(displacement[node.id * 2]),
     Math.abs(displacement[node.id * 2 + 1] - strainY * node.y)), 0);
   return {
-    name: "GLOBAL_AFFINE_ELASTICITY_ANALYTICAL_BENCHMARK",
-    scientificStatus: "VERIFICACION_ANALITICA_ELASTICIDAD_LINEAL_NO_VALIDACION_GEOTECNICA",
-    analyticalExpectation: "u_x=0, u_y=εy; div(σ)=0, tracciones constantes en derecha y techo; empotramiento inferior y rodillo izquierdo.",
+    name: porePressureKpa ? "GLOBAL_AFFINE_BIOT_PRESSURE_ANALYTICAL_BENCHMARK" : "GLOBAL_AFFINE_ELASTICITY_ANALYTICAL_BENCHMARK",
+    scientificStatus: porePressureKpa ? "VERIFICACION_ANALITICA_CARGA_BIOT_UNIFORME_NO_VALIDACION_HIDROGEOLOGICA" : "VERIFICACION_ANALITICA_ELASTICIDAD_LINEAL_NO_VALIDACION_GEOTECNICA",
+    analyticalExpectation: "u_x=0, u_y=εy; tracción total (Dε−αpI)n en derecha y techo; empotramiento inferior y rodillo izquierdo.",
     meshX, meshY, nodeCount: nodes.length, elementCount: elements.length,
     youngModulusKpa, poissonRatio, strainY, sigmaXXKpa: sigmaXX, sigmaYYKpa: sigmaYY,
+    porePressureKpa, biotCoefficient, rightBoundaryTractionKpa, topBoundaryTractionKpa,
     maximumAbsoluteDisplacementErrorM: maximumAbsoluteErrorM,
     relativeMaximumDisplacementError: maximumAbsoluteErrorM / (strainY * heightM),
     solverRelativeResidual: solved.relativeResidual,
     passed: solved.converged && maximumAbsoluteErrorM < 1e-7
   };
+}
+
+export function verifyGlobalAffineElasticityBenchmark() {
+  return verifyGlobalAffineBenchmark(0, 0);
+}
+
+export function verifyGlobalAffineBiotPressureBenchmark() {
+  return verifyGlobalAffineBenchmark(120, 0.85);
 }
 
 function prepareSystem(mesh) {
@@ -351,19 +363,22 @@ function porePressureAt(x, y, cumulativeRainfallMm, scenario) {
   return GRAVITY_WATER_KN_M3 * (hydrostaticHead + rainfallHead);
 }
 
-function buildLoad(prepared, cumulativeRainfallMm, scenario) {
-  const load = Float64Array.from(prepared.gravityLoad);
+function addBiotInitialStressLoad(prepared, load, pressureAtElement, biotCoefficient) {
   for (const element of prepared.preparedElements) {
-    const porePressureKpa = porePressureAt(element.centroid.x, element.centroid.y, cumulativeRainfallMm, scenario);
-    const initialStress = [scenario.biotCoefficient * porePressureKpa, scenario.biotCoefficient * porePressureKpa, 0];
+    const initialStressKpa = biotCoefficient * pressureAtElement(element);
     for (let localDof = 0; localDof < 6; localDof++) {
       const freeDof = prepared.dofToFree[element.dofs[localDof]];
       if (freeDof < 0) continue;
-      let force = 0;
-      for (let component = 0; component < 3; component++) force += element.B[component][localDof] * initialStress[component] * element.area;
-      load[freeDof] += force;
+      load[freeDof] += (element.B[0][localDof] + element.B[1][localDof]) * initialStressKpa * element.area;
     }
   }
+}
+
+function buildLoad(prepared, cumulativeRainfallMm, scenario) {
+  const load = Float64Array.from(prepared.gravityLoad);
+  addBiotInitialStressLoad(prepared, load,
+    (element) => porePressureAt(element.centroid.x, element.centroid.y, cumulativeRainfallMm, scenario),
+    scenario.biotCoefficient);
   return load;
 }
 

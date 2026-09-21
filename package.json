@@ -10,6 +10,7 @@
     "test": "node --test",
     "generate:fem": "node scripts/generate-fem-dataset.js",
     "split:fem": "node scripts/split-fem-dataset.js",
+    "split:fem:chronological": "node scripts/split-fem-chronological.js",
     "train:baseline": "node scripts/train-temporal-baseline.js",
     "train:lstm": "python3 scripts/train-lstm.py",
     "test:lstm": "python3 scripts/test-lstm-core.py",

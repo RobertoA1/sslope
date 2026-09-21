@@ -16,7 +16,7 @@ El proyecto implementa el flujo operativo propuesto por el manuscrito **“Gemel
 | Sensibilidad hidrológica | Eventos manuales y lluvia diaria NASA POWER de Pasco, con infiltración y drenaje | Semisintética; respuesta demostrativa |
 | Alerta temprana | FoS, índice de riesgo, incertidumbre y niveles configurables | Política no validada |
 | Representación espacial | Visor Three.js con geometría 3D y sección FEM 2D nodal animada | El corte es FEM 2D; el volumen no es FEM 3D |
-| Evaluación experimental | Backtest temporal con persistencia, ridge, LSTM e híbrido físico; MAE, RMSE, SMAPE, sesgo, R², cobertura y latencia | Datos semisintéticos; sin validación de campo |
+| Evaluación experimental | Comparación por fechas de lluvia disjuntas y dos orígenes cronológicos (pruebas 2024 y 2025) con persistencia, ridge, LSTM e híbrido físico; MAE, RMSE, SMAPE, sesgo, R², cobertura y latencia | Todos los experimentos son semisintéticos; no son validación de campo |
 | Persistencia operacional | SQLite WAL: telemetría por variable, geometrías, modelos, corridas FEM resumidas, pronósticos, alertas y eventos | Local, sin réplica ni cifrado; solo prototipo |
 
 ## Protocolo integrado
@@ -56,19 +56,25 @@ De forma separada, `scripts/train-spatial-pinn.py` entrena una red PIELM espacia
 
 La API puede escalar ese campo a otra cantidad de lluvia acumulada para el mismo escenario, porque en el FEM actual la carga incremental depende linealmente de esa cantidad. Las pruebas comprueban 12,5, 48 y 200 mm contra corridas FEM adicionales. Esto no cambia el carácter semisintético ni demuestra extrapolación a infiltración transitoria, nuevas geometrías o materiales.
 
-La ablación entrenada usa exclusivamente la partición de prueba y sustituye cada grupo retirado por medias aprendidas en entrenamiento. A 1 h, el MAE del híbrido completo es `0.00000623 mm`, frente a `0.00000927 mm` sin estado FEM y `0.00003208 mm` sin hidrología. A 6 h es `0.00005128 mm`, frente a `0.00007178 mm` sin FEM y `0.00018988 mm` sin hidrología. Esto evidencia que ambos grupos aportan señal en el banco semisintético; no demuestra todavía transferencia a una mina real.
+La ablación entrenada usa exclusivamente fechas de lluvia reservadas para prueba y sustituye cada grupo retirado por medias aprendidas en entrenamiento. A 1 h, el MAE del híbrido completo es `0.00000798 mm`, frente a `0.00000936 mm` sin estado FEM y `0.00002571 mm` sin hidrología. A 6 h es `0.00006176 mm`, frente a `0.00007204 mm` sin FEM y `0.00016214 mm` sin hidrología. Esto evidencia que ambos grupos aportan señal en el banco semisintético; no demuestra todavía transferencia a una mina real.
 
-La robustez también se evalúa sin reentrenamiento. Con ruido gaussiano equivalente al 5 % de la desviación de entrenamiento, el MAE híbrido aumenta 34,19 % a 1 h y 28,51 % a 6 h. Con 30 % de entradas faltantes MCAR e imputación por media, aumenta 153,61 % y 97,00 %, respectivamente. El prototipo debe por tanto bloquear o degradar explícitamente los pronósticos cuando la calidad de telemetría sea insuficiente.
+Como comprobación complementaria, los cuatro métodos se reentrenaron con escenarios 2020–2023, se seleccionaron con 2024 y se evaluaron en 2025. En ventanas comparables, la LSTM y el híbrido lograron MAE `0.00000540` y `0.00000519 mm` a 1 h, y `0.00005769` y `0.00005502 mm` a 6 h. Las diferencias observadas favorecen al híbrido, pero los intervalos de bootstrap pareado por fecha incluyen cero en ambos horizontes: no se ha demostrado una ventaja estadísticamente concluyente. El experimento cronológico evita usar lluvia de 2025 durante el ajuste, pero los objetivos siguen siendo desplazamientos FEM semisintéticos. El año de prueba tampoco contiene lluvias tan extremas como el entrenamiento. Su protocolo y comandos figuran en [CASO_TA01_FEM.md](CASO_TA01_FEM.md).
+
+Un segundo origen entrena en 2020–2022, valida en 2023 y prueba en 2024, excluyendo por completo 2025. Allí la LSTM tiene un MAE levemente menor que el híbrido a 1 y 6 h; los intervalos pareados también incluyen cero. El signo de la diferencia cambia entre años, por lo que el manuscrito no debe afirmar superioridad predictiva general del corrector guiado por física con la evidencia actual.
+
+Una simulación de selección por MAE de validación tampoco identifica al modelo de menor MAE de prueba en tres de cuatro combinaciones año–horizonte. Las diferencias son pequeñas y no concluyentes, pero refuerzan que el prototipo no debe promocionar automáticamente al híbrido como modelo de producción.
+
+La robustez también se evalúa sin reentrenamiento. Con ruido gaussiano equivalente al 5 % de la desviación de entrenamiento, el MAE híbrido aumenta 53,88 % a 1 h y 46,10 % a 6 h. Con 30 % de entradas faltantes MCAR e imputación por media, aumenta 133,96 % y 70,77 %, respectivamente. El prototipo debe por tanto bloquear o degradar explícitamente los pronósticos cuando la calidad de telemetría sea insuficiente.
 
 La API materializa esa regla mediante `modelDiagnostics.dataQuality`: revisa al menos 24 lecturas, completitud mínima de 80 %, brechas máximas de 3 h, marcas temporales duplicadas, actualización dentro de 3 h y un mínimo de 80 % de lecturas cuya fuente se declara observada. `passesQualityGate` solo certifica estos controles estructurales, no la autenticidad de la fuente ni la validez científica del modelo. El cálculo demostrativo sigue visible para poder probar el sistema, pero `operationalDecisionAllowed` permanece en `false` incluso si los datos pasan la puerta de calidad: el modelo general continúa sin calibración y validación geotécnica independientes.
 
 La ingesta CSV/JSON por lote y la API `/api/sensors` permiten separar las series por estación. SQLite escribe cada lote en una sola transacción; el pronóstico seleccionado consulta únicamente la estación activa y mantiene separadas las fuentes declaradas de campo respecto de las simuladas. Las lecturas antiguas pueden consultarse, pero no generan nuevas alertas.
 
-También se simulan retrasos de 1 h y 3 h mediante arrastre de la última lectura, y se reportan métricas separadas para una estación húmeda simplificada (noviembre–abril) y seca (mayo–octubre). A tres horas de retraso, el MAE cambia +3,85 % a 1 h y +0,25 % a 6 h. Esta baja sensibilidad no se extrapola a una red de comunicaciones real.
+También se simulan retrasos de 1 h y 3 h mediante arrastre de la última lectura, y se reportan métricas separadas para una estación húmeda simplificada (noviembre–abril) y seca (mayo–octubre). A tres horas de retraso, el MAE cambia −14,29 % a 1 h y −7,22 % a 6 h en esta partición. Que el error baje aquí no implica que retrasar sensores ayude en una red real; refleja la composición de los escenarios y este esquema de perturbación.
 
 ## Interpretación correcta
 
-El experimento sirve para depurar el protocolo y detectar qué componente ayuda o perjudica en los datos actuales. Que una variante obtenga menor error no demuestra superioridad científica: los datos sintéticos provienen de reglas conocidas y los componentes todavía no han sido calibrados ni entrenados.
+El experimento sirve para depurar el protocolo y detectar qué componente ayuda o perjudica en los datos actuales. Que una variante obtenga menor error no demuestra superioridad científica: los desplazamientos sintéticos provienen del FEM propio y los componentes aún no han sido calibrados ni evaluados con observaciones independientes de campo.
 
 ## Criterios antes de publicar resultados
 

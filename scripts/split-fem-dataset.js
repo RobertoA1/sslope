@@ -22,10 +22,11 @@ const outputManifest = {
   sourceCsv: path.relative(projectDir, sourcePath),
   sourceManifest: path.relative(projectDir, manifestPath),
   seed,
-  method: "SCENARIO_GROUP_SPLIT_WITH_EXTREME_EVENT_HOLDOUT",
-  leakageControl: "Todas las horas de un scenario_id permanecen en una sola partición.",
+  method: "SOURCE_DATE_GROUP_SPLIT_WITH_EXTREME_EVENT_HOLDOUT",
+  leakageControl: "Todos los escenarios y horas de una misma fecha de lluvia permanecen en una sola partición. No es una división cronológica por años.",
   ratios: split.ratios,
   reservedExtremeEvents: split.reservedExtremeEvents,
+  sourceDateCounts: split.sourceDateCounts,
   summaries: split.summaries,
   scenarioIds: split.scenarioIds,
   scientificStatus: sourceManifest.scientificStatus

@@ -135,7 +135,8 @@
             <div class="playback-actions"><button id="play-displacement" class="secondary" type="button">▶ Simular desplazamiento</button><button id="pause-displacement" class="secondary" type="button" disabled>❚❚ Pausar</button><button id="reset-displacement" class="secondary" type="button">↺ Reiniciar</button></div>
             <label for="playback-speed">Velocidad de reproducción</label>
             <select id="playback-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
-            <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">1200×</output><input id="playback-amplification" type="range" min="200" max="2000" step="100" value="1200" /></label>
+            <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">1200×</output><input id="playback-amplification" type="range" min="0" max="19" step="1" value="11" title="Extremo izquierdo: 1× sin amplificación; después, 200× a 2000×" /></label>
+            <div class="amplification-shortcuts"><button id="playback-scale-1x" class="secondary" type="button">1× · escala real</button><span>1× → 2000×</span></div>
             <div class="playback-track" role="progressbar" aria-label="Progreso de la simulación temporal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="playback-progress"></span></div>
             <label class="playback-seek-label" for="playback-seek">Hora visible<input id="playback-seek" type="range" min="0" max="100" step="1" value="0" /></label>
             <div class="playback-readout"><strong id="playback-time">t = 0.0 h</strong><span id="playback-displacement">Desplazamiento: —</span></div>
@@ -251,11 +252,12 @@
         <section class="baseline-runner" aria-label="Evaluación temporal TA-01">
           <div class="fem-runner-heading"><div><p class="label">MODELOS TEMPORALES</p><h3>Persistencia, ridge, LSTM e híbrido físico</h3></div><span class="chip">SEMISINTÉTICA</span></div>
           <div class="baseline-controls">
+            <label for="baseline-protocol">Evaluación<select id="baseline-protocol"><option value="date-group">Por fecha de lluvia</option><option value="chronological-2024">Cronológica: prueba 2024</option><option value="chronological-2025">Cronológica: prueba 2025</option></select></label>
             <label for="baseline-horizon">Horizonte evaluado<select id="baseline-horizon"><option value="1">1 hora</option><option value="6" selected>6 horas</option></select></label>
             <button id="load-baseline" type="button">Comparar modelos</button>
           </div>
           <div id="baseline-metrics" class="fem-metrics"><span>Cargando la evaluación aislada del conjunto de prueba…</span></div>
-          <p id="baseline-status" class="control-hint">La comparación usa las mismas ventanas de prueba para todos los modelos, sin mezclar escenarios entre particiones.</p>
+          <p id="baseline-status" class="control-hint">La comparación usa las mismas ventanas de prueba para todos los modelos, sin mezclar fechas de lluvia entre particiones. No es un holdout cronológico.</p>
         </section>
         <div class="research-controls">
           <label for="research-horizon">Horizonte de ablación

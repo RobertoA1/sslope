@@ -1,0 +1,74 @@
+{
+  "method": "PAIRED_SOURCE_DATE_BLOCK_BOOTSTRAP",
+  "status": "SEMISYNTHETIC_SINGLE_GEOMETRY",
+  "comparisons": [
+    {
+      "testYear": 2024,
+      "horizonHours": 1,
+      "unit": "mm",
+      "estimand": "MAE_LSTM_MINUS_MAE_HYBRID",
+      "positiveMeans": "HYBRID_LOWER_MAE",
+      "dateBlockCount": 82,
+      "sampleCount": 1476,
+      "bootstrapDraws": 5000,
+      "seed": 20260925,
+      "observedDifferenceMm": -5.2933604336042854e-8,
+      "confidenceInterval95Mm": [
+        -1.4360433604335977e-7,
+        4.252710027100298e-8
+      ],
+      "probabilityPositiveInBootstrap": 0.131
+    },
+    {
+      "testYear": 2024,
+      "horizonHours": 6,
+      "unit": "mm",
+      "estimand": "MAE_LSTM_MINUS_MAE_HYBRID",
+      "positiveMeans": "HYBRID_LOWER_MAE",
+      "dateBlockCount": 82,
+      "sampleCount": 1066,
+      "bootstrapDraws": 5000,
+      "seed": 20260930,
+      "observedDifferenceMm": -5.409662288930583e-7,
+      "confidenceInterval95Mm": [
+        -0.0000011536585365853667,
+        6.638836772983202e-8
+      ],
+      "probabilityPositiveInBootstrap": 0.0392
+    },
+    {
+      "testYear": 2025,
+      "horizonHours": 1,
+      "unit": "mm",
+      "estimand": "MAE_LSTM_MINUS_MAE_HYBRID",
+      "positiveMeans": "HYBRID_LOWER_MAE",
+      "dateBlockCount": 76,
+      "sampleCount": 1404,
+      "bootstrapDraws": 5000,
+      "seed": 20260918,
+      "observedDifferenceMm": 2.051495726495722e-7,
+      "confidenceInterval95Mm": [
+        -2.5904558404558403e-7,
+        6.875974025974026e-7
+      ],
+      "probabilityPositiveInBootstrap": 0.807
+    },
+    {
+      "testYear": 2025,
+      "horizonHours": 6,
+      "unit": "mm",
+      "estimand": "MAE_LSTM_MINUS_MAE_HYBRID",
+      "positiveMeans": "HYBRID_LOWER_MAE",
+      "dateBlockCount": 76,
+      "sampleCount": 1014,
+      "bootstrapDraws": 5000,
+      "seed": 20260923,
+      "observedDifferenceMm": 0.0000026632642998027587,
+      "confidenceInterval95Mm": [
+        -3.831854043392584e-7,
+        0.000006248874999999993
+      ],
+      "probabilityPositiveInBootstrap": 0.9552
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildTa01IncrementalEquilibrium, runFem2D, verifyCstPatchTest, verifyGlobalAffineElasticityBenchmark } from "../src/core/fem-2d.js";
+import { buildTa01IncrementalEquilibrium, runFem2D, verifyCstPatchTest, verifyGlobalAffineBiotPressureBenchmark, verifyGlobalAffineElasticityBenchmark } from "../src/core/fem-2d.js";
 import { parseNasaPowerDailyCsv } from "../src/core/rainfall-history.js";
 import { generateTa01Dataset, runTa01FemCase, ta01DatasetToCsv } from "../src/core/study-case-ta01.js";
 
@@ -61,6 +61,17 @@ test("el ensamblaje y solver FEM reproducen una solución elástica analítica g
   assert.ok(benchmark.maximumAbsoluteDisplacementErrorM < 1e-7);
   assert.ok(benchmark.solverRelativeResidual < 1e-8);
   assert.equal(benchmark.elementCount, benchmark.meshX * benchmark.meshY * 2);
+});
+
+test("la carga de presión de poros de Biot reproduce una solución analítica global", () => {
+  const benchmark = verifyGlobalAffineBiotPressureBenchmark();
+  assert.equal(benchmark.passed, true);
+  assert.equal(benchmark.porePressureKpa, 120);
+  assert.equal(benchmark.biotCoefficient, 0.85);
+  assert.ok(benchmark.rightBoundaryTractionKpa < benchmark.sigmaXXKpa);
+  assert.ok(benchmark.topBoundaryTractionKpa < benchmark.sigmaYYKpa);
+  assert.ok(benchmark.maximumAbsoluteDisplacementErrorM < 1e-7);
+  assert.ok(benchmark.solverRelativeResidual < 1e-8);
 });
 
 test("el equilibrio incremental reproduce el campo FEM inducido por lluvia", () => {

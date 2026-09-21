@@ -119,8 +119,8 @@ def add_gradients(*groups):
     return {name: sum(group[name] for group in groups) for name in groups[0]}
 
 
-def load_lstm(project_dir: Path, horizon: int, lstm_module):
-    artifact = json.loads((project_dir / "data" / "models" / f"ta01-lstm-{horizon}h.json").read_text(encoding="utf-8"))
+def load_lstm(model_path: Path, lstm_module):
+    artifact = json.loads(model_path.read_text(encoding="utf-8"))
     network = lstm_module.LstmRegressor(len(lstm_module.FEATURES), artifact["architecture"]["hiddenUnits"], artifact["training"]["seed"])
     network.parameters = {name: np.asarray(value, dtype=np.float64) for name, value in artifact["model"]["weights"].items()}
     feature_mean = np.asarray([artifact["model"]["featureMean"][name] for name in lstm_module.FEATURES], dtype=np.float64).reshape(1, 1, -1)
@@ -216,6 +216,8 @@ def main():
     parser.add_argument("--learning-rate", type=float, default=0.0015)
     parser.add_argument("--seed", type=int, default=20260917)
     parser.add_argument("--input-prefix", default="data/generated/ta01-fem-500")
+    parser.add_argument("--lstm-model", default=None)
+    parser.add_argument("--ridge-predictions", default=None)
     parser.add_argument("--output", default=None)
     parser.add_argument("--predictions", default=None)
     args = parser.parse_args()
@@ -224,7 +226,13 @@ def main():
     lstm_module = load_lstm_module(project_dir)
     prefix = project_dir / args.input_prefix
     datasets = {name: lstm_module.make_sequences(lstm_module.read_csv(Path(f"{prefix}-{name}.csv")), 6, args.horizon) for name in ["train", "validation", "test"]}
-    lstm_artifact, lstm_network, lstm_feature_mean, lstm_feature_std = load_lstm(project_dir, args.horizon, lstm_module)
+    lstm_path = project_dir / (args.lstm_model or f"data/models/ta01-lstm-{args.horizon}h.json")
+    ridge_path = project_dir / (args.ridge_predictions or f"data/generated/ta01-baseline-{args.horizon}h-test-predictions.csv")
+    lstm_artifact, lstm_network, lstm_feature_mean, lstm_feature_std = load_lstm(lstm_path, lstm_module)
+    expected_split = (project_dir / f"{args.input_prefix}-split-manifest.json").resolve()
+    lstm_split = (project_dir / lstm_artifact["dataset"]["splitManifest"]).resolve()
+    if lstm_split != expected_split:
+        raise ValueError("La LSTM y el conjunto del corrector usan particiones distintas")
     target_mean = float(lstm_artifact["model"]["targetDeltaMean"])
     target_std = float(lstm_artifact["model"]["targetDeltaStandardDeviation"])
     base_y = {name: lstm_standardized_delta(lstm_network, dataset, lstm_feature_mean, lstm_feature_std) for name, dataset in datasets.items()}
@@ -351,7 +359,7 @@ def main():
         _, lstm_prediction = lstm_module.predict_physical(lstm_network, dataset, lstm_feature_mean, lstm_feature_std, target_mean, target_std)
         evaluation["lstm"] = metric_values(dataset.actual, lstm_prediction)
         if name == "test":
-            ridge = ridge_predictions(project_dir / "data" / "generated" / f"ta01-baseline-{args.horizon}h-test-predictions.csv", dataset.metadata)
+            ridge = ridge_predictions(ridge_path, dataset.metadata)
             evaluation["ridgeComparable"] = metric_values(dataset.actual, ridge)
         else:
             ridge = None
@@ -410,7 +418,7 @@ def main():
     prediction_path.parent.mkdir(parents=True, exist_ok=True)
     with prediction_path.open("w", encoding="utf-8", newline="") as handle:
         fields = ["scenario_id", "origin_hour", "target_hour", "actual_displacement_mm", "persistence_prediction_mm", "ridge_prediction_mm", "lstm_prediction_mm", "physics_guided_unconstrained_prediction_mm", "physics_guided_prediction_mm", "interval_lower_mm", "interval_upper_mm", "physics_guided_error_mm"]
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         for index, item in enumerate(datasets["test"].metadata):
             writer.writerow({

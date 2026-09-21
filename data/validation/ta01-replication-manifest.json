@@ -1,18 +1,77 @@
 {
   "id": "TA01-RESEARCH-SUPPLEMENT-V1",
-  "generatedAt": "2026-09-17T03:50:21.724Z",
+  "generatedAt": "2026-09-17T23:37:02.496Z",
   "scientificStatus": "MATERIAL_SUPLEMENTARIO_SEMISINTETICO_NO_VALIDACION_DE_CAMPO",
   "datasetId": "TA01-DATASET-S500-SEED20260915",
-  "split": "350 escenarios entrenamiento / 75 validación / 75 prueba, sin mezclar horas de un escenario",
+  "split": "350 escenarios entrenamiento / 75 validación / 75 prueba, sin mezclar fechas de lluvia; no es un holdout cronológico",
+  "splitMethod": "SOURCE_DATE_GROUP_SPLIT_WITH_EXTREME_EVENT_HOLDOUT",
+  "sourceDateCounts": {
+    "train": 346,
+    "validation": 74,
+    "test": 75
+  },
+  "chronologicalHoldout": {
+    "method": "SOURCE_DATE_CHRONOLOGICAL_HOLDOUT",
+    "cutoffs": {
+      "validationFrom": "2024-01-01",
+      "testFrom": "2025-01-01"
+    },
+    "scenarioCounts": {
+      "train": 340,
+      "validation": 82,
+      "test": 78
+    },
+    "sourceDateCounts": {
+      "train": 337,
+      "validation": 82,
+      "test": 76
+    },
+    "limitation": "Prueba futura en 2025 para el mismo FEM y geometría TA-01; no son desplazamientos observados ni validación de mina."
+  },
+  "rollingOrigin": [
+    {
+      "testYear": 2024,
+      "cutoffs": {
+        "validationFrom": "2023-01-01",
+        "testFrom": "2024-01-01",
+        "testBefore": "2025-01-01"
+      },
+      "scenarioCounts": {
+        "train": 258,
+        "validation": 82,
+        "test": 82
+      },
+      "excludedFutureScenarios": 78
+    },
+    {
+      "testYear": 2025,
+      "cutoffs": {
+        "validationFrom": "2024-01-01",
+        "testFrom": "2025-01-01"
+      },
+      "scenarioCounts": {
+        "train": 340,
+        "validation": 82,
+        "test": 78
+      },
+      "excludedFutureScenarios": 0
+    }
+  ],
   "riskDetection": {
     "target": "rainfall_induced_max_displacement_mm",
-    "thresholdMm": 0.00082,
+    "thresholdMm": 0.0008,
     "thresholdDefinition": "Percentil 95 calculado exclusivamente en la partición de entrenamiento",
     "positiveClass": "desplazamiento acumulado inducido por lluvia igual o superior al umbral",
     "limitation": "No representa una alarma minera calibrada ni una falla real; mide discriminación interna de episodios altos del FEM semisintético."
   },
   "outputs": [
     "data/validation/ta01-model-comparison.csv",
+    "data/validation/ta01-chronological-model-comparison.csv",
+    "data/validation/ta01-chronological-bootstrap.json",
+    "data/validation/ta01-chronological-stratified.csv",
+    "data/validation/ta01-rolling-origin-model-comparison.csv",
+    "data/validation/ta01-rolling-origin-bootstrap.json",
+    "data/validation/ta01-rolling-model-selection.csv",
     "data/validation/ta01-ablation-summary.csv",
     "data/validation/ta01-robustness-summary.csv",
     "data/validation/ta01-fem-mesh-summary.csv",
@@ -20,29 +79,197 @@
     "data/validation/spatial-pinn-validation-summary.csv"
   ],
   "sources": {
+    "data/rainfall/pasco-nasa-power-2020-2025.csv": {
+      "sha256": "929141bc669ced424ce537d372e231fcaa9f9566010bcf9914af7ea32cb639d2"
+    },
+    "data/generated/ta01-fem-500.csv": {
+      "sha256": "c05e507388577f3f15d6cd0740f6730a17d3d9242d8e3de7a4b5d55ef4effb3b"
+    },
+    "data/generated/ta01-fem-500-manifest.json": {
+      "sha256": "d1035296bf2e476ecbb91d8ec8202a169d7e9993c82559e4e5214206ad9b874e"
+    },
+    "data/generated/ta01-fem-500-split-manifest.json": {
+      "sha256": "629239d6a22aa7f5193d752d004fe44fe64fac1d1d404ad79b3abfd8f338db0a"
+    },
     "data/generated/ta01-fem-500-train.csv": {
-      "sha256": "c2297c5eab1ec6f37b20bf4e67c2387cb72aa5d88f47ba6584bb9cf1eb3bb010"
+      "sha256": "6015faf78fac4329503e8d1524b7b0b0ca286fe76fd71cb8cf9d95f1ed15811f"
+    },
+    "data/generated/ta01-fem-500-validation.csv": {
+      "sha256": "0110d260106ed3c12c77f20866b1c0b7ed3ca755883c92e9753dd8964d8e5447"
     },
     "data/generated/ta01-fem-500-test.csv": {
-      "sha256": "cdf939d4d75418f2b02983a7df2f013b09f832e31f62dbb736befbce8bfc80a3"
+      "sha256": "a5977389cfce11984b4aae046fa0651d24984ca1ef4bd9e2bb0d5db65677e711"
+    },
+    "data/generated/ta01-fem-500-chronological-split-manifest.json": {
+      "sha256": "cb80c3e8627872fa5597452a434cac72bec27f280898938469a097cb1ae065d6"
+    },
+    "data/generated/ta01-fem-500-chronological-train.csv": {
+      "sha256": "26eb247014a3af6195cec322bbebf9ccd94a15464a1517cbc4cb9ca9881045ef"
+    },
+    "data/generated/ta01-fem-500-chronological-validation.csv": {
+      "sha256": "2a0bd08afce1d1b41b1346227094f7b4e3dd846e70abf8c4f3afb634ceec4747"
+    },
+    "data/generated/ta01-fem-500-chronological-test.csv": {
+      "sha256": "1eaf564586850838fc6c9756607ca3538607827060915bee6a71103ba007e1f5"
+    },
+    "data/generated/ta01-fem-500-backtest-2024-split-manifest.json": {
+      "sha256": "621f6f8c9ad899f7d6e798791f8bd4534e44f0bc07d856528baa4e1fd3f9c636"
+    },
+    "data/generated/ta01-fem-500-backtest-2024-train.csv": {
+      "sha256": "ff24b54604ea56dd9b6b9b2a85dcb10c90fe5ae1a22135093b04119c989fa85f"
+    },
+    "data/generated/ta01-fem-500-backtest-2024-validation.csv": {
+      "sha256": "c6ba4aadbf3fbf3988a17ad9be2539f5a21c2b28da83351e70f47b90810c3996"
+    },
+    "data/generated/ta01-fem-500-backtest-2024-test.csv": {
+      "sha256": "2a0bd08afce1d1b41b1346227094f7b4e3dd846e70abf8c4f3afb634ceec4747"
+    },
+    "src/core/fem-2d.js": {
+      "sha256": "cc4607c6a5fffd642c8fa8879dca31cae66eaceb86881873572f7dc4e02af70f"
+    },
+    "src/core/study-case-ta01.js": {
+      "sha256": "ab2c0f19487d05e08afb337d3480f532d5c28321e9d85959d037edd501814be7"
+    },
+    "src/core/temporal-baseline.js": {
+      "sha256": "ff02459a41abef7e76ae4460bc1f87f2953c2c9460b156e1ee41075d0ea58ed4"
+    },
+    "src/core/model-selection.js": {
+      "sha256": "1ad1f2698343a63579d09a30b76069a69860d2201feecf916c4969fc67a62cb3"
+    },
+    "scripts/generate-fem-dataset.js": {
+      "sha256": "7d3ffaf7fc7b0bc9bf10285d1b60840024f16a7ff62dcdf09299f1ae11cb5d68"
+    },
+    "scripts/split-fem-dataset.js": {
+      "sha256": "00d8e90accbfcae4ad5446a92be74e33449eca9e17a24d0889e05a5a3da5c038"
+    },
+    "scripts/split-fem-chronological.js": {
+      "sha256": "1752cc506c05e4124b339b1a4e4e4224ae147ac4d639357ce899b17c4c551ae3"
+    },
+    "scripts/train-temporal-baseline.js": {
+      "sha256": "693d22ee930b93cb69cefbe56487398fc18013f3ba8d2146448818fda3696a06"
+    },
+    "scripts/train-lstm.py": {
+      "sha256": "17ca3ad0a6764550b9dac3946f051494341749fa7179ba9f56acafd5b89af35d"
+    },
+    "scripts/train-physics-guided.py": {
+      "sha256": "3e89719b6f79ca2579049b8bda087bba934da9767dc3307f0f1e11b26a207aa6"
+    },
+    "scripts/generate-research-summary.js": {
+      "sha256": "1e41ea8e5718edc535c902d5c47fd4b1a0b17a5aa8980e455763b724644eb521"
+    },
+    "data/generated/ta01-baseline-1h.json": {
+      "sha256": "0084d9baced0ddf09bb33fddb0837b9044753fbc7e48e150e9da0c6d20b58284"
+    },
+    "data/generated/ta01-baseline-1h-test-predictions.csv": {
+      "sha256": "2f70e44a63ead821ce2fc1e541e677d5332e1fe07a7380733532841e7004b4d0"
+    },
+    "data/models/ta01-lstm-1h.json": {
+      "sha256": "aded8eb9eba27b4a830100ceab6fa6b655f148a7646291ee91bb645b3870d13c"
+    },
+    "data/generated/ta01-lstm-1h-test-predictions.csv": {
+      "sha256": "274af1291703d68d24add7f8dc657f35f44c1097123ea35f010c98d8a3628a47"
     },
     "data/models/ta01-physics-guided-1h.json": {
-      "sha256": "c4e0a39aa7dfb2c66295c2028b8973765d06a98c3966bda5d6048faf0beb2e64"
+      "sha256": "15ea8cc7e5f9dbd968c126ee16598f68a22d772607b76254259a4c123bc34dc3"
     },
     "data/generated/ta01-physics-guided-1h-test-predictions.csv": {
-      "sha256": "5900efdcea29bf610755f596e96e12691153d019a9cb4243182832d1aa74df2b"
+      "sha256": "30d7ff6afae4897d6daf2e620fc3e561435df740ca1d69fb3d25ea3945840b97"
+    },
+    "data/generated/ta01-chronological-baseline-1h.json": {
+      "sha256": "742d33a54699042ec2c2a17cb3fe9df6411e40694e4c979faa68183df17e4c45"
+    },
+    "data/generated/ta01-chronological-baseline-1h-test-predictions.csv": {
+      "sha256": "3c0dd6a5e3964518057e230118cd574914486680c252313f1f6b4212826db55c"
+    },
+    "data/models/ta01-chronological-lstm-1h.json": {
+      "sha256": "0c44fbd04d809a7f71ab1e7614a0bafa73f66c1e51e6c573cb3984e0ff16b9e1"
+    },
+    "data/generated/ta01-chronological-lstm-1h-test-predictions.csv": {
+      "sha256": "7c80115734f9d0138bdab787836a56b0e5480afdd549dbdd3526e89b87dd83a9"
+    },
+    "data/models/ta01-chronological-physics-guided-1h.json": {
+      "sha256": "3404b9d0614f9f0b737a530fd45b62af0aff226253eccc2317d20745b3ea3e2c"
+    },
+    "data/generated/ta01-chronological-physics-guided-1h-test-predictions.csv": {
+      "sha256": "9e0957203ac3cb1acf56af607588427a6a3eb6e840b943c40855f8d3c89bd9eb"
+    },
+    "data/generated/ta01-baseline-6h.json": {
+      "sha256": "d4d2da5b9350e53caba86b0f92ef348352def647f9cd0adf6ec88cdc47ffeed7"
+    },
+    "data/generated/ta01-baseline-6h-test-predictions.csv": {
+      "sha256": "71fad4de1e42d9d8add8045a0cbab27feee6417fc1e47a5395fb23b552d74c0e"
+    },
+    "data/models/ta01-lstm-6h.json": {
+      "sha256": "549f37a0d7410709ad97327d2d3a517bfd42e6a643abb30a1c5cb55b3aa3d4c2"
+    },
+    "data/generated/ta01-lstm-6h-test-predictions.csv": {
+      "sha256": "d98254f04495fc564a792da905b89850cc1276fad94a6e469f735b53f2cf0482"
     },
     "data/models/ta01-physics-guided-6h.json": {
-      "sha256": "588faa202e0c68af418c5a2013bcda6e7f861b425c1209fd7eb9be64fec9f352"
+      "sha256": "3c6bc70ccebbc7c9efb6ed1245cce09a04b964182b484c0bf9ed409790f87aa4"
     },
     "data/generated/ta01-physics-guided-6h-test-predictions.csv": {
-      "sha256": "f6885a6a194154612600f630ca368a4a771fd22994e88065145883fb6b61c71e"
+      "sha256": "e05c6be3ec7fda5776f71abadf7077acd87f3727207e0c4483ef116f6c38d318"
+    },
+    "data/generated/ta01-chronological-baseline-6h.json": {
+      "sha256": "732400437bc82be7351707ce6259113a7cd575fae6d21e70c735a990f4199994"
+    },
+    "data/generated/ta01-chronological-baseline-6h-test-predictions.csv": {
+      "sha256": "a6688b459c18ea04686e2ebc019239adaa0c19e29d1ff5929fe032fad5ca08a4"
+    },
+    "data/models/ta01-chronological-lstm-6h.json": {
+      "sha256": "85a99090eb1532ce17c1b3a3a5add4a680899ae3325e6532125cb5dd0eeaef4d"
+    },
+    "data/generated/ta01-chronological-lstm-6h-test-predictions.csv": {
+      "sha256": "2caade57e72dd218ed5ed2d673d15a55667d79f2985daca4b12d6b54907f63d9"
+    },
+    "data/models/ta01-chronological-physics-guided-6h.json": {
+      "sha256": "ca6348ff2eb8c41a5fe758fdddd3c0c226daeb6e0011c401bbd2b0d11ad20f2e"
+    },
+    "data/generated/ta01-chronological-physics-guided-6h-test-predictions.csv": {
+      "sha256": "8545aeeb412e47d1fa320bb09fb2913b4f5c5b572bf5c3a1bc3fc96744296a8b"
+    },
+    "data/generated/ta01-backtest-2024-baseline-1h.json": {
+      "sha256": "4c8eb0f184e61f05fc038c646ef532c798d6a0347dfed52e75fb615b59bd052b"
+    },
+    "data/generated/ta01-backtest-2024-baseline-1h-test-predictions.csv": {
+      "sha256": "eb5c69f840285bd59525df289c103a58e807d746d1e2dcb3f1d2ba74f390337f"
+    },
+    "data/models/ta01-backtest-2024-lstm-1h.json": {
+      "sha256": "f58ed65d71c9434da6583872f2fee1e3286ee9bd8c6dc03c0241b6ab37d78d84"
+    },
+    "data/generated/ta01-backtest-2024-lstm-1h-test-predictions.csv": {
+      "sha256": "9f40b538c3d1610d67fd4b090e8fabd056b143c1545576facd47fc8737c46617"
+    },
+    "data/models/ta01-backtest-2024-physics-guided-1h.json": {
+      "sha256": "aba6303a68ceec0368ab8a9e1629d370f2e79ce97e48bd6a331e25c84c7668e6"
+    },
+    "data/generated/ta01-backtest-2024-physics-guided-1h-test-predictions.csv": {
+      "sha256": "575a6aba1eba7b3080a44b683645567dffd2c5547902b8c72b1e2fe682784662"
+    },
+    "data/generated/ta01-backtest-2024-baseline-6h.json": {
+      "sha256": "3f3e2c1f84e7cff761ba205d1037e599c97fb1d648993447725ef35d0c074f7b"
+    },
+    "data/generated/ta01-backtest-2024-baseline-6h-test-predictions.csv": {
+      "sha256": "3672499b6fa7cc9719fb3bba3032b157e533b52f4e44d136d187c453d783efb1"
+    },
+    "data/models/ta01-backtest-2024-lstm-6h.json": {
+      "sha256": "0dfd5bb35677a3cd9daf8e55e03ec7c9fab554656f5331e82362cebe8455881b"
+    },
+    "data/generated/ta01-backtest-2024-lstm-6h-test-predictions.csv": {
+      "sha256": "bc5dc8503b1ab6fab379d840457bc891488c95f88dcd56a558aa09965856cbe8"
+    },
+    "data/models/ta01-backtest-2024-physics-guided-6h.json": {
+      "sha256": "962ce7aa2c61dccd2b433d4893f7ed4a1817b3fe2b490031fcc09c9ae6fe4813"
+    },
+    "data/generated/ta01-backtest-2024-physics-guided-6h-test-predictions.csv": {
+      "sha256": "a6fcbe04fec08511a78f0c83266c5c62e7c4198cf1ad9fb7714ab4356a33260c"
     },
     "data/validation/ta01-model-robustness.json": {
-      "sha256": "b7550212e2aba1d0aaecefa35b939587d73023d04e131ca6ef6b7d16a043b51c"
+      "sha256": "a36963db2aabb221c485a2875f9ff7b0716e37778efea2809f0fc42f08d5461a"
     },
     "data/validation/ta01-fem-mesh-sensitivity.json": {
-      "sha256": "de2a34d81859a019224af1671bed56d600f9e1bdf759ea3cd64e958f544fcdee"
+      "sha256": "f70fb044d82ea66aac5c95e4de4e69309bff0dc7a049d2018a9ed91d760bffd8"
     },
     "data/validation/spatial-pinn-manufactured-elasticity.json": {
       "sha256": "7cfe0599a539c8c4e80770510192b0167a1fcd3a3085e0faefe210f6b2415d49"

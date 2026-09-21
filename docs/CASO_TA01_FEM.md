@@ -68,12 +68,63 @@ Opciones disponibles: `--seed`, `--mesh-x`, `--mesh-y` y `--output`. Junto al CS
 
 Cada fila representa una hora de un escenario. La clave lógica es `scenario_id + simulation_hour`; las columnas incluyen unidades en el nombre. El objetivo inicial recomendado para la LSTM es `rainfall_induced_max_displacement_mm`.
 
-La separación entrenamiento/validación/prueba debe hacerse por `scenario_id`, nunca mezclando al azar horas de un mismo escenario. Una división inicial apropiada es 70/15/15 por escenario, manteniendo los eventos más extremos en validación y prueba.
+La separación entrenamiento/validación/prueba se hace por **fecha de lluvia**: todos los escenarios y horas de una misma fecha permanecen juntos. Esto impide reutilizar el mismo evento meteorológico al ajustar y evaluar. Se conserva una proporción 70/15/15 por número de escenarios y se reservan los eventos más extremos para validación y prueba. No es una partición cronológica por años; tampoco demuestra transferencia a otras geometrías o fuentes meteorológicas.
 
-La división reproducible ya generada contiene 350 escenarios de entrenamiento, 75 de validación y 75 de prueba. El evento de 102.88 mm/día se reserva para prueba y el siguiente evento extremo para validación. Para reconstruirla:
+La división reproducible ya generada contiene 350 escenarios de entrenamiento, 75 de validación y 75 de prueba. El evento de 102.88 mm/día se reserva para prueba y el siguiente evento extremo de fecha distinta para validación. Para reconstruirla:
 
 ```bash
 npm run split:fem
+```
+
+### Comprobación adicional fuera de tiempo
+
+Existe una segunda partición estrictamente cronológica del **mismo** conjunto de 500 escenarios: 340 escenarios de 2020–2023 para entrenamiento, 82 de 2024 para validación y 78 de 2025 para prueba. Ninguna fecha de lluvia ni escenario cruza periodos. Los modelos se vuelven a entrenar para esta partición; los pesos del experimento anterior no se reutilizan. La tabla `data/validation/ta01-chronological-model-comparison.csv` compara las mismas ventanas de 2025 para los cuatro métodos.
+
+| Horizonte | Ventanas | Persistencia MAE | Ridge MAE | LSTM MAE | Híbrido MAE |
+|---|---:|---:|---:|---:|---:|
+| 1 h | 1404 | 0.00002167 mm | 0.00002055 mm | 0.00000540 mm | 0.00000519 mm |
+| 6 h | 1014 | 0.00014399 mm | 0.00015151 mm | 0.00005769 mm | 0.00005502 mm |
+
+El híbrido reduce levemente el MAE *observado* de la LSTM en ambos horizontes (aprox. 3,9 % y 4,6 %). Sin embargo, el bootstrap pareado por **76 fechas de lluvia**, 5000 remuestreos y semilla registrada da intervalos del 95 % para `MAE(LSTM) − MAE(híbrido)` de `[−2,59×10⁻⁷, 6,88×10⁻⁷] mm` a 1 h y `[−3,83×10⁻⁷, 6,25×10⁻⁶] mm` a 6 h. **Ambos incluyen cero**: esta muestra no demuestra una ventaja estadísticamente concluyente del híbrido. El cálculo y su semilla están en `data/validation/ta01-chronological-bootstrap.json`; cuantifica variación entre fechas, no incertidumbre del FEM ni generalización a otra mina.
+
+A 6 h, ridge **empeora** respecto de persistencia. La cobertura empírica de los intervalos nominales del 95 % es 94,02 % a 1 h y 92,11 % a 6 h: el intervalo de 6 h queda subcubierto. La prueba de 2025 alcanza 10,73 mm/día como máximo, mientras entrenamiento contiene un evento de 102,88 mm/día; por tanto, **no** prueba extrapolación a lluvias extremas futuras. Los desplazamientos objetivos siguen siendo salidas del FEM propio, no observaciones de una mina.
+
+La tabla `data/validation/ta01-chronological-stratified.csv` separa los errores por lluvia diaria (0, 0–1, 1–5 y ≥5 mm) y por objetivo de desplazamiento nulo/positivo. En el subconjunto ≥5 mm hay **solo tres fechas** de prueba: a 6 h, el MAE híbrido sube de `0.00005502 mm` global a `0.00053952 mm`. Es un diagnóstico descriptivo con pocas fechas, no una estimación fiable del rendimiento bajo tormentas fuertes. En las ventanas cuyo desplazamiento objetivo es cero, persistencia es perfecta por definición; por eso el promedio global tampoco debe interpretarse sin examinar las ventanas con movimiento.
+
+### Segundo origen temporal: prueba 2024
+
+Para comprobar que el resultado no dependa de un único año, se añadió otro corte: entrenamiento 2020–2022 (258 escenarios), validación 2023 (82), prueba 2024 (82) y **exclusión íntegra de 2025** (78). Se entrenaron nuevos pesos para las cuatro alternativas. `data/validation/ta01-rolling-origin-model-comparison.csv` reúne ambos orígenes temporales y `data/validation/ta01-rolling-origin-bootstrap.json` registra los intervalos pareados por fecha.
+
+| Prueba | Horizonte | MAE LSTM | MAE híbrido | Lectura |
+|---|---:|---:|---:|---|
+| 2024 | 1 h | 0.00000435 mm | 0.00000440 mm | LSTM ligeramente mejor |
+| 2024 | 6 h | 0.00002909 mm | 0.00002964 mm | LSTM ligeramente mejor |
+| 2025 | 1 h | 0.00000540 mm | 0.00000519 mm | Híbrido ligeramente mejor |
+| 2025 | 6 h | 0.00005769 mm | 0.00005502 mm | Híbrido ligeramente mejor |
+
+Los cuatro intervalos de confianza del 95 % para la diferencia de MAE incluyen cero. **No se sostiene que el corrector físico supere de forma robusta a la LSTM** en estos datos. Las restricciones físicas sí siguen verificándose como propiedades del modelo, pero eso es una conclusión distinta de la precisión predictiva. Estos dos cortes comparten el mismo generador FEM y una sola geometría, y 2024/2025 carecen de lluvias tan extremas como las del entrenamiento.
+
+La selección entre LSTM e híbrido se simuló **sin usar la prueba para decidir**: se elige el menor MAE en el año de validación y recién después se observa el año de prueba. En tres de las cuatro combinaciones año–horizonte, esa elección no coincide con el menor MAE de prueba (`data/validation/ta01-rolling-model-selection.csv`). Las diferencias son pequeñas y sus intervalos incluyen cero; esto es una señal de selección inestable en el banco disponible, no una tasa de fallo extrapolable a minas. El visor por ello presenta ambos pronósticos como experimentales y no declara un ganador operacional.
+
+Para generar el corte adicional antes de entrenar sus modelos:
+
+```bash
+npm run split:fem:chronological -- --validation-from=2023-01-01 --test-from=2024-01-01 --test-before=2025-01-01 --output-prefix=data/generated/ta01-fem-500-backtest-2024
+```
+
+Se usan los comandos de entrenamiento detallados a continuación, sustituyendo `ta01-fem-500-chronological` por `ta01-fem-500-backtest-2024`, `ta01-chronological` por `ta01-backtest-2024` y manteniendo los horizontes 1 y 6 h. Finalmente, `npm run report:research` regenera ambas tablas e intervalos.
+
+Para reproducir los artefactos cronológicos después de generar el conjunto de 500 escenarios:
+
+```bash
+npm run split:fem:chronological
+npm run train:baseline -- --horizon=1 --input-prefix=data/generated/ta01-fem-500-chronological --output=data/generated/ta01-chronological-baseline-1h.json
+npm run train:baseline -- --horizon=6 --input-prefix=data/generated/ta01-fem-500-chronological --output=data/generated/ta01-chronological-baseline-6h.json
+npm run train:lstm -- --horizon=1 --input-prefix=data/generated/ta01-fem-500-chronological --output=data/models/ta01-chronological-lstm-1h.json --predictions=data/generated/ta01-chronological-lstm-1h-test-predictions.csv --ridge-predictions=data/generated/ta01-chronological-baseline-1h-test-predictions.csv
+npm run train:lstm -- --horizon=6 --input-prefix=data/generated/ta01-fem-500-chronological --output=data/models/ta01-chronological-lstm-6h.json --predictions=data/generated/ta01-chronological-lstm-6h-test-predictions.csv --ridge-predictions=data/generated/ta01-chronological-baseline-6h-test-predictions.csv
+npm run train:physics -- --horizon=1 --input-prefix=data/generated/ta01-fem-500-chronological --lstm-model=data/models/ta01-chronological-lstm-1h.json --ridge-predictions=data/generated/ta01-chronological-baseline-1h-test-predictions.csv --output=data/models/ta01-chronological-physics-guided-1h.json --predictions=data/generated/ta01-chronological-physics-guided-1h-test-predictions.csv
+npm run train:physics -- --horizon=6 --input-prefix=data/generated/ta01-fem-500-chronological --lstm-model=data/models/ta01-chronological-lstm-6h.json --ridge-predictions=data/generated/ta01-chronological-baseline-6h-test-predictions.csv --output=data/models/ta01-chronological-physics-guided-6h.json --predictions=data/generated/ta01-chronological-physics-guided-6h-test-predictions.csv
+npm run report:research
 ```
 
 ## Línea base temporal
@@ -87,7 +138,7 @@ npm run train:baseline -- --horizon=1
 npm run train:baseline -- --horizon=6
 ```
 
-En la prueba aislada, la línea base restringida reduce el MAE frente a persistencia aproximadamente 52.8% a una hora y 54.1% a seis horas. Estos resultados describen el conjunto FEM semisintético y no demuestran desempeño sobre un talud real.
+En la prueba aislada, la línea base restringida reduce el MAE frente a persistencia aproximadamente 33,6 % a una hora y 22,2 % a seis horas. Estos resultados describen el conjunto FEM semisintético dividido por fecha de lluvia y no demuestran desempeño sobre un talud real.
 
 ## LSTM entrenada
 
@@ -101,7 +152,7 @@ npm run test:lstm
 
 La prueba del núcleo compara la retropropagación con una derivada numérica. Con la semilla registrada, el error relativo observado es inferior a 1×10⁻⁸.
 
-Sobre las mismas ventanas de prueba, la LSTM obtiene un MAE de `0.00000673 mm` y RMSE de `0.00003670 mm` a una hora, frente a `0.00001304 mm` y `0.00004992 mm` de ridge. A seis horas obtiene MAE `0.00005466 mm` y RMSE `0.00028869 mm`, frente a `0.00007637 mm` y `0.00026834 mm` de ridge. Por ello la LSTM mejora el MAE en ambos horizontes, pero ridge conserva por poco el menor RMSE a seis horas.
+Sobre las mismas ventanas de prueba, la LSTM obtiene un MAE de `0.00000858 mm` y RMSE de `0.00005466 mm` a una hora, frente a `0.00001181 mm` y `0.00006266 mm` de ridge. A seis horas obtiene MAE `0.00006332 mm` y RMSE `0.00042635 mm`, frente a `0.00008855 mm` y `0.00044652 mm` de ridge. En esta partición disjunta por fecha, la LSTM mejora ambas métricas en los dos horizontes; esto sigue siendo una evaluación semisintética.
 
 ### Inferencia integrada
 
@@ -113,9 +164,9 @@ Esta comparación es una validación embebida semisintética. La LSTM no se apli
 
 `scripts/train-physics-guided.py` entrena un MLP residual sobre la salida LSTM. La pérdida combina consistencia supervisada con FEM, desplazamiento acumulado no decreciente, sensibilidad a lluvia, sensibilidad al índice de seguridad, condición seca y regularización. La arquitectura separa las contribuciones de lluvia y seguridad para imponer sus signos de forma monótona. El conjunto de prueba registra cero violaciones condicionales para ambas variables.
 
-A una hora, el corrector obtiene MAE 0.00000623 mm y RMSE 0.00003354 mm, frente a 0.00000673 mm y 0.00003670 mm de la LSTM. A seis horas obtiene MAE 0.00005128 mm y RMSE 0.00027034 mm, frente a 0.00005466 mm y 0.00028869 mm de la LSTM. Ridge conserva por poco el menor RMSE a seis horas (`0.00026834 mm`), por lo que el híbrido no es uniformemente superior.
+A una hora, el corrector obtiene MAE `0.00000798 mm` y RMSE `0.00005093 mm`, frente a `0.00000858 mm` y `0.00005466 mm` de la LSTM. A seis horas obtiene MAE `0.00006176 mm` y RMSE `0.00041181 mm`, frente a `0.00006332 mm` y `0.00042635 mm` de la LSTM. Mejora las dos métricas en esta partición, aunque ello no prueba superioridad fuera del banco semisintético.
 
-El intervalo conformal se calcula con el conjunto de validación a cobertura nominal de 95%. En prueba alcanza 97,04% a una hora y 97,33% a seis horas. La desviación se informa como error de calibración y no se oculta ajustando el cuantil con el conjunto de prueba.
+El intervalo conformal se calcula con el conjunto de validación a cobertura nominal de 95 %. En prueba alcanza 96,07 % a una hora y 96,31 % a seis horas. La desviación se informa como error de calibración y no se oculta ajustando el cuantil con el conjunto de prueba.
 
 ```bash
 npm run train:physics -- --horizon=1
@@ -132,6 +183,8 @@ Este corrector opera sobre variables FEM agregadas. No evalúa residuos de equil
 El mismo artefacto ejecuta una prueba analítica de parche: dos elementos CST sometidos a un campo de desplazamiento afín deben reproducir una deformación constante exacta. El error máximo calculado es inferior a `1e-12`. Esta prueba verifica la matriz cinemática del elemento, no la calibración geotécnica del caso TA-01.
 
 También ejecuta una prueba global de elasticidad lineal sobre una malla rectangular de 12×8 celdas. Para el campo exacto `u_x=0, u_y=εy`, las tensiones son constantes y `div(σ)=0`; las tracciones se integran directamente sobre los bordes superior y derecho, mientras el empotramiento inferior y el rodillo izquierdo coinciden con los del solver. Al resolver la malla completa, el error nodal máximo es `1,62×10⁻¹¹ m` y el residuo relativo del solver `8,54×10⁻⁹`. A diferencia de la prueba local de parche, esto ejercita ensamblaje, cargas de contorno, restricciones y PCG. Sigue siendo un caso analítico de elasticidad homogénea: no valida el modelo de presión de poros, la geometría TA-01 ni el índice de seguridad, y no reemplaza un benchmark geotécnico publicado.
+
+Se añadió una segunda prueba global con presión de poros **uniforme** de `120 kPa` y coeficiente de Biot `0,85`. Para el mismo desplazamiento afín conocido, las tracciones externas se reducen en `αp` y el vector de carga de Biot debe compensar exactamente esa diferencia. El error nodal máximo es `1,60×10⁻¹¹ m` y el residuo del solver `8,58×10⁻⁹`. Esto verifica el ensamblaje y el signo de la carga mecánica de presión de poros; **no valida** infiltración transitoria, distribución real de presión, parámetros TA-01 ni estabilidad de una mina.
 
 ## Aproximación espacial informada por el FEM
 
@@ -196,13 +249,13 @@ Se comprobó la malla **mecánica** por separado: el mismo campo hidráulico can
 
 ### Ablación de componentes entrenados
 
-El JSON de cada horizonte incluye una ablación evaluada sobre el mismo conjunto de prueba reservado. Los grupos retirados se reemplazan por sus medias de entrenamiento para evitar usar estadísticas de prueba. El híbrido completo obtiene el menor MAE en ambos horizontes: `0.00000623 mm` a 1 h y `0.00005128 mm` a 6 h. Retirar hidrología produce la mayor degradación (`0.00003208 mm` y `0.00018988 mm`); retirar variables de estado FEM también degrada el MAE (`0.00000927 mm` y `0.00007178 mm`). La sustitución puede formar combinaciones fuera de la distribución conjunta original, por lo que debe interpretarse como evidencia interna del banco semisintético.
+El JSON de cada horizonte incluye una ablación evaluada sobre el mismo conjunto de prueba reservado. Los grupos retirados se reemplazan por sus medias de entrenamiento para evitar usar estadísticas de prueba. El híbrido completo obtiene el menor MAE en ambos horizontes: `0.00000798 mm` a 1 h y `0.00006176 mm` a 6 h. Retirar hidrología produce la mayor degradación (`0.00002571 mm` y `0.00016214 mm`); retirar variables de estado FEM también degrada el MAE (`0.00000936 mm` y `0.00007204 mm`). La sustitución puede formar combinaciones fuera de la distribución conjunta original, por lo que debe interpretarse como evidencia interna del banco semisintético.
 
 ### Robustez de las entradas
 
-`npm run validate:robustness` genera `data/validation/ta01-model-robustness.json`. El ruido de 5 % de la desviación de entrenamiento incrementa el MAE híbrido 34,19 % a 1 h y 28,51 % a 6 h. La pérdida aleatoria de 30 % de entradas, imputada con medias de entrenamiento, lo incrementa 153,61 % y 97,00 %. Esta prueba es interna y MCAR; justifica incorporar reglas de calidad de sensores antes de cualquier despliegue.
+`npm run validate:robustness` genera `data/validation/ta01-model-robustness.json`. El ruido de 5 % de la desviación de entrenamiento incrementa el MAE híbrido 53,88 % a 1 h y 46,10 % a 6 h. La pérdida aleatoria de 30 % de entradas, imputada con medias de entrenamiento, lo incrementa 133,96 % y 70,77 %. Esta prueba es interna y MCAR; justifica mantener reglas de calidad de sensores antes de cualquier despliegue.
 
-Un retraso de tres horas simulado mediante arrastre de la última observación cambia el MAE +3,85 % a 1 h y +0,25 % a 6 h. La partición estacional simplificada muestra mayor error en noviembre–abril que en mayo–octubre; no debe interpretarse como climatología local calibrada, sino como un control de estabilidad por época de la fuente de lluvia.
+Un retraso de tres horas simulado mediante arrastre de la última observación cambia el MAE −14,29 % a 1 h y −7,22 % a 6 h en este conjunto; **no** significa que retrasar sensores mejore un sistema real. La partición estacional simplificada muestra mayor error en noviembre–abril que en mayo–octubre; no debe interpretarse como climatología local calibrada, sino como un control de estabilidad por época de la fuente de lluvia.
 
 ## Material suplementario reproducible
 

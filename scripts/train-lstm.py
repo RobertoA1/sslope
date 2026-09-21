@@ -343,7 +343,7 @@ def main():
             "scenario_id", "origin_hour", "target_hour", "actual_displacement_mm", "persistence_prediction_mm",
             "ridge_prediction_mm", "lstm_unconstrained_prediction_mm", "lstm_prediction_mm", "lstm_error_mm",
         ]
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for index, item in enumerate(datasets["test"].metadata):
             writer.writerow({

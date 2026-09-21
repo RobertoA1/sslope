@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createForecast } from "./core/forecast-engine.js";
+import { summarizeValidationSelection } from "./core/model-selection.js";
 import { predictTa01SpatialRainfall } from "./core/ta01-spatial-inference.js";
 import { parseNasaPowerDailyCsv } from "./core/rainfall-history.js";
 import { OperationalRepository } from "./persistence.js";
@@ -219,6 +220,32 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/twin") return sendJson(res, 200, store.getTwinStatus(url.searchParams.get("sensorId")));
     if (req.method === "GET" && url.pathname === "/api/simulation") return sendJson(res, 200, { parameters: store.simulationParameters });
     if (req.method === "GET" && url.pathname === "/api/research") return sendJson(res, 200, store.getResearchStatus());
+    if (req.method === "GET" && url.pathname === "/api/research/chronological") {
+      const horizon = Number(url.searchParams.get("horizon") || 1);
+      const testYear = Number(url.searchParams.get("testYear") || 2025);
+      if (![1, 6].includes(horizon)) throw new Error("La evaluación cronológica admite horizontes de 1 o 6 horas");
+      if (![2024, 2025].includes(testYear)) throw new Error("La evaluación cronológica disponible prueba 2024 o 2025");
+      const prefix = testYear === 2024 ? "ta01-fem-500-backtest-2024" : "ta01-fem-500-chronological";
+      const modelPrefix = testYear === 2024 ? "ta01-backtest-2024" : "ta01-chronological";
+      const splitRelative = `data/generated/${prefix}-split-manifest.json`;
+      const [split, artifact, bootstrap] = await Promise.all([
+        readFile(path.join(generatedDataDir, `${prefix}-split-manifest.json`), "utf8").then(JSON.parse),
+        readFile(path.join(modelDataDir, `${modelPrefix}-physics-guided-${horizon}h.json`), "utf8").then(JSON.parse),
+        readFile(path.join(validationDataDir, "ta01-rolling-origin-bootstrap.json"), "utf8").then(JSON.parse)
+      ]);
+      if (artifact.dataset.splitManifest !== splitRelative) throw new Error("El modelo cronológico no corresponde a la partición mostrada");
+      return sendJson(res, 200, {
+        testYear,
+        method: split.method,
+        scientificStatus: split.scientificStatus,
+        cutoffs: split.cutoffs,
+        scenarioCounts: Object.fromEntries(["train", "validation", "test"].map((name) => [name, split.summaries[name].scenarioCount])),
+        horizonHours: horizon,
+        metrics: artifact.metrics.test,
+        validationSelection: summarizeValidationSelection(artifact, testYear, horizon),
+        pairedBootstrap: bootstrap.comparisons.find((item) => item.horizonHours === horizon && item.testYear === testYear)
+      });
+    }
     if (req.method === "GET" && url.pathname === "/api/persistence/status") return sendJson(res, 200, repository.status());
     if (req.method === "GET" && url.pathname === "/api/research/baseline") {
       const horizon = Number(url.searchParams.get("horizon") || 1);

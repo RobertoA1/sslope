@@ -110,6 +110,13 @@ export function splitFemDataset(rows, scenarioManifest, input = {}) {
   const scenarioById = new Map(scenarioManifest.map((scenario) => [scenario.scenarioId, scenario]));
   const rowIds = new Set(rows.map((row) => row.scenario_id));
   if (rowIds.size !== scenarioById.size || [...rowIds].some((id) => !scenarioById.has(id))) throw new Error("Los escenarios del CSV y del manifiesto no coinciden");
+  if (scenarioManifest.some((scenario) => !/^\d{4}-\d{2}-\d{2}$/.test(scenario.sourceDate || ""))) throw new Error("Cada escenario debe declarar sourceDate para evitar fugas entre fechas");
+  for (const row of rows) {
+    const expectedDate = scenarioById.get(row.scenario_id).sourceDate;
+    if (row.source_date !== expectedDate) throw new Error(`La fecha del CSV no coincide con el manifiesto para ${row.scenario_id}`);
+  }
+  const dateGroups = Map.groupBy(scenarioManifest, (scenario) => scenario.sourceDate);
+  if (dateGroups.size < 3) throw new Error("Se requieren al menos tres fechas de lluvia distintas");
   const count = scenarioManifest.length;
   const targetCounts = {
     train: Math.floor(count * ratios.train),
@@ -117,47 +124,115 @@ export function splitFemDataset(rows, scenarioManifest, input = {}) {
     test: count - Math.floor(count * ratios.train) - Math.floor(count * ratios.validation)
   };
   const rankedRain = [...scenarioManifest].sort((a, b) => b.observedDailyRainfallMm - a.observedDailyRainfallMm || a.scenarioId.localeCompare(b.scenarioId));
-  const assigned = { train: [], validation: [rankedRain[1].scenarioId], test: [rankedRain[0].scenarioId] };
+  const wettest = rankedRain[0];
+  const secondDistinctDate = rankedRain.find((scenario) => scenario.sourceDate !== wettest.sourceDate);
+  if (!secondDistinctDate) throw new Error("No hay otra fecha extrema independiente para validación");
+  const assigned = { train: [], validation: [], test: [] };
   const riskLevels = [...new Set(scenarioManifest.map((scenario) => scenario.summary?.riskLevel || "UNAVAILABLE"))];
   const riskTotals = Object.fromEntries(riskLevels.map((risk) => [risk, scenarioManifest.filter((scenario) => (scenario.summary?.riskLevel || "UNAVAILABLE") === risk).length]));
   const riskCounts = Object.fromEntries(Object.keys(assigned).map((split) => [split, Object.fromEntries(riskLevels.map((risk) => [risk, 0]))]));
-  for (const split of ["validation", "test"]) {
-    const risk = scenarioById.get(assigned[split][0]).summary?.riskLevel || "UNAVAILABLE";
-    riskCounts[split][risk] += 1;
-  }
-  const reserved = new Set([...assigned.validation, ...assigned.test]);
+  const assignGroup = (group, split) => {
+    for (const scenario of group) {
+      assigned[split].push(scenario.scenarioId);
+      riskCounts[split][scenario.summary?.riskLevel || "UNAVAILABLE"] += 1;
+    }
+  };
+  assignGroup(dateGroups.get(wettest.sourceDate), "test");
+  assignGroup(dateGroups.get(secondDistinctDate.sourceDate), "validation");
+  if (assigned.test.length > targetCounts.test || assigned.validation.length > targetCounts.validation) throw new Error("Los eventos extremos no caben en sus particiones");
   const random = seededRandom(seed);
-  const remaining = shuffled(scenarioManifest.filter((scenario) => !reserved.has(scenario.scenarioId)), random);
-  for (const scenario of remaining) {
-    const risk = scenario.summary?.riskLevel || "UNAVAILABLE";
-    const options = Object.keys(assigned).filter((split) => assigned[split].length < targetCounts[split]);
+  const remaining = shuffled([...dateGroups.entries()].filter(([date]) => date !== wettest.sourceDate && date !== secondDistinctDate.sourceDate), random)
+    .sort((left, right) => right[1].length - left[1].length);
+  for (const [, group] of remaining) {
+    const options = Object.keys(assigned).filter((split) => assigned[split].length + group.length <= targetCounts[split]);
+    if (!options.length) throw new Error("No es posible respetar las proporciones sin dividir una fecha de lluvia");
     const selected = options.sort((left, right) => {
       const score = (split) => {
-        const riskNeed = riskTotals[risk] * ratios[split] - riskCounts[split][risk];
+        const riskNeed = group.reduce((sum, scenario) => {
+          const risk = scenario.summary?.riskLevel || "UNAVAILABLE";
+          return sum + riskTotals[risk] * ratios[split] - riskCounts[split][risk];
+        }, 0);
         const capacityNeed = (targetCounts[split] - assigned[split].length) / Math.max(1, targetCounts[split]);
         return riskNeed * 4 + capacityNeed;
       };
       return score(right) - score(left) || left.localeCompare(right);
     })[0];
-    assigned[selected].push(scenario.scenarioId);
-    riskCounts[selected][risk] += 1;
+    assignGroup(group, selected);
   }
   Object.values(assigned).forEach((ids) => ids.sort());
   const membership = new Map(Object.entries(assigned).flatMap(([split, ids]) => ids.map((id) => [id, split])));
   const splitRows = Object.fromEntries(Object.keys(assigned).map((split) => [split, rows.filter((row) => membership.get(row.scenario_id) === split)]));
   const allAssigned = Object.values(assigned).flat();
   if (new Set(allAssigned).size !== count || allAssigned.length !== count) throw new Error("La división produjo escenarios duplicados o faltantes");
+  const dateMembership = new Map();
+  for (const [split, ids] of Object.entries(assigned)) {
+    for (const id of ids) {
+      const date = scenarioById.get(id).sourceDate;
+      if (dateMembership.has(date) && dateMembership.get(date) !== split) throw new Error(`La fecha ${date} aparece en más de una partición`);
+      dateMembership.set(date, split);
+    }
+  }
   return {
     seed,
     ratios,
     targetCounts,
+    sourceDateCounts: Object.fromEntries(Object.entries(assigned).map(([split, ids]) => [split, new Set(ids.map((id) => scenarioById.get(id).sourceDate)).size])),
     scenarioIds: assigned,
     rows: splitRows,
     reservedExtremeEvents: {
-      test: { scenarioId: rankedRain[0].scenarioId, rainfallMm: rankedRain[0].observedDailyRainfallMm },
-      validation: { scenarioId: rankedRain[1].scenarioId, rainfallMm: rankedRain[1].observedDailyRainfallMm }
+      test: { scenarioId: wettest.scenarioId, sourceDate: wettest.sourceDate, rainfallMm: wettest.observedDailyRainfallMm },
+      validation: { scenarioId: secondDistinctDate.scenarioId, sourceDate: secondDistinctDate.sourceDate, rainfallMm: secondDistinctDate.observedDailyRainfallMm }
     },
     summaries: Object.fromEntries(Object.keys(assigned).map((split) => [split, splitSummary(split, assigned[split], rows, scenarioById, rankedRain[0].scenarioId)]))
+  };
+}
+
+/** Ensayo fuera de tiempo: nunca usa un año futuro al entrenar o seleccionar el modelo. */
+export function splitFemChronological(rows, scenarioManifest, input = {}) {
+  const validationFrom = input.validationFrom ?? "2024-01-01";
+  const testFrom = input.testFrom ?? "2025-01-01";
+  const testBefore = input.testBefore ?? null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(validationFrom) || !/^\d{4}-\d{2}-\d{2}$/.test(testFrom) || validationFrom >= testFrom ||
+      (testBefore !== null && (!/^\d{4}-\d{2}-\d{2}$/.test(testBefore) || testBefore <= testFrom))) {
+    throw new Error("Los cortes cronológicos deben ser fechas ISO crecientes");
+  }
+  if (!Array.isArray(rows) || !rows.length || !Array.isArray(scenarioManifest) || scenarioManifest.length < 3) {
+    throw new Error("El ensayo cronológico requiere filas y al menos tres escenarios");
+  }
+  const scenarioById = new Map(scenarioManifest.map((scenario) => [scenario.scenarioId, scenario]));
+  if (scenarioById.size !== scenarioManifest.length) throw new Error("Hay identificadores de escenario duplicados");
+  const rowIds = new Set(rows.map((row) => row.scenario_id));
+  if (rowIds.size !== scenarioById.size || [...rowIds].some((id) => !scenarioById.has(id))) throw new Error("Los escenarios del CSV y del manifiesto no coinciden");
+  for (const scenario of scenarioManifest) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(scenario.sourceDate || "")) throw new Error(`sourceDate inválida para ${scenario.scenarioId}`);
+  }
+  for (const row of rows) {
+    if (row.source_date !== scenarioById.get(row.scenario_id).sourceDate) throw new Error(`La fecha del CSV no coincide con el manifiesto para ${row.scenario_id}`);
+  }
+  const scenarioIds = { train: [], validation: [], test: [] };
+  const excludedScenarioIds = [];
+  for (const scenario of scenarioManifest) {
+    if (testBefore !== null && scenario.sourceDate >= testBefore) {
+      excludedScenarioIds.push(scenario.scenarioId);
+      continue;
+    }
+    const split = scenario.sourceDate >= testFrom ? "test" : scenario.sourceDate >= validationFrom ? "validation" : "train";
+    scenarioIds[split].push(scenario.scenarioId);
+  }
+  if (Object.values(scenarioIds).some((ids) => !ids.length)) throw new Error("Cada periodo cronológico debe contener escenarios");
+  for (const ids of Object.values(scenarioIds)) ids.sort();
+  const membership = new Map(Object.entries(scenarioIds).flatMap(([split, ids]) => ids.map((id) => [id, split])));
+  const splitRows = Object.fromEntries(Object.keys(scenarioIds).map((split) => [split, rows.filter((row) => membership.get(row.scenario_id) === split)]));
+  const wettestScenarioId = [...scenarioManifest].sort((a, b) => b.observedDailyRainfallMm - a.observedDailyRainfallMm)[0].scenarioId;
+  return {
+    method: "SOURCE_DATE_CHRONOLOGICAL_HOLDOUT",
+    cutoffs: { validationFrom, testFrom, ...(testBefore === null ? {} : { testBefore }) },
+    excludedScenarioIds: excludedScenarioIds.sort(),
+    excludedSourceDateCount: new Set(excludedScenarioIds.map((id) => scenarioById.get(id).sourceDate)).size,
+    scenarioIds,
+    rows: splitRows,
+    sourceDateCounts: Object.fromEntries(Object.entries(scenarioIds).map(([split, ids]) => [split, new Set(ids.map((id) => scenarioById.get(id).sourceDate)).size])),
+    summaries: Object.fromEntries(Object.entries(scenarioIds).map(([split, ids]) => [split, splitSummary(split, ids, rows, scenarioById, wettestScenarioId)]))
   };
 }
 

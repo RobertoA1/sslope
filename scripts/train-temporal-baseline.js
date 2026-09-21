@@ -16,7 +16,7 @@ const splitManifest = JSON.parse(await readFile(splitManifestPath, "utf8"));
 const startedAt = performance.now();
 const baseline = trainTemporalBaseline(splitRows, { horizonHours });
 const result = {
-  id: `TA01-RIDGE-${horizonHours}H-SEED${splitManifest.seed}`,
+  id: `TA01-RIDGE-${horizonHours}H-${splitManifest.id}`,
   generatedAt: new Date().toISOString(),
   dataset: {
     sourceDatasetId: splitManifest.sourceDatasetId,

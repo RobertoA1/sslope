@@ -235,7 +235,7 @@ export function generateTa01Dataset(rainfallDataset, input = {}) {
       seed,
       samplingMethod: "LATIN_HYPERCUBE",
       parameterRanges: TA01_PARAMETER_RANGES,
-      splitRule: "Separar entrenamiento, validación y prueba por scenario_id; nunca por filas aleatorias.",
+      splitRule: "Separar entrenamiento, validación y prueba por fecha de lluvia; ningún scenario_id ni sourceDate puede cruzar particiones.",
       targetRecommendation: "rainfall_induced_max_displacement_mm",
       scientificStatus: "SEMI_SINTETICO_NO_CALIBRADO"
     },

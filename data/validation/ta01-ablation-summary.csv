@@ -1,13 +1,13 @@
 horizon_hours,variant_id,label,components,sample_count,mae_mm,rmse_mm,bias_mm,smape_percent,r2
-1,PERSISTENCE,Persistencia,estado actual,1350,0.00002831,0.00013292,-0.00002831,8.5227,0.99514
-1,RIDGE,Ridge,ventana temporal + FEM + hidrología,1350,0.00001304,0.00004992,0.00000514,69.4736,0.999314
-1,LSTM,LSTM,LSTM + FEM + hidrología,1350,0.00000673,0.0000367,-0.00000524,30.178,0.999629
-1,HYBRID_NO_HYDROLOGY,Híbrido sin hidrología,LSTM + corrector físico; variables hidrológicas fijadas a la media de entrenamiento,1350,0.00003208,0.0001313,-0.00001663,108.5681,0.995258
-1,HYBRID_NO_FEM,Híbrido sin estado FEM,LSTM + corrector físico; variables mecánicas fijadas a la media de entrenamiento,1350,0.00000927,0.00003752,-0.00000364,8.8235,0.999613
-1,HYBRID_FULL,Híbrido físico completo,LSTM + FEM + hidrología + restricciones,1350,0.00000623,0.00003354,-0.00000411,41.4188,0.999691
-6,PERSISTENCE,Persistencia,estado actual,975,0.00017871,0.00079503,-0.00017871,34.5359,0.863427
-6,RIDGE,Ridge,ventana temporal + FEM + hidrología,975,0.00007637,0.00026834,0.00002997,81.6577,0.984442
-6,LSTM,LSTM,LSTM + FEM + hidrología,975,0.00005466,0.00028869,-0.00003626,70.2877,0.981993
-6,HYBRID_NO_HYDROLOGY,Híbrido sin hidrología,LSTM + corrector físico; variables hidrológicas fijadas a la media de entrenamiento,975,0.00018988,0.00070019,-0.00007904,122.1226,0.894066
-6,HYBRID_NO_FEM,Híbrido sin estado FEM,LSTM + corrector físico; variables mecánicas fijadas a la media de entrenamiento,975,0.00007178,0.00029507,-0.00003254,16.3092,0.981187
-6,HYBRID_FULL,Híbrido físico completo,LSTM + FEM + hidrología + restricciones,975,0.00005128,0.00027034,-0.00003401,64.5092,0.984209
+1,PERSISTENCE,Persistencia,estado actual,1350,0.00002081,0.00010999,-0.00002081,7.3674,0.995939
+1,RIDGE,Ridge,ventana temporal + FEM + hidrología,1350,0.00001181,0.00006266,0.00001074,47.6287,0.998682
+1,LSTM,LSTM,LSTM + FEM + hidrología,1350,0.00000858,0.00005466,-0.00000557,83.5235,0.998997
+1,HYBRID_NO_HYDROLOGY,Híbrido sin hidrología,LSTM + corrector físico; variables hidrológicas fijadas a la media de entrenamiento,1350,0.00002571,0.0001065,-0.0000104,132.7337,0.996193
+1,HYBRID_NO_FEM,Híbrido sin estado FEM,LSTM + corrector físico; variables mecánicas fijadas a la media de entrenamiento,1350,0.00000936,0.0000507,-0.00000486,83.2819,0.999137
+1,HYBRID_FULL,Híbrido físico completo,LSTM + FEM + hidrología + restricciones,1350,0.00000798,0.00005093,-0.00000558,61.4943,0.999129
+6,PERSISTENCE,Persistencia,estado actual,975,0.00013169,0.00065863,-0.00013169,33.9841,0.884685
+6,RIDGE,Ridge,ventana temporal + FEM + hidrología,975,0.00008855,0.00044652,0.00008223,58.9687,0.946999
+6,LSTM,LSTM,LSTM + FEM + hidrología,975,0.00006332,0.00042635,-0.00004516,34.8959,0.95168
+6,HYBRID_NO_HYDROLOGY,Híbrido sin hidrología,LSTM + corrector físico; variables hidrológicas fijadas a la media de entrenamiento,975,0.00016214,0.0005734,-0.00004255,144.6275,0.9126
+6,HYBRID_NO_FEM,Híbrido sin estado FEM,LSTM + corrector físico; variables mecánicas fijadas a la media de entrenamiento,975,0.00007204,0.00041207,-0.00004278,27.866,0.954862
+6,HYBRID_FULL,Híbrido físico completo,LSTM + FEM + hidrología + restricciones,975,0.00006176,0.00041181,-0.00004256,47.1714,0.954919

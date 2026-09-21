@@ -34,6 +34,7 @@ import {
   WireframeGeometry
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { femDisplayScale } from "./displacement-scale.js";
 
 const clamp = (value, min = 0, max = 1) => Math.min(Math.max(value, min), max);
 
@@ -517,7 +518,7 @@ export class SlopeScene3D {
     const materialMotion = data.options.materialMotion;
     if (this.ghostTerrain) this.ghostTerrain.visible = visible && materialMotion && !data.femRun;
     this.materialFragments.forEach((fragment) => {
-      fragment.visible = visible && materialMotion && !data.femRun;
+      fragment.visible = visible && materialMotion && !data.femRun && data.playback.amplification !== 1;
       if (!fragment.visible) return;
       const base = fragment.userData.basePoint;
       const display = displacedPoint(base, data.forecast.simulationParameters || {}, data.forecast, data.playback.progress, data.playback.amplification);
@@ -588,7 +589,7 @@ export class SlopeScene3D {
     const progress = clamp(data.playback.progress);
     const steps = run.timeSeries || [];
     const stepIndex = progress <= 0 ? -1 : Math.min(steps.length - 1, Math.max(0, Math.ceil(progress * steps.length) - 1));
-    const stateKey = `${stepIndex}|${data.options.materialMotion}`;
+    const stateKey = `${stepIndex}|${data.options.materialMotion}|${data.playback.amplification}`;
     if (!force && stateKey === this.femSliceLastState) return;
     this.femSliceLastState = stateKey;
     const stepNodes = stepIndex >= 0 ? steps[stepIndex]?.nodes : null;
@@ -596,9 +597,9 @@ export class SlopeScene3D {
     const width = run.scenario?.slopeWidthM || 160;
     const frontZ = width * 0.42 + 3;
     const finalMaximumMm = Math.max(run.summary?.maximumRainfallInducedDisplacementMm || 0, 1e-9);
-    // La autoescala hace legibles desplazamientos submilimétricos. El panel
-    // conserva y muestra siempre la magnitud física sin amplificar.
-    const visualScale = Math.max(data.playback.amplification || 1, Math.min(1_000_000, 6 / (finalMaximumMm / 1000)));
+    // En 1× se usa el desplazamiento calculado; fuera de 1×, la autoescala
+    // hace legibles movimientos submilimétricos sin modificar el panel.
+    const visualScale = femDisplayScale(data.playback.amplification, finalMaximumMm);
     const position = this.femSlice.geometry.getAttribute("position");
     const color = this.femSlice.geometry.getAttribute("color");
     this.femSliceNodeIds.forEach((nodeId, vertexIndex) => {

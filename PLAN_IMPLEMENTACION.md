@@ -11,14 +11,14 @@ Desarrollar un gemelo digital para pronosticar, en tiempo casi real, la estabili
 
 La primera versión (MVP) debe funcionar con datos históricos o sintéticos y ser extensible a una integración posterior con instrumentación real.
 
-## Estado ejecutado del prototipo (16 de septiembre de 2026)
+## Estado ejecutado del prototipo (17 de septiembre de 2026)
 
 | Entregable | Estado verificable |
 |---|---|
 | Caso TA-01, lluvia Pasco y conjunto FEM de 500 escenarios | Implementado y versionado como semisintético no calibrado |
-| FEM 2D CST y campos nodales horarios | Implementado; prueba de parche, solución analítica global de elasticidad y sensibilidad 30×20 frente a 48×32. Griffiths–Lane reproducido con XSLOPE externo; el FEM propio aún no supera ese benchmark SSRM |
+| FEM 2D CST y campos nodales horarios | Implementado; prueba de parche, soluciones analíticas globales de elasticidad y carga uniforme de Biot, y sensibilidad 30×20 frente a 48×32. Griffiths–Lane reproducido con XSLOPE externo; el FEM propio aún no supera ese benchmark SSRM |
 | Filtración transitoria ligada a lluvia | Ensayo XSLOPE con retención van Genuchten y balance de masa <5 %. El caso inicial infiltra 0,0864 mm de 102,88 mm; un escenario húmedo **hipotético** infiltra 8,64 mm y produce hasta ~2,0 kPa adicionales de presión de poros a 24 h. En ambos acoplamientos tri3→tri6 SSRM el ΔFoS no se resuelve a tolerancia 0,02. La sensibilidad temporal en malla 6 m llega a 0,00767 m de diferencia máxima entre pasos 0,1875/0,1 h a 24 h. Incluso con paso máximo 0,1 h, las mallas 6/4 m difieren hasta 2,502 m en carga, pero ese máximo está en zona de succión; en los nodos de entrada al SSRM, la diferencia máxima de presión positiva es 0,0459 kPa. El FoS húmedo entre mallas mecánicas 10/8/6 m varía 0,0195. Falta demostrar convergencia acoplada y observar contornos y parámetros antes de uso físico/operacional |
-| Persistencia, ridge, LSTM y corrector guiado por física | Entrenados y evaluados en particiones aisladas por escenario |
+| Persistencia, ridge, LSTM y corrector guiado por física | Entrenados y evaluados por fecha de lluvia y en dos orígenes cronológicos independientes (pruebas 2024 y 2025). La ventaja de MAE cambia de signo entre años y los cuatro intervalos pareados incluyen cero. Sigue siendo semisintético y no acredita transferencia a una mina |
 | Ablación, incertidumbre y robustez | Implementadas; tablas y manifiesto SHA-256 reproducibles |
 | Visor Three.js, lluvia y desplazamiento en vivo | Implementado, con modo realista opcional, vectores alternativos, pantalla completa y ventana adicional |
 | Geometría externa y resultados FEM externos | Importadores disponibles; los resultados externos quedan etiquetados como no verificados |

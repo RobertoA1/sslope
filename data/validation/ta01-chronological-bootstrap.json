@@ -1,0 +1,38 @@
+{
+  "method": "PAIRED_SOURCE_DATE_BLOCK_BOOTSTRAP",
+  "status": "SEMISYNTHETIC_SINGLE_GEOMETRY",
+  "comparisons": [
+    {
+      "horizonHours": 1,
+      "unit": "mm",
+      "estimand": "MAE_LSTM_MINUS_MAE_HYBRID",
+      "positiveMeans": "HYBRID_LOWER_MAE",
+      "dateBlockCount": 76,
+      "sampleCount": 1404,
+      "bootstrapDraws": 5000,
+      "seed": 20260918,
+      "observedDifferenceMm": 2.051495726495722e-7,
+      "confidenceInterval95Mm": [
+        -2.5904558404558403e-7,
+        6.875974025974026e-7
+      ],
+      "probabilityPositiveInBootstrap": 0.807
+    },
+    {
+      "horizonHours": 6,
+      "unit": "mm",
+      "estimand": "MAE_LSTM_MINUS_MAE_HYBRID",
+      "positiveMeans": "HYBRID_LOWER_MAE",
+      "dateBlockCount": 76,
+      "sampleCount": 1014,
+      "bootstrapDraws": 5000,
+      "seed": 20260923,
+      "observedDifferenceMm": 0.0000026632642998027587,
+      "confidenceInterval95Mm": [
+        -3.831854043392584e-7,
+        0.000006248874999999993
+      ],
+      "probabilityPositiveInBootstrap": 0.9552
+    }
+  ]
+}

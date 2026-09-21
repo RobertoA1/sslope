@@ -1,0 +1,1895 @@
+{
+  "id": "TA01-PHYSICS-GUIDED-6H-SEED20260917",
+  "generatedAt": "2026-09-17T23:32:32.470256+00:00",
+  "method": "LSTM_RESIDUAL_PHYSICS_GUIDED_MLP_V1",
+  "scientificStatus": "RED_NEURONAL_GUIADA_POR_FISICA_AGREGADA_NO_PINN_PDE_NO_OPERACIONAL",
+  "scope": "Corrector temporal agregado sobre LSTM. No resuelve el equilibrio espacial ni sustituye una PINN de campo.",
+  "dataset": {
+    "sourceDatasetId": "TA01-DATASET-S500-SEED20260915",
+    "splitManifest": "data/generated/ta01-fem-500-chronological-split-manifest.json",
+    "leakageControl": "Entrenamiento anterior a 2024-01-01; validación desde 2024-01-01 hasta 2025-01-01; prueba desde 2025-01-01 en adelante. Escenarios y fechas completos en un solo periodo."
+  },
+  "architecture": {
+    "type": "LSTM + MLP residual monótono guiado por física",
+    "horizonHours": 6,
+    "lookbackHours": 6,
+    "inputFeatures": [
+      "lstm_delta_standardized",
+      "current_displacement_mm",
+      "current_rainfall_mm_h",
+      "cumulative_rainfall_mm",
+      "forecast_rainfall_mm",
+      "maximum_pore_pressure_kpa",
+      "mohr_coulomb_safety_index",
+      "simulation_hour",
+      "cohesion_kpa",
+      "friction_angle_deg",
+      "unit_weight_kn_m3",
+      "young_modulus_mpa",
+      "log10_permeability_m_s",
+      "drainage_efficiency",
+      "water_table_m",
+      "storage_coefficient",
+      "lookback_displacement_change_mm",
+      "lookback_pore_pressure_change_kpa",
+      "lookback_safety_index_change"
+    ],
+    "hiddenUnits": 16,
+    "baseModelId": "TA01-LSTM-6H-SEED20260916",
+    "output": "corrección del incremento estandarizado de desplazamiento inducido por lluvia",
+    "monotonicByConstruction": {
+      "forecast_rainfall_mm": "NON_DECREASING",
+      "mohr_coulomb_safety_index": "NON_INCREASING"
+    }
+  },
+  "training": {
+    "optimizer": "Adam",
+    "epochsRequested": 360,
+    "epochsCompleted": 139,
+    "bestEpoch": 94,
+    "earlyStoppingPatience": 45,
+    "batchSize": 128,
+    "learningRate": 0.0015,
+    "seed": 20260917,
+    "lossWeights": {
+      "data": 1.0,
+      "monotonicity": 0.12,
+      "rainSensitivity": 0.2,
+      "safetySensitivity": 0.2,
+      "dryBoundary": 0.08,
+      "l2": 1e-06
+    },
+    "lossTerms": [
+      "FEM supervised consistency",
+      "monotonic accumulated displacement",
+      "rainfall sensitivity",
+      "safety-index sensitivity",
+      "dry-boundary residual",
+      "L2"
+    ],
+    "selectionMetric": "MAE de validación más penalización por violaciones condicionales de lluvia y seguridad"
+  },
+  "uncertainty": {
+    "method": "VALIDATION_ABSOLUTE_ERROR_QUANTILE",
+    "nominalCoverage": 0.95,
+    "halfWidthMm": 0.00014297428111251231
+  },
+  "latency": {
+    "meanSingleInferenceMs": 0.021144,
+    "benchmarkRuns": 200,
+    "environment": "NumPy CPU"
+  },
+  "metrics": {
+    "train": {
+      "pinn": {
+        "sampleCount": 4420,
+        "maeMm": 9.51e-06,
+        "rmseMm": 1.955e-05,
+        "biasMm": 1.96e-06,
+        "smapePercent": 57.6629,
+        "r2": 0.999986
+      },
+      "pinnUnconstrained": {
+        "sampleCount": 4420,
+        "maeMm": 1.551e-05,
+        "rmseMm": 2.291e-05,
+        "biasMm": -4.05e-06,
+        "smapePercent": 138.4544,
+        "r2": 0.999981
+      },
+      "persistence": {
+        "sampleCount": 4420,
+        "maeMm": 0.00024827,
+        "rmseMm": 0.00242116,
+        "biasMm": -0.00024827,
+        "smapePercent": 26.6934,
+        "r2": 0.789609
+      },
+      "constraintCorrections": 1996,
+      "violationsAfterConstraint": 0,
+      "uncertainty": {
+        "method": "VALIDATION_ABSOLUTE_ERROR_QUANTILE",
+        "nominalCoverage": 0.95,
+        "halfWidthMm": 0.00014297,
+        "empiricalCoverage": 0.9982,
+        "meanIntervalWidthMm": 0.0001692,
+        "absoluteCalibrationError": 0.0482
+      },
+      "lstm": {
+        "sampleCount": 4420,
+        "maeMm": 1.16e-05,
+        "rmseMm": 2.744e-05,
+        "biasMm": 9.1e-07,
+        "smapePercent": 52.6583,
+        "r2": 0.999973
+      },
+      "physicsChecks": {
+        "rainSensitivityViolations": 0,
+        "safetySensitivityViolations": 0,
+        "sampleCount": 4420
+      }
+    },
+    "validation": {
+      "pinn": {
+        "sampleCount": 1066,
+        "maeMm": 4.037e-05,
+        "rmseMm": 0.00015052,
+        "biasMm": 1.671e-05,
+        "smapePercent": 62.8747,
+        "r2": 0.954355
+      },
+      "pinnUnconstrained": {
+        "sampleCount": 1066,
+        "maeMm": 5.411e-05,
+        "rmseMm": 0.00015319,
+        "biasMm": 2.98e-06,
+        "smapePercent": 135.3557,
+        "r2": 0.952723
+      },
+      "persistence": {
+        "sampleCount": 1066,
+        "maeMm": 6.888e-05,
+        "rmseMm": 0.00026751,
+        "biasMm": -6.888e-05,
+        "smapePercent": 33.2657,
+        "r2": 0.855827
+      },
+      "constraintCorrections": 477,
+      "violationsAfterConstraint": 0,
+      "uncertainty": {
+        "method": "VALIDATION_ABSOLUTE_ERROR_QUANTILE",
+        "nominalCoverage": 0.95,
+        "halfWidthMm": 0.00014297,
+        "empiricalCoverage": 0.9512,
+        "meanIntervalWidthMm": 0.00017738,
+        "absoluteCalibrationError": 0.0012
+      },
+      "lstm": {
+        "sampleCount": 1066,
+        "maeMm": 4.117e-05,
+        "rmseMm": 0.00016145,
+        "biasMm": 1.669e-05,
+        "smapePercent": 56.8843,
+        "r2": 0.947485
+      },
+      "physicsChecks": {
+        "rainSensitivityViolations": 0,
+        "safetySensitivityViolations": 0,
+        "sampleCount": 1066
+      }
+    },
+    "test": {
+      "pinn": {
+        "sampleCount": 1014,
+        "maeMm": 5.502e-05,
+        "rmseMm": 0.00021793,
+        "biasMm": 1.609e-05,
+        "smapePercent": 53.9768,
+        "r2": 0.948042
+      },
+      "pinnUnconstrained": {
+        "sampleCount": 1014,
+        "maeMm": 7.368e-05,
+        "rmseMm": 0.00022834,
+        "biasMm": -2.57e-06,
+        "smapePercent": 102.3949,
+        "r2": 0.942964
+      },
+      "persistence": {
+        "sampleCount": 1014,
+        "maeMm": 0.00014399,
+        "rmseMm": 0.00045508,
+        "biasMm": -0.00014399,
+        "smapePercent": 49.6918,
+        "r2": 0.773442
+      },
+      "constraintCorrections": 339,
+      "violationsAfterConstraint": 0,
+      "uncertainty": {
+        "method": "VALIDATION_ABSOLUTE_ERROR_QUANTILE",
+        "nominalCoverage": 0.95,
+        "halfWidthMm": 0.00014297,
+        "empiricalCoverage": 0.9211,
+        "meanIntervalWidthMm": 0.00018703,
+        "absoluteCalibrationError": 0.0289
+      },
+      "lstm": {
+        "sampleCount": 1014,
+        "maeMm": 5.769e-05,
+        "rmseMm": 0.00022994,
+        "biasMm": 1.541e-05,
+        "smapePercent": 53.5199,
+        "r2": 0.942158
+      },
+      "ridgeComparable": {
+        "sampleCount": 1014,
+        "maeMm": 0.00015151,
+        "rmseMm": 0.00052442,
+        "biasMm": 0.00012611,
+        "smapePercent": 74.6799,
+        "r2": 0.699143
+      },
+      "physicsChecks": {
+        "rainSensitivityViolations": 0,
+        "safetySensitivityViolations": 0,
+        "sampleCount": 1014
+      }
+    }
+  },
+  "ablation": {
+    "split": "test",
+    "sampleCount": 1014,
+    "variants": [
+      {
+        "id": "PERSISTENCE",
+        "label": "Persistencia",
+        "components": "estado actual",
+        "sampleCount": 1014,
+        "maeMm": 0.00014399,
+        "rmseMm": 0.00045508,
+        "biasMm": -0.00014399,
+        "smapePercent": 49.6918,
+        "r2": 0.773442
+      },
+      {
+        "id": "RIDGE",
+        "label": "Ridge",
+        "components": "ventana temporal + FEM + hidrología",
+        "sampleCount": 1014,
+        "maeMm": 0.00015151,
+        "rmseMm": 0.00052442,
+        "biasMm": 0.00012611,
+        "smapePercent": 74.6799,
+        "r2": 0.699143
+      },
+      {
+        "id": "LSTM",
+        "label": "LSTM",
+        "components": "LSTM + FEM + hidrología",
+        "sampleCount": 1014,
+        "maeMm": 5.769e-05,
+        "rmseMm": 0.00022994,
+        "biasMm": 1.541e-05,
+        "smapePercent": 53.5199,
+        "r2": 0.942158
+      },
+      {
+        "id": "HYBRID_NO_HYDROLOGY",
+        "label": "Híbrido sin hidrología",
+        "components": "LSTM + corrector físico; variables hidrológicas fijadas a la media de entrenamiento",
+        "sampleCount": 1014,
+        "maeMm": 0.00018273,
+        "rmseMm": 0.00041151,
+        "biasMm": 3.121e-05,
+        "smapePercent": 114.9491,
+        "r2": 0.814748
+      },
+      {
+        "id": "HYBRID_NO_FEM",
+        "label": "Híbrido sin estado FEM",
+        "components": "LSTM + corrector físico; variables mecánicas fijadas a la media de entrenamiento",
+        "sampleCount": 1014,
+        "maeMm": 7.823e-05,
+        "rmseMm": 0.00020561,
+        "biasMm": -1.667e-05,
+        "smapePercent": 89.0694,
+        "r2": 0.953754
+      },
+      {
+        "id": "HYBRID_FULL",
+        "label": "Híbrido físico completo",
+        "components": "LSTM + FEM + hidrología + restricciones",
+        "sampleCount": 1014,
+        "maeMm": 5.502e-05,
+        "rmseMm": 0.00021793,
+        "biasMm": 1.609e-05,
+        "smapePercent": 53.9768,
+        "r2": 0.948042
+      }
+    ],
+    "method": "Ablación por sustitución con medias calculadas exclusivamente en entrenamiento",
+    "limitation": "Las variables ablacionadas pueden formar combinaciones fuera de la distribución conjunta original; interpretar junto con el análisis de sensibilidad.",
+    "bestByMae": "HYBRID_FULL"
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "trainCompositeLoss": 0.00044711,
+      "validationMaeMm": 4.663e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.663e-05
+    },
+    {
+      "epoch": 2,
+      "trainCompositeLoss": 0.00026736,
+      "validationMaeMm": 4.519e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.519e-05
+    },
+    {
+      "epoch": 3,
+      "trainCompositeLoss": 0.00023162,
+      "validationMaeMm": 4.476e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.476e-05
+    },
+    {
+      "epoch": 4,
+      "trainCompositeLoss": 0.00021182,
+      "validationMaeMm": 4.514e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.514e-05
+    },
+    {
+      "epoch": 5,
+      "trainCompositeLoss": 0.00018807,
+      "validationMaeMm": 4.523e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.523e-05
+    },
+    {
+      "epoch": 6,
+      "trainCompositeLoss": 0.00017722,
+      "validationMaeMm": 4.48e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.48e-05
+    },
+    {
+      "epoch": 7,
+      "trainCompositeLoss": 0.00016948,
+      "validationMaeMm": 4.6e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.6e-05
+    },
+    {
+      "epoch": 8,
+      "trainCompositeLoss": 0.0001644,
+      "validationMaeMm": 4.471e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.471e-05
+    },
+    {
+      "epoch": 9,
+      "trainCompositeLoss": 0.00015722,
+      "validationMaeMm": 4.546e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.546e-05
+    },
+    {
+      "epoch": 10,
+      "trainCompositeLoss": 0.00015109,
+      "validationMaeMm": 4.412e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.412e-05
+    },
+    {
+      "epoch": 11,
+      "trainCompositeLoss": 0.00014889,
+      "validationMaeMm": 4.537e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.537e-05
+    },
+    {
+      "epoch": 12,
+      "trainCompositeLoss": 0.00014792,
+      "validationMaeMm": 4.446e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.446e-05
+    },
+    {
+      "epoch": 13,
+      "trainCompositeLoss": 0.00014321,
+      "validationMaeMm": 4.265e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.265e-05
+    },
+    {
+      "epoch": 14,
+      "trainCompositeLoss": 0.00014174,
+      "validationMaeMm": 4.427e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.427e-05
+    },
+    {
+      "epoch": 15,
+      "trainCompositeLoss": 0.00013766,
+      "validationMaeMm": 4.398e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.398e-05
+    },
+    {
+      "epoch": 16,
+      "trainCompositeLoss": 0.00013694,
+      "validationMaeMm": 4.249e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.249e-05
+    },
+    {
+      "epoch": 17,
+      "trainCompositeLoss": 0.0001332,
+      "validationMaeMm": 4.355e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.355e-05
+    },
+    {
+      "epoch": 18,
+      "trainCompositeLoss": 0.00012922,
+      "validationMaeMm": 4.286e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.286e-05
+    },
+    {
+      "epoch": 19,
+      "trainCompositeLoss": 0.00012812,
+      "validationMaeMm": 4.255e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.255e-05
+    },
+    {
+      "epoch": 20,
+      "trainCompositeLoss": 0.00012568,
+      "validationMaeMm": 4.176e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.176e-05
+    },
+    {
+      "epoch": 21,
+      "trainCompositeLoss": 0.00012677,
+      "validationMaeMm": 4.269e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.269e-05
+    },
+    {
+      "epoch": 22,
+      "trainCompositeLoss": 0.00012276,
+      "validationMaeMm": 4.449e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.449e-05
+    },
+    {
+      "epoch": 23,
+      "trainCompositeLoss": 0.00011999,
+      "validationMaeMm": 4.343e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.343e-05
+    },
+    {
+      "epoch": 24,
+      "trainCompositeLoss": 0.00012055,
+      "validationMaeMm": 4.267e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.267e-05
+    },
+    {
+      "epoch": 25,
+      "trainCompositeLoss": 0.00012075,
+      "validationMaeMm": 4.268e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.268e-05
+    },
+    {
+      "epoch": 26,
+      "trainCompositeLoss": 0.0001218,
+      "validationMaeMm": 4.244e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.244e-05
+    },
+    {
+      "epoch": 27,
+      "trainCompositeLoss": 0.00011884,
+      "validationMaeMm": 4.366e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.366e-05
+    },
+    {
+      "epoch": 28,
+      "trainCompositeLoss": 0.00011782,
+      "validationMaeMm": 4.368e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.368e-05
+    },
+    {
+      "epoch": 29,
+      "trainCompositeLoss": 0.00011687,
+      "validationMaeMm": 4.446e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.446e-05
+    },
+    {
+      "epoch": 30,
+      "trainCompositeLoss": 0.00011621,
+      "validationMaeMm": 4.235e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.235e-05
+    },
+    {
+      "epoch": 31,
+      "trainCompositeLoss": 0.00011586,
+      "validationMaeMm": 4.308e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.308e-05
+    },
+    {
+      "epoch": 32,
+      "trainCompositeLoss": 0.00011369,
+      "validationMaeMm": 4.257e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.257e-05
+    },
+    {
+      "epoch": 33,
+      "trainCompositeLoss": 0.00011385,
+      "validationMaeMm": 4.181e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.181e-05
+    },
+    {
+      "epoch": 34,
+      "trainCompositeLoss": 0.0001142,
+      "validationMaeMm": 4.127e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.127e-05
+    },
+    {
+      "epoch": 35,
+      "trainCompositeLoss": 0.00010985,
+      "validationMaeMm": 4.187e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.187e-05
+    },
+    {
+      "epoch": 36,
+      "trainCompositeLoss": 0.0001138,
+      "validationMaeMm": 4.43e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.43e-05
+    },
+    {
+      "epoch": 37,
+      "trainCompositeLoss": 0.00011191,
+      "validationMaeMm": 4.218e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.218e-05
+    },
+    {
+      "epoch": 38,
+      "trainCompositeLoss": 0.00010931,
+      "validationMaeMm": 4.225e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.225e-05
+    },
+    {
+      "epoch": 39,
+      "trainCompositeLoss": 0.00010945,
+      "validationMaeMm": 4.337e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.337e-05
+    },
+    {
+      "epoch": 40,
+      "trainCompositeLoss": 0.00010806,
+      "validationMaeMm": 4.247e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.247e-05
+    },
+    {
+      "epoch": 41,
+      "trainCompositeLoss": 0.00010744,
+      "validationMaeMm": 4.241e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.241e-05
+    },
+    {
+      "epoch": 42,
+      "trainCompositeLoss": 0.00010791,
+      "validationMaeMm": 4.241e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.241e-05
+    },
+    {
+      "epoch": 43,
+      "trainCompositeLoss": 0.00010677,
+      "validationMaeMm": 4.395e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.395e-05
+    },
+    {
+      "epoch": 44,
+      "trainCompositeLoss": 0.00010455,
+      "validationMaeMm": 4.245e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.245e-05
+    },
+    {
+      "epoch": 45,
+      "trainCompositeLoss": 0.00010751,
+      "validationMaeMm": 4.448e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.448e-05
+    },
+    {
+      "epoch": 46,
+      "trainCompositeLoss": 0.00010985,
+      "validationMaeMm": 4.275e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.275e-05
+    },
+    {
+      "epoch": 47,
+      "trainCompositeLoss": 0.00010642,
+      "validationMaeMm": 4.26e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.26e-05
+    },
+    {
+      "epoch": 48,
+      "trainCompositeLoss": 0.00010336,
+      "validationMaeMm": 4.246e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.246e-05
+    },
+    {
+      "epoch": 49,
+      "trainCompositeLoss": 0.00010381,
+      "validationMaeMm": 4.268e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.268e-05
+    },
+    {
+      "epoch": 50,
+      "trainCompositeLoss": 0.00010644,
+      "validationMaeMm": 4.408e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.408e-05
+    },
+    {
+      "epoch": 51,
+      "trainCompositeLoss": 0.00010831,
+      "validationMaeMm": 4.231e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.231e-05
+    },
+    {
+      "epoch": 52,
+      "trainCompositeLoss": 0.00010394,
+      "validationMaeMm": 4.414e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.414e-05
+    },
+    {
+      "epoch": 53,
+      "trainCompositeLoss": 0.00010106,
+      "validationMaeMm": 4.152e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.152e-05
+    },
+    {
+      "epoch": 54,
+      "trainCompositeLoss": 0.000103,
+      "validationMaeMm": 4.306e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.306e-05
+    },
+    {
+      "epoch": 55,
+      "trainCompositeLoss": 0.00010647,
+      "validationMaeMm": 4.159e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.159e-05
+    },
+    {
+      "epoch": 56,
+      "trainCompositeLoss": 0.00010262,
+      "validationMaeMm": 4.168e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.168e-05
+    },
+    {
+      "epoch": 57,
+      "trainCompositeLoss": 0.00010019,
+      "validationMaeMm": 4.149e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.149e-05
+    },
+    {
+      "epoch": 58,
+      "trainCompositeLoss": 0.00010743,
+      "validationMaeMm": 4.273e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.273e-05
+    },
+    {
+      "epoch": 59,
+      "trainCompositeLoss": 0.00010162,
+      "validationMaeMm": 4.147e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.147e-05
+    },
+    {
+      "epoch": 60,
+      "trainCompositeLoss": 0.00010065,
+      "validationMaeMm": 4.225e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.225e-05
+    },
+    {
+      "epoch": 61,
+      "trainCompositeLoss": 0.00010119,
+      "validationMaeMm": 4.289e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.289e-05
+    },
+    {
+      "epoch": 62,
+      "trainCompositeLoss": 0.00010147,
+      "validationMaeMm": 4.17e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.17e-05
+    },
+    {
+      "epoch": 63,
+      "trainCompositeLoss": 0.00010077,
+      "validationMaeMm": 4.196e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.196e-05
+    },
+    {
+      "epoch": 64,
+      "trainCompositeLoss": 0.00010133,
+      "validationMaeMm": 4.162e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.162e-05
+    },
+    {
+      "epoch": 65,
+      "trainCompositeLoss": 0.00010149,
+      "validationMaeMm": 4.317e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.317e-05
+    },
+    {
+      "epoch": 66,
+      "trainCompositeLoss": 0.0001003,
+      "validationMaeMm": 4.249e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.249e-05
+    },
+    {
+      "epoch": 67,
+      "trainCompositeLoss": 0.00010056,
+      "validationMaeMm": 4.174e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.174e-05
+    },
+    {
+      "epoch": 68,
+      "trainCompositeLoss": 9.863e-05,
+      "validationMaeMm": 4.38e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.38e-05
+    },
+    {
+      "epoch": 69,
+      "trainCompositeLoss": 0.00010325,
+      "validationMaeMm": 4.176e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.176e-05
+    },
+    {
+      "epoch": 70,
+      "trainCompositeLoss": 0.000101,
+      "validationMaeMm": 4.11e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.11e-05
+    },
+    {
+      "epoch": 71,
+      "trainCompositeLoss": 0.00010273,
+      "validationMaeMm": 4.299e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.299e-05
+    },
+    {
+      "epoch": 72,
+      "trainCompositeLoss": 0.00010077,
+      "validationMaeMm": 4.291e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.291e-05
+    },
+    {
+      "epoch": 73,
+      "trainCompositeLoss": 9.555e-05,
+      "validationMaeMm": 4.423e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.423e-05
+    },
+    {
+      "epoch": 74,
+      "trainCompositeLoss": 0.00010136,
+      "validationMaeMm": 4.213e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.213e-05
+    },
+    {
+      "epoch": 75,
+      "trainCompositeLoss": 0.0001025,
+      "validationMaeMm": 4.163e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.163e-05
+    },
+    {
+      "epoch": 76,
+      "trainCompositeLoss": 9.823e-05,
+      "validationMaeMm": 4.223e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.223e-05
+    },
+    {
+      "epoch": 77,
+      "trainCompositeLoss": 0.00010223,
+      "validationMaeMm": 4.19e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.19e-05
+    },
+    {
+      "epoch": 78,
+      "trainCompositeLoss": 9.9e-05,
+      "validationMaeMm": 4.347e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.347e-05
+    },
+    {
+      "epoch": 79,
+      "trainCompositeLoss": 9.667e-05,
+      "validationMaeMm": 4.196e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.196e-05
+    },
+    {
+      "epoch": 80,
+      "trainCompositeLoss": 9.404e-05,
+      "validationMaeMm": 4.141e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.141e-05
+    },
+    {
+      "epoch": 81,
+      "trainCompositeLoss": 9.784e-05,
+      "validationMaeMm": 4.159e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.159e-05
+    },
+    {
+      "epoch": 82,
+      "trainCompositeLoss": 9.832e-05,
+      "validationMaeMm": 4.228e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.228e-05
+    },
+    {
+      "epoch": 83,
+      "trainCompositeLoss": 9.62e-05,
+      "validationMaeMm": 4.191e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.191e-05
+    },
+    {
+      "epoch": 84,
+      "trainCompositeLoss": 0.00010031,
+      "validationMaeMm": 4.371e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.371e-05
+    },
+    {
+      "epoch": 85,
+      "trainCompositeLoss": 9.766e-05,
+      "validationMaeMm": 4.119e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.119e-05
+    },
+    {
+      "epoch": 86,
+      "trainCompositeLoss": 9.557e-05,
+      "validationMaeMm": 4.051e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.051e-05
+    },
+    {
+      "epoch": 87,
+      "trainCompositeLoss": 9.662e-05,
+      "validationMaeMm": 4.211e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.211e-05
+    },
+    {
+      "epoch": 88,
+      "trainCompositeLoss": 9.739e-05,
+      "validationMaeMm": 4.167e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.167e-05
+    },
+    {
+      "epoch": 89,
+      "trainCompositeLoss": 9.761e-05,
+      "validationMaeMm": 4.498e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.498e-05
+    },
+    {
+      "epoch": 90,
+      "trainCompositeLoss": 9.55e-05,
+      "validationMaeMm": 4.271e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.271e-05
+    },
+    {
+      "epoch": 91,
+      "trainCompositeLoss": 9.877e-05,
+      "validationMaeMm": 4.313e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.313e-05
+    },
+    {
+      "epoch": 92,
+      "trainCompositeLoss": 9.403e-05,
+      "validationMaeMm": 4.135e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.135e-05
+    },
+    {
+      "epoch": 93,
+      "trainCompositeLoss": 9.501e-05,
+      "validationMaeMm": 4.224e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.224e-05
+    },
+    {
+      "epoch": 94,
+      "trainCompositeLoss": 9.975e-05,
+      "validationMaeMm": 4.037e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.037e-05
+    },
+    {
+      "epoch": 95,
+      "trainCompositeLoss": 9.769e-05,
+      "validationMaeMm": 4.395e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.395e-05
+    },
+    {
+      "epoch": 96,
+      "trainCompositeLoss": 9.753e-05,
+      "validationMaeMm": 4.331e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.331e-05
+    },
+    {
+      "epoch": 97,
+      "trainCompositeLoss": 0.00010169,
+      "validationMaeMm": 4.092e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.092e-05
+    },
+    {
+      "epoch": 98,
+      "trainCompositeLoss": 9.633e-05,
+      "validationMaeMm": 4.25e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.25e-05
+    },
+    {
+      "epoch": 99,
+      "trainCompositeLoss": 9.306e-05,
+      "validationMaeMm": 4.231e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.231e-05
+    },
+    {
+      "epoch": 100,
+      "trainCompositeLoss": 9.329e-05,
+      "validationMaeMm": 4.045e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.045e-05
+    },
+    {
+      "epoch": 101,
+      "trainCompositeLoss": 9.275e-05,
+      "validationMaeMm": 4.326e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.326e-05
+    },
+    {
+      "epoch": 102,
+      "trainCompositeLoss": 9.636e-05,
+      "validationMaeMm": 4.227e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.227e-05
+    },
+    {
+      "epoch": 103,
+      "trainCompositeLoss": 9.671e-05,
+      "validationMaeMm": 4.189e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.189e-05
+    },
+    {
+      "epoch": 104,
+      "trainCompositeLoss": 9.362e-05,
+      "validationMaeMm": 4.208e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.208e-05
+    },
+    {
+      "epoch": 105,
+      "trainCompositeLoss": 9.587e-05,
+      "validationMaeMm": 4.164e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.164e-05
+    },
+    {
+      "epoch": 106,
+      "trainCompositeLoss": 9.585e-05,
+      "validationMaeMm": 4.119e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.119e-05
+    },
+    {
+      "epoch": 107,
+      "trainCompositeLoss": 9.438e-05,
+      "validationMaeMm": 4.253e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.253e-05
+    },
+    {
+      "epoch": 108,
+      "trainCompositeLoss": 9.352e-05,
+      "validationMaeMm": 4.066e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.066e-05
+    },
+    {
+      "epoch": 109,
+      "trainCompositeLoss": 9.186e-05,
+      "validationMaeMm": 4.184e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.184e-05
+    },
+    {
+      "epoch": 110,
+      "trainCompositeLoss": 9.58e-05,
+      "validationMaeMm": 4.342e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.342e-05
+    },
+    {
+      "epoch": 111,
+      "trainCompositeLoss": 9.262e-05,
+      "validationMaeMm": 4.169e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.169e-05
+    },
+    {
+      "epoch": 112,
+      "trainCompositeLoss": 9.287e-05,
+      "validationMaeMm": 4.226e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.226e-05
+    },
+    {
+      "epoch": 113,
+      "trainCompositeLoss": 9.313e-05,
+      "validationMaeMm": 4.318e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.318e-05
+    },
+    {
+      "epoch": 114,
+      "trainCompositeLoss": 9.216e-05,
+      "validationMaeMm": 4.17e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.17e-05
+    },
+    {
+      "epoch": 115,
+      "trainCompositeLoss": 9.18e-05,
+      "validationMaeMm": 4.361e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.361e-05
+    },
+    {
+      "epoch": 116,
+      "trainCompositeLoss": 8.985e-05,
+      "validationMaeMm": 4.488e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.488e-05
+    },
+    {
+      "epoch": 117,
+      "trainCompositeLoss": 9.217e-05,
+      "validationMaeMm": 4.081e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.081e-05
+    },
+    {
+      "epoch": 118,
+      "trainCompositeLoss": 8.939e-05,
+      "validationMaeMm": 4.247e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.247e-05
+    },
+    {
+      "epoch": 119,
+      "trainCompositeLoss": 9.146e-05,
+      "validationMaeMm": 4.186e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.186e-05
+    },
+    {
+      "epoch": 120,
+      "trainCompositeLoss": 9.077e-05,
+      "validationMaeMm": 4.393e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.393e-05
+    },
+    {
+      "epoch": 121,
+      "trainCompositeLoss": 9.256e-05,
+      "validationMaeMm": 4.286e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.286e-05
+    },
+    {
+      "epoch": 122,
+      "trainCompositeLoss": 9.215e-05,
+      "validationMaeMm": 4.245e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.245e-05
+    },
+    {
+      "epoch": 123,
+      "trainCompositeLoss": 9.027e-05,
+      "validationMaeMm": 4.098e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.098e-05
+    },
+    {
+      "epoch": 124,
+      "trainCompositeLoss": 8.857e-05,
+      "validationMaeMm": 4.244e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.244e-05
+    },
+    {
+      "epoch": 125,
+      "trainCompositeLoss": 9.787e-05,
+      "validationMaeMm": 4.199e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.199e-05
+    },
+    {
+      "epoch": 126,
+      "trainCompositeLoss": 9.204e-05,
+      "validationMaeMm": 4.344e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.344e-05
+    },
+    {
+      "epoch": 127,
+      "trainCompositeLoss": 9.233e-05,
+      "validationMaeMm": 4.042e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.042e-05
+    },
+    {
+      "epoch": 128,
+      "trainCompositeLoss": 9.367e-05,
+      "validationMaeMm": 4.201e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.201e-05
+    },
+    {
+      "epoch": 129,
+      "trainCompositeLoss": 9.067e-05,
+      "validationMaeMm": 4.23e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.23e-05
+    },
+    {
+      "epoch": 130,
+      "trainCompositeLoss": 8.87e-05,
+      "validationMaeMm": 4.327e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.327e-05
+    },
+    {
+      "epoch": 131,
+      "trainCompositeLoss": 9.076e-05,
+      "validationMaeMm": 4.222e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.222e-05
+    },
+    {
+      "epoch": 132,
+      "trainCompositeLoss": 9.333e-05,
+      "validationMaeMm": 4.169e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.169e-05
+    },
+    {
+      "epoch": 133,
+      "trainCompositeLoss": 9.067e-05,
+      "validationMaeMm": 4.376e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.376e-05
+    },
+    {
+      "epoch": 134,
+      "trainCompositeLoss": 8.793e-05,
+      "validationMaeMm": 4.261e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.261e-05
+    },
+    {
+      "epoch": 135,
+      "trainCompositeLoss": 9.154e-05,
+      "validationMaeMm": 4.143e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.143e-05
+    },
+    {
+      "epoch": 136,
+      "trainCompositeLoss": 8.808e-05,
+      "validationMaeMm": 4.234e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.234e-05
+    },
+    {
+      "epoch": 137,
+      "trainCompositeLoss": 9.041e-05,
+      "validationMaeMm": 4.15e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.15e-05
+    },
+    {
+      "epoch": 138,
+      "trainCompositeLoss": 8.777e-05,
+      "validationMaeMm": 4.316e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.316e-05
+    },
+    {
+      "epoch": 139,
+      "trainCompositeLoss": 8.855e-05,
+      "validationMaeMm": 4.174e-05,
+      "validationRainViolationRate": 0.0,
+      "validationSafetyViolationRate": 0.0,
+      "selectionScore": 4.174e-05
+    }
+  ],
+  "model": {
+    "inputMean": {
+      "lstm_delta_standardized": -0.003899922329,
+      "current_displacement_mm": 0.000357142534,
+      "current_rainfall_mm_h": 0.074206734615,
+      "cumulative_rainfall_mm": 0.625808823529,
+      "forecast_rainfall_mm": 0.397430465158,
+      "maximum_pore_pressure_kpa": 355.593714343893,
+      "mohr_coulomb_safety_index": 1.432656877828,
+      "simulation_hour": 12.0,
+      "cohesion_kpa": 148.281947058824,
+      "friction_angle_deg": 35.05575882353,
+      "unit_weight_kn_m3": 22.034238235294,
+      "young_modulus_mpa": 1724.506158823525,
+      "log10_permeability_m_s": -7.726924292579,
+      "drainage_efficiency": 0.436934735294,
+      "water_table_m": 37.913879411764,
+      "storage_coefficient": 0.236586558824,
+      "lookback_displacement_change_mm": 0.000216106335,
+      "lookback_pore_pressure_change_kpa": 0.004955384615,
+      "lookback_safety_index_change": -2.986425e-06
+    },
+    "inputStandardDeviation": {
+      "lstm_delta_standardized": 0.999308819289,
+      "current_displacement_mm": 0.003533764333,
+      "current_rainfall_mm_h": 0.371272261469,
+      "cumulative_rainfall_mm": 3.76608695765,
+      "forecast_rainfall_mm": 2.047680149164,
+      "maximum_pore_pressure_kpa": 158.587566188273,
+      "mohr_coulomb_safety_index": 0.335131783346,
+      "simulation_hour": 3.741657386774,
+      "cohesion_kpa": 51.499272260565,
+      "friction_angle_deg": 5.038695524527,
+      "unit_weight_kn_m3": 2.297525611265,
+      "young_modulus_mpa": 765.373277959786,
+      "log10_permeability_m_s": 1.285363489365,
+      "drainage_efficiency": 0.243150153906,
+      "water_table_m": 16.166083450896,
+      "storage_coefficient": 0.066972331466,
+      "lookback_displacement_change_mm": 0.002083436081,
+      "lookback_pore_pressure_change_kpa": 0.028557092144,
+      "lookback_safety_index_change": 3.3769846e-05
+    },
+    "weights": {
+      "w1": [
+        [
+          -0.114814213896,
+          0.179216212996,
+          0.11535670116,
+          0.092001829388,
+          0.339598965428,
+          0.158674612932,
+          -0.171814300061,
+          0.106902040944,
+          -0.228725908146,
+          -0.671506140037,
+          -0.244160890395,
+          -0.049198204176,
+          -0.268810611327,
+          0.387456461144,
+          -0.065994974679,
+          0.753427216603
+        ],
+        [
+          0.267083288162,
+          0.124593418493,
+          -0.192081457542,
+          0.085488661408,
+          -0.086432123103,
+          -0.087683317405,
+          -0.011118504689,
+          0.09607026532,
+          0.002083406032,
+          -0.200790815951,
+          -0.104764956763,
+          0.074651844327,
+          0.083202535124,
+          -0.197277796321,
+          0.160219825144,
+          -0.031447698836
+        ],
+        [
+          -0.362211707993,
+          -0.026758673672,
+          0.728111044319,
+          0.184658181212,
+          -0.008669880563,
+          0.018127463304,
+          0.248741647609,
+          0.081277986502,
+          -0.30614546586,
+          -0.048113053452,
+          -0.183824772077,
+          0.255298697919,
+          0.076932461497,
+          -0.284565296002,
+          -0.101700398787,
+          0.047733229684
+        ],
+        [
+          -0.176624905323,
+          -0.043730306571,
+          0.02397198511,
+          -0.163493073641,
+          -0.023453409986,
+          0.218326904776,
+          -0.244169914053,
+          0.072991689544,
+          0.158729412449,
+          -0.008124677228,
+          0.269866739136,
+          -0.120637268203,
+          0.030422247107,
+          -0.327122715981,
+          0.012036662572,
+          -0.068703460764
+        ],
+        [
+          -0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0,
+          -0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0,
+          0.0,
+          -0.0,
+          0.0,
+          -0.0
+        ],
+        [
+          0.269566788411,
+          0.057648985134,
+          -0.162617434338,
+          0.209700951039,
+          -0.155473116211,
+          0.121898007236,
+          0.100635510915,
+          -0.127544310659,
+          0.101873456702,
+          0.023460489671,
+          -0.009805461922,
+          -0.101580780832,
+          0.285002241286,
+          -0.102230119209,
+          -0.18107870043,
+          0.077870330281
+        ],
+        [
+          -0.0,
+          -0.0,
+          0.0,
+          0.0,
+          -0.0,
+          -0.0,
+          0.0,
+          -0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.14540414691,
+          -0.009870895218,
+          -0.067596079156,
+          0.095425897441,
+          -0.034391037467,
+          -0.18133798607,
+          0.002870797148,
+          0.263722757556,
+          -0.176271274042,
+          0.240866968813,
+          -0.013814565369,
+          -0.023149183697,
+          -0.001185094617,
+          -0.023861186476,
+          -0.065976950325,
+          -0.043675364471
+        ],
+        [
+          -0.340727097695,
+          0.315937627492,
+          0.110775334063,
+          -0.138519823123,
+          0.155221665797,
+          -0.413125441893,
+          -0.150319126987,
+          0.062154566607,
+          0.3725346861,
+          -0.11997785066,
+          0.04037561995,
+          0.116142532904,
+          -0.323597208315,
+          -0.104652716162,
+          0.169122570242,
+          0.220472745754
+        ],
+        [
+          0.004749223918,
+          0.155540096313,
+          0.09946677881,
+          0.023007519899,
+          0.30931916802,
+          -0.229482508679,
+          -0.140968189224,
+          0.043153086935,
+          0.31176858034,
+          0.064398446034,
+          -0.063315452048,
+          -0.15500157653,
+          0.106868017436,
+          0.049680535573,
+          -0.045323507487,
+          0.239061571424
+        ],
+        [
+          -0.042474951603,
+          0.10141992457,
+          0.036398978326,
+          -0.061993044387,
+          0.149020411595,
+          -0.038990346092,
+          0.057915956182,
+          -0.026569264891,
+          0.173180758585,
+          0.056157309227,
+          -0.011864131949,
+          0.01713037177,
+          -0.097504324076,
+          0.030531131517,
+          -0.069995068392,
+          0.082840311135
+        ],
+        [
+          -0.123630700846,
+          0.06305730457,
+          -0.055622678458,
+          0.094932655576,
+          -0.100806427684,
+          -0.153664463284,
+          -0.129668284762,
+          0.359430781932,
+          -0.056970191285,
+          0.307035794802,
+          0.003384562817,
+          -0.075493552469,
+          -0.050244606047,
+          -0.008440992691,
+          -0.054705432993,
+          -0.033062690662
+        ],
+        [
+          -0.072698759729,
+          0.028063307638,
+          0.009959155178,
+          -0.297808346426,
+          -0.151913309679,
+          -0.0679610396,
+          -0.036578594412,
+          -0.041138973923,
+          0.101586269134,
+          -0.010585883336,
+          0.137875514972,
+          0.221868170687,
+          -0.057023248906,
+          -0.191077378953,
+          -0.072225297709,
+          0.14437135812
+        ],
+        [
+          0.199330886719,
+          -0.070186248866,
+          0.128893040765,
+          -0.236015357208,
+          0.034854521064,
+          0.254276062767,
+          -0.098498827319,
+          0.103785194361,
+          -0.266053462427,
+          0.167809069077,
+          0.273484229373,
+          -0.303715432736,
+          0.099277339066,
+          0.002043823126,
+          -0.23720763047,
+          -0.238988860778
+        ],
+        [
+          -0.258619750772,
+          -0.146550297901,
+          0.136741258518,
+          0.080517026032,
+          0.157599207703,
+          -0.030196601421,
+          0.321512471475,
+          -0.155938414847,
+          0.077455541974,
+          0.144106617727,
+          0.019396307811,
+          -0.062870668405,
+          0.081055756863,
+          0.315128043984,
+          0.030089860282,
+          0.027136171195
+        ],
+        [
+          -0.071272196086,
+          0.266341410252,
+          -0.112425626898,
+          0.155816456012,
+          0.045377685862,
+          0.308575760782,
+          -0.051776395819,
+          0.103709981647,
+          -0.118191118048,
+          0.012338756734,
+          0.1875125819,
+          0.219212185613,
+          -0.081825410286,
+          0.299049149931,
+          -0.077615569474,
+          -0.12827489938
+        ],
+        [
+          0.443184247856,
+          0.163932195562,
+          -0.260597885846,
+          -0.114215337532,
+          -0.058047080626,
+          -0.002335124883,
+          0.125572609362,
+          0.128080293731,
+          0.012587385211,
+          -0.0009032472,
+          0.01284858826,
+          -0.088057525728,
+          0.049170914787,
+          -0.310541246193,
+          0.041398884951,
+          -0.311592063928
+        ],
+        [
+          0.494553624603,
+          -0.174552606202,
+          0.287206841853,
+          -0.244357952246,
+          -0.026600125431,
+          -0.151810262716,
+          0.079866096155,
+          0.151227705974,
+          -0.016265503391,
+          0.062693544578,
+          0.111440861524,
+          -0.280386485005,
+          -0.081093957326,
+          -0.172162720263,
+          -0.037993928545,
+          0.10689192475
+        ],
+        [
+          0.025160830196,
+          -0.154578721783,
+          -0.043301848639,
+          -0.079340852768,
+          -0.454785125817,
+          0.202075181011,
+          -0.131734861917,
+          -0.005950292405,
+          0.046022665971,
+          -0.079050658042,
+          0.107849560475,
+          -0.283542462939,
+          0.08789097177,
+          0.01180037571,
+          0.054536739851,
+          0.051631157465
+        ]
+      ],
+      "b1": [
+        -0.049338628297,
+        0.058954343865,
+        0.033146478938,
+        -0.34346737413,
+        0.133794449999,
+        0.165856961315,
+        -0.338904996101,
+        0.022438357209,
+        0.214080151398,
+        -0.583045340638,
+        -0.062769558282,
+        0.151722973014,
+        0.338467031041,
+        -0.0563071111,
+        0.023662664066,
+        0.239522246728
+      ],
+      "w2": [
+        [
+          0.02619092933
+        ],
+        [
+          0.038516221189
+        ],
+        [
+          0.054894068987
+        ],
+        [
+          -0.016294019077
+        ],
+        [
+          -0.042027043459
+        ],
+        [
+          -0.019831888173
+        ],
+        [
+          -0.01851639656
+        ],
+        [
+          -0.022120550872
+        ],
+        [
+          0.039696864964
+        ],
+        [
+          0.041907300743
+        ],
+        [
+          -0.011642625247
+        ],
+        [
+          0.024041960576
+        ],
+        [
+          0.030258265842
+        ],
+        [
+          0.026411639024
+        ],
+        [
+          0.049322542489
+        ],
+        [
+          -0.060082680741
+        ]
+      ],
+      "b2": [
+        0.009213353253
+      ],
+      "rainRaw": [
+        -4.188061490523
+      ],
+      "safetyRaw": [
+        -4.673456921599
+      ]
+    }
+  }
+}
