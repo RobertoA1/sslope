@@ -59,6 +59,32 @@ test("el manifiesto suplementario coincide con sus fuentes versionadas", async (
   assert.ok(manifest.outputs.includes("data/validation/ta01-rolling-origin-model-comparison.csv"));
   assert.ok(manifest.outputs.includes("data/validation/ta01-rolling-origin-bootstrap.json"));
   assert.ok(manifest.outputs.includes("data/validation/ta01-rolling-model-selection.csv"));
+  assert.ok(manifest.outputs.includes("data/validation/ta01-rolling-interval-coverage.csv"));
+  assert.ok(manifest.outputs.includes("data/validation/ta01-rolling-interval-coverage.json"));
+});
+
+test("la cobertura condicional se reconcilia con los pronósticos exportados", async () => {
+  const report = JSON.parse(await readFile(path.join(root, "data/validation/ta01-rolling-interval-coverage.json"), "utf8"));
+  const csvRows = parseFlatCsv(await readFile(path.join(root, "data/validation/ta01-rolling-interval-coverage.csv"), "utf8")).rows;
+  assert.equal(report.rows.length, csvRows.length);
+  for (const year of [2024, 2025]) {
+    for (const horizon of [1, 6]) {
+      const prefix = year === 2024 ? "ta01-backtest-2024" : "ta01-chronological";
+      const predictions = parseFlatCsv(await readFile(path.join(root, `data/generated/${prefix}-physics-guided-${horizon}h-test-predictions.csv`), "utf8")).rows;
+      const artifact = JSON.parse(await readFile(path.join(root, `data/models/${prefix}-physics-guided-${horizon}h.json`), "utf8"));
+      const all = report.rows.find((row) => row.test_year === year && row.horizon_hours === horizon && row.segment === "ALL");
+      const high = report.rows.find((row) => row.test_year === year && row.horizon_hours === horizon && row.segment === "RAIN_HIGH_GE_5");
+      assert.ok(all && high);
+      assert.equal(all.sample_count, predictions.length);
+      const covered = predictions.filter((row) => Number(row.actual_displacement_mm) >= Number(row.interval_lower_mm) && Number(row.actual_displacement_mm) <= Number(row.interval_upper_mm)).length;
+      assert.equal(all.empirical_coverage, covered / predictions.length);
+      assert.ok(Math.abs(all.empirical_coverage - artifact.metrics.test.uncertainty.empiricalCoverage) < 0.0001);
+      assert.equal(high.source_date_count, year === 2024 ? 2 : 3);
+      assert.ok(high.empirical_coverage < high.nominal_coverage);
+      const matchingCsv = csvRows.find((row) => Number(row.test_year) === year && Number(row.horizon_hours) === horizon && row.segment === "RAIN_HIGH_GE_5");
+      assert.equal(Number(matchingCsv.empirical_coverage), high.empirical_coverage);
+    }
+  }
 });
 
 test("el origen temporal 2024 excluye 2025 y sus métricas coinciden con los modelos", async () => {

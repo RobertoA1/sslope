@@ -1,6 +1,6 @@
 {
   "id": "TA01-RESEARCH-SUPPLEMENT-V1",
-  "generatedAt": "2026-09-17T23:37:02.496Z",
+  "generatedAt": "2026-09-22T19:52:05.538Z",
   "scientificStatus": "MATERIAL_SUPLEMENTARIO_SEMISINTETICO_NO_VALIDACION_DE_CAMPO",
   "datasetId": "TA01-DATASET-S500-SEED20260915",
   "split": "350 escenarios entrenamiento / 75 validación / 75 prueba, sin mezclar fechas de lluvia; no es un holdout cronológico",
@@ -72,6 +72,8 @@
     "data/validation/ta01-rolling-origin-model-comparison.csv",
     "data/validation/ta01-rolling-origin-bootstrap.json",
     "data/validation/ta01-rolling-model-selection.csv",
+    "data/validation/ta01-rolling-interval-coverage.csv",
+    "data/validation/ta01-rolling-interval-coverage.json",
     "data/validation/ta01-ablation-summary.csv",
     "data/validation/ta01-robustness-summary.csv",
     "data/validation/ta01-fem-mesh-summary.csv",
@@ -155,7 +157,7 @@
       "sha256": "3e89719b6f79ca2579049b8bda087bba934da9767dc3307f0f1e11b26a207aa6"
     },
     "scripts/generate-research-summary.js": {
-      "sha256": "1e41ea8e5718edc535c902d5c47fd4b1a0b17a5aa8980e455763b724644eb521"
+      "sha256": "a80568ef97ef275afa95d49fe9205f3fff0a96f9a5ee0154800f7ca7e29d1771"
     },
     "data/generated/ta01-baseline-1h.json": {
       "sha256": "0084d9baced0ddf09bb33fddb0837b9044753fbc7e48e150e9da0c6d20b58284"

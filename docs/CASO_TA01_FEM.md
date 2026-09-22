@@ -106,6 +106,8 @@ Los cuatro intervalos de confianza del 95 % para la diferencia de MAE incluyen c
 
 La selección entre LSTM e híbrido se simuló **sin usar la prueba para decidir**: se elige el menor MAE en el año de validación y recién después se observa el año de prueba. En tres de las cuatro combinaciones año–horizonte, esa elección no coincide con el menor MAE de prueba (`data/validation/ta01-rolling-model-selection.csv`). Las diferencias son pequeñas y sus intervalos incluyen cero; esto es una señal de selección inestable en el banco disponible, no una tasa de fallo extrapolable a minas. El visor por ello presenta ambos pronósticos como experimentales y no declara un ganador operacional.
 
+Se examinó también la **cobertura condicional** de los intervalos nominales del 95 % (`data/validation/ta01-rolling-interval-coverage.csv`). Para el subconjunto de lluvia diaria ≥5 mm, la cobertura a 1 h/6 h fue 33,3 %/76,9 % en 2024 (solo 2 fechas) y 59,3 %/43,6 % en 2025 (solo 3 fechas). Son pocos eventos y no permiten estimar una tasa de cobertura estable, pero muestran que la cobertura global no garantiza la cobertura bajo lluvia más intensa. A 6 h en 2025, incluso entre las ventanas con desplazamiento positivo la cobertura fue 90,3 %. Los intervalos permanecen experimentales y no deben usarse como garantía de seguridad.
+
 Para generar el corte adicional antes de entrenar sus modelos:
 
 ```bash

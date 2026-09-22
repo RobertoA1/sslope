@@ -228,10 +228,11 @@ const server = http.createServer(async (req, res) => {
       const prefix = testYear === 2024 ? "ta01-fem-500-backtest-2024" : "ta01-fem-500-chronological";
       const modelPrefix = testYear === 2024 ? "ta01-backtest-2024" : "ta01-chronological";
       const splitRelative = `data/generated/${prefix}-split-manifest.json`;
-      const [split, artifact, bootstrap] = await Promise.all([
+      const [split, artifact, bootstrap, coverage] = await Promise.all([
         readFile(path.join(generatedDataDir, `${prefix}-split-manifest.json`), "utf8").then(JSON.parse),
         readFile(path.join(modelDataDir, `${modelPrefix}-physics-guided-${horizon}h.json`), "utf8").then(JSON.parse),
-        readFile(path.join(validationDataDir, "ta01-rolling-origin-bootstrap.json"), "utf8").then(JSON.parse)
+        readFile(path.join(validationDataDir, "ta01-rolling-origin-bootstrap.json"), "utf8").then(JSON.parse),
+        readFile(path.join(validationDataDir, "ta01-rolling-interval-coverage.json"), "utf8").then(JSON.parse)
       ]);
       if (artifact.dataset.splitManifest !== splitRelative) throw new Error("El modelo cronológico no corresponde a la partición mostrada");
       return sendJson(res, 200, {
@@ -243,7 +244,8 @@ const server = http.createServer(async (req, res) => {
         horizonHours: horizon,
         metrics: artifact.metrics.test,
         validationSelection: summarizeValidationSelection(artifact, testYear, horizon),
-        pairedBootstrap: bootstrap.comparisons.find((item) => item.horizonHours === horizon && item.testYear === testYear)
+        pairedBootstrap: bootstrap.comparisons.find((item) => item.horizonHours === horizon && item.testYear === testYear),
+        intervalCoverage: coverage.rows.filter((item) => item.test_year === testYear && item.horizon_hours === horizon)
       });
     }
     if (req.method === "GET" && url.pathname === "/api/persistence/status") return sendJson(res, 200, repository.status());

@@ -482,19 +482,22 @@ async function loadTemporalBaseline() {
       const testYear = Number($("#baseline-protocol").value.slice(-4));
       const evaluation = await api(`/api/research/chronological?horizon=${horizon}&testYear=${testYear}`);
       const { persistence, ridgeComparable: ridge, lstm, pinn: guided, uncertainty } = evaluation.metrics;
+      const highRainCoverage = evaluation.intervalCoverage?.find((item) => item.segment === "RAIN_HIGH_GE_5");
       $("#baseline-metrics").innerHTML = [
         ["MAE persistencia", `${persistence.maeMm.toFixed(8)} mm`],
         ["MAE ridge", `${ridge.maeMm.toFixed(8)} mm`],
         ["MAE LSTM", `${lstm.maeMm.toFixed(8)} mm`],
         ["MAE híbrido físico", `${guided.maeMm.toFixed(8)} mm`],
-        ["RMSE híbrido", `${guided.rmseMm.toFixed(8)} mm`]
+        ["RMSE híbrido", `${guided.rmseMm.toFixed(8)} mm`],
+        ...(highRainCoverage ? [["Cobertura con lluvia ≥5 mm/día", `${(highRainCoverage.empirical_coverage * 100).toFixed(1)}% · ${highRainCoverage.source_date_count} fechas`]] : [])
       ].map(([label, value]) => `<article><small>${label}</small><strong>${value}</strong></article>`).join("");
       const improvement = lstm.maeMm > 0 ? (1 - guided.maeMm / lstm.maeMm) * 100 : 0;
       const interval = evaluation.pairedBootstrap?.confidenceInterval95Mm;
       const intervalNote = interval ? ` IC 95% pareado por fecha para MAE(LSTM)−MAE(híbrido): [${interval[0].toExponential(2)}, ${interval[1].toExponential(2)}] mm${interval[0] <= 0 && interval[1] >= 0 ? "; incluye cero, sin ventaja concluyente" : ""}.` : "";
       const selection = evaluation.validationSelection;
       const selectionNote = selection ? ` La selección por validación (${selection.selectedOnValidation === "LSTM" ? "LSTM" : "híbrido"}) ${selection.selectionMatchesTest ? "coincidió" : "no coincidió"} con el menor MAE de prueba.` : "";
-      $("#baseline-status").textContent = `Prueba cronológica ${testYear} · ${guided.sampleCount} ventanas comparables · entrenamiento 2020–${testYear - 2} (${evaluation.scenarioCounts.train} escenarios), validación ${testYear - 1} (${evaluation.scenarioCounts.validation}) y prueba ${testYear} (${evaluation.scenarioCounts.test}). El híbrido ${improvement >= 0 ? "mejora" : "empeora"} el MAE observado ${Math.abs(improvement).toFixed(1)}% frente a LSTM.${intervalNote}${selectionNote} Cobertura ${(uncertainty.empiricalCoverage * 100).toFixed(1)}% para intervalo nominal 95%. Desplazamientos FEM semisintéticos: no es validación de mina.`;
+      const highRainNote = highRainCoverage ? ` Con lluvia ≥5 mm/día, la cobertura observada es ${(highRainCoverage.empirical_coverage * 100).toFixed(1)}% en solo ${highRainCoverage.source_date_count} fechas.` : "";
+      $("#baseline-status").textContent = `Prueba cronológica ${testYear} · ${guided.sampleCount} ventanas comparables · entrenamiento 2020–${testYear - 2} (${evaluation.scenarioCounts.train} escenarios), validación ${testYear - 1} (${evaluation.scenarioCounts.validation}) y prueba ${testYear} (${evaluation.scenarioCounts.test}). El híbrido ${improvement >= 0 ? "mejora" : "empeora"} el MAE observado ${Math.abs(improvement).toFixed(1)}% frente a LSTM.${intervalNote}${selectionNote} Cobertura global ${(uncertainty.empiricalCoverage * 100).toFixed(1)}% para intervalo nominal 95%.${highRainNote} Desplazamientos FEM semisintéticos: no es validación de mina.`;
       return;
     }
     const [baseline, result, physics] = await Promise.all([api(`/api/research/baseline?horizon=${horizon}`), api(`/api/research/lstm?horizon=${horizon}`), api(`/api/research/physics-guided?horizon=${horizon}`)]);

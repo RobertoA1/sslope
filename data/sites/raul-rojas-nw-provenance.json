@@ -1,0 +1,54 @@
+{
+  "siteId": "raul-rojas-nw",
+  "siteName": "Tajo abierto Raúl Rojas, pared noroeste",
+  "retrievedOn": "2026-09-22",
+  "status": "research_candidate_not_calibrated",
+  "datasets": [
+    {
+      "file": "raul-rojas-nw-transect.geojson",
+      "kind": "cartographic_selection",
+      "source": "OpenStreetMap way 343484051, version 5",
+      "sourceUrl": "https://www.openstreetmap.org/way/343484051/history/5",
+      "coordinates": "EPSG:4326, longitude-latitude",
+      "limitations": "A-B selected visually; not a surveyed wall, crest, toe, or sensor location"
+    },
+    {
+      "file": "raul-rojas-nw-srtm30m-profile.csv",
+      "sha256": "ee76c32a235db952026f01cb3ab36cf99570ad9319f6c80e265c0f578cc1383a",
+      "kind": "derived_historical_topography",
+      "source": "SRTM 1 arc-second version 3 via Open Topo Data public API",
+      "sourceUrl": "https://api.opentopodata.org/v1/srtm30m?locations=-10.67041,-76.26486%7C-10.67598,-76.25971&samples=25&interpolation=bilinear",
+      "documentationUrl": "https://www.opentopodata.org/datasets/srtm/",
+      "observationPeriod": "2000-02",
+      "sampleCount": 25,
+      "horizontalCoordinates": "EPSG:4326, longitude-latitude",
+      "verticalUnits": "m",
+      "verticalDatum": "EGM96, per SRTMGL1 product documentation; verify before combining with other elevation sources",
+      "limitations": "About 30 m raster resolution and year-2000 mine geometry; not suitable for current benches or operational geotechnics"
+    },
+    {
+      "file": "raul-rojas-nw-power-rain-2009-2010.csv",
+      "sha256": "3717827064b0239e71c0179e91274def3c2554207165a1db0b235de0069d57d2",
+      "kind": "regional_meteorological_reanalysis",
+      "source": "NASA POWER daily PRECTOTCORR, MERRA-2",
+      "sourceUrl": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR&community=AG&longitude=-76.26&latitude=-10.68&start=20090801&end=20100131&format=JSON&time-standard=LST",
+      "period": "2009-08-01/2010-01-31",
+      "sampleCount": 184,
+      "units": "mm/day",
+      "timeStandard": "LST",
+      "limitations": "Regional model grid, not a rain gauge at the wall; no hourly observed intensity"
+    },
+    {
+      "file": "raul-rojas-nw-prism-aggregate-2009-2010.csv",
+      "sha256": "e8145baaf485176921faecdc27141d56d0a2ec4764a9b255d167afcc4c757c16",
+      "kind": "secondary_published_observation_summary",
+      "source": "Ramos Parra (2026), figures 19-20, printed page 42; tables credited there to Sociedad Geoconsultora",
+      "sourceUrl": "https://gestionrepo.unmsm.edu.pe/items/66eba497-666f-4139-b9cb-cf1fa10ac241",
+      "period": "2009-08/2010-01, exact reading dates not specified",
+      "sampleCount": 11,
+      "units": "mm accumulated",
+      "limitations": "Six-month aggregate by prism; no sensor coordinates, direction/component or daily time series. Not suitable for temporal training or sensor-level model validation"
+    }
+  ],
+  "operationalDecisionAllowed": false
+}

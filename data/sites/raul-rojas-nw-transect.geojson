@@ -1,0 +1,58 @@
+{
+  "type": "FeatureCollection",
+  "name": "raul-rojas-nw-transect",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "raul-rojas-nw-ab-v1",
+      "properties": {
+        "site": "Tajo abierto Raúl Rojas, Cerro de Pasco, Perú",
+        "sector": "pared noroeste, sección cartográfica candidata",
+        "crs": "EPSG:4326",
+        "coordinateOrder": "longitude, latitude",
+        "direction": "noroeste a sureste, hacia el interior del tajo",
+        "startLabel": "A: flanco noroeste aproximado",
+        "endLabel": "B: interior del tajo aproximado",
+        "lengthApproxM": 837,
+        "studyCorridorHalfWidthM": 100,
+        "source": "OpenStreetMap way 343484051, versión 5; puntos A y B seleccionados visualmente sobre el mapa",
+        "sourceUrl": "https://www.openstreetmap.org/way/343484051/history/5",
+        "selectedOn": "2026-09-22",
+        "status": "provisional_cartographic_not_surveyed",
+        "warning": "No usar los extremos como corona o pie medidos. Verificar con topografía de resolución adecuada y una fecha de geometría antes de construir el FEM. No representa una calibración de TA-01 ni un modelo operacional."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-76.26486, -10.67041],
+          [-76.25971, -10.67598]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "raul-rojas-nw-descent-v1",
+      "properties": {
+        "site": "Tajo abierto Raúl Rojas, Cerro de Pasco, Perú",
+        "sector": "tramo descendente NW inferido de SRTM 30 m",
+        "crs": "EPSG:4326",
+        "coordinateOrder": "longitude, latitude",
+        "startSample": 12,
+        "endSample": 24,
+        "startElevationApproxM": 4310,
+        "endElevationApproxM": 4093,
+        "lengthApproxM": 418,
+        "source": "Perfil SRTM 30 m del transecto A-B, campaña de 2000",
+        "status": "historical_dem_inference_not_surveyed",
+        "warning": "El inicio C no es una corona medida y B no es un pie medido. No usar esta forma histórica como geometría actual de la mina."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-76.26228502, -10.67319501],
+          [-76.25971, -10.67598]
+        ]
+      }
+    }
+  ]
+}

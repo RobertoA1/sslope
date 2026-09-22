@@ -120,15 +120,16 @@ const bootstrapChronologicalMaeDifference = (predictionRows, dateByScenario, see
   };
 };
 
+const temporalSegments = [
+  ["RAIN_DRY_0", (row) => row.rainfallMm === 0],
+  ["RAIN_LOW_GT_0_LT_1", (row) => row.rainfallMm > 0 && row.rainfallMm < 1],
+  ["RAIN_MODERATE_GE_1_LT_5", (row) => row.rainfallMm >= 1 && row.rainfallMm < 5],
+  ["RAIN_HIGH_GE_5", (row) => row.rainfallMm >= 5],
+  ["TARGET_ZERO", (row) => row.actual === 0],
+  ["TARGET_POSITIVE", (row) => row.actual > 0]
+];
+
 const chronologicalSegmentRows = (horizonHours, predictionRows, scenarioMetadata) => {
-  const segments = [
-    ["RAIN_DRY_0", (row) => row.rainfallMm === 0],
-    ["RAIN_LOW_GT_0_LT_1", (row) => row.rainfallMm > 0 && row.rainfallMm < 1],
-    ["RAIN_MODERATE_GE_1_LT_5", (row) => row.rainfallMm >= 1 && row.rainfallMm < 5],
-    ["RAIN_HIGH_GE_5", (row) => row.rainfallMm >= 5],
-    ["TARGET_ZERO", (row) => row.actual === 0],
-    ["TARGET_POSITIVE", (row) => row.actual > 0]
-  ];
   const predictions = predictionRows.map((row) => {
     const metadata = scenarioMetadata.get(row.scenario_id);
     if (!metadata) throw new Error(`Faltan metadatos cronológicos de ${row.scenario_id}`);
@@ -143,7 +144,7 @@ const chronologicalSegmentRows = (horizonHours, predictionRows, scenarioMetadata
       HYBRID_PHYSICS_GUIDED: Number(row.physics_guided_prediction_mm)
     };
   });
-  return segments.flatMap(([segment, predicate]) => {
+  return temporalSegments.flatMap(([segment, predicate]) => {
     const selected = predictions.filter(predicate);
     if (!selected.length) return [];
     const scenarioCount = new Set(selected.map((row) => row.scenarioId)).size;
@@ -162,6 +163,36 @@ const chronologicalSegmentRows = (horizonHours, predictionRows, scenarioMetadata
         bias_mm: errors.reduce((sum, error) => sum + error, 0) / errors.length
       };
     });
+  });
+};
+
+const intervalCoverageRows = (testYear, horizonHours, predictionRows, scenarioMetadata, nominalCoverage) => {
+  const values = predictionRows.map((row) => {
+    const metadata = scenarioMetadata.get(row.scenario_id);
+    if (!metadata) throw new Error(`Faltan metadatos de prueba para ${row.scenario_id}`);
+    const actual = Number(row.actual_displacement_mm);
+    const lower = Number(row.interval_lower_mm);
+    const upper = Number(row.interval_upper_mm);
+    if (![actual, lower, upper].every(Number.isFinite) || lower > upper) throw new Error("Intervalo cronológico inválido");
+    return { scenarioId: row.scenario_id, sourceDate: metadata.sourceDate, rainfallMm: metadata.rainfallMm, actual, lower, upper };
+  });
+  return [["ALL", () => true], ...temporalSegments].flatMap(([segment, predicate]) => {
+    const selected = values.filter(predicate);
+    if (!selected.length) return [];
+    const covered = selected.filter((row) => row.actual >= row.lower && row.actual <= row.upper).length;
+    const empiricalCoverage = covered / selected.length;
+    return [{
+      test_year: testYear,
+      horizon_hours: horizonHours,
+      segment,
+      scenario_count: new Set(selected.map((row) => row.scenarioId)).size,
+      source_date_count: new Set(selected.map((row) => row.sourceDate)).size,
+      sample_count: selected.length,
+      nominal_coverage: nominalCoverage,
+      empirical_coverage: empiricalCoverage,
+      coverage_gap: empiricalCoverage - nominalCoverage,
+      mean_interval_width_mm: selected.reduce((sum, row) => sum + row.upper - row.lower, 0) / selected.length
+    }];
   });
 };
 
@@ -185,6 +216,7 @@ const chronologicalScenarioMetadata = new Map(chronologicalTestRows.map((row) =>
 const chronologicalBootstrap = [];
 const rollingBootstrap = [];
 const chronologicalSegments = [];
+const rollingIntervalCoverage = [];
 const sourceFiles = [
   "data/rainfall/pasco-nasa-power-2020-2025.csv",
   "data/generated/ta01-fem-500.csv",
@@ -260,6 +292,7 @@ for (const horizonHours of [1, 6]) {
   chronologicalBootstrap.push(futureBootstrap);
   rollingBootstrap.push({ testYear: 2025, ...futureBootstrap });
   chronologicalSegments.push(...chronologicalSegmentRows(horizonHours, chronologicalPredictions, chronologicalScenarioMetadata));
+  rollingIntervalCoverage.push(...intervalCoverageRows(2025, horizonHours, chronologicalPredictions, chronologicalScenarioMetadata, chronologicalTest.uncertainty.nominalCoverage));
   ablation.push(...artifact.ablation.variants.map((variant) => ({
     horizon_hours: horizonHours,
     variant_id: variant.id,
@@ -295,6 +328,7 @@ for (const horizonHours of [1, 6]) {
 
 const earlierFoldTestRows = parseCsv(await readFile(source("data/generated/ta01-fem-500-backtest-2024-test.csv"), "utf8"));
 const earlierFoldDateByScenario = new Map(earlierFoldTestRows.map((row) => [row.scenario_id, row.source_date]));
+const earlierFoldScenarioMetadata = new Map(earlierFoldTestRows.map((row) => [row.scenario_id, { sourceDate: row.source_date, rainfallMm: Number(row.observed_daily_rainfall_mm) }]));
 for (const horizonHours of [1, 6]) {
   const modelRelative = `data/models/ta01-backtest-2024-physics-guided-${horizonHours}h.json`;
   const predictionRelative = `data/generated/ta01-backtest-2024-physics-guided-${horizonHours}h-test-predictions.csv`;
@@ -317,10 +351,12 @@ for (const horizonHours of [1, 6]) {
   ].map((row) => ({ test_year: 2024, ...row })));
   const predictions = parseCsv(await readFile(source(predictionRelative), "utf8"));
   rollingBootstrap.push({ testYear: 2024, horizonHours, ...bootstrapChronologicalMaeDifference(predictions, earlierFoldDateByScenario, 20260924 + horizonHours) });
+  rollingIntervalCoverage.push(...intervalCoverageRows(2024, horizonHours, predictions, earlierFoldScenarioMetadata, test.uncertainty.nominalCoverage));
 }
 rollingComparison.sort((a, b) => a.test_year - b.test_year || a.horizon_hours - b.horizon_hours);
 rollingBootstrap.sort((a, b) => a.testYear - b.testYear || a.horizonHours - b.horizonHours);
 rollingSelection.sort((a, b) => a.testYear - b.testYear || a.horizonHours - b.horizonHours);
+rollingIntervalCoverage.sort((a, b) => a.test_year - b.test_year || a.horizon_hours - b.horizon_hours);
 
 const robustnessArtifact = JSON.parse(await readFile(source("data/validation/ta01-model-robustness.json"), "utf8"));
 const robustness = robustnessArtifact.results.flatMap((result) => [
@@ -380,6 +416,8 @@ await Promise.all([
   writeFile(path.join(outputDir, "ta01-rolling-origin-model-comparison.csv"), csv(rollingComparison)),
   writeFile(path.join(outputDir, "ta01-rolling-origin-bootstrap.json"), `${JSON.stringify({ method: "PAIRED_SOURCE_DATE_BLOCK_BOOTSTRAP", status: "SEMISYNTHETIC_SINGLE_GEOMETRY", comparisons: rollingBootstrap }, null, 2)}\n`),
   writeFile(path.join(outputDir, "ta01-rolling-model-selection.csv"), csv(rollingSelection)),
+  writeFile(path.join(outputDir, "ta01-rolling-interval-coverage.csv"), csv(rollingIntervalCoverage)),
+  writeFile(path.join(outputDir, "ta01-rolling-interval-coverage.json"), `${JSON.stringify({ method: "VALIDATION_CONFORMAL_INTERVAL_TEST_DIAGNOSTIC", scientificStatus: "SEMISYNTHETIC_SINGLE_GEOMETRY", note: "Cobertura condicional descriptiva; los grupos de lluvia alta tienen solo dos o tres fechas.", rows: rollingIntervalCoverage }, null, 2)}\n`),
   writeFile(path.join(outputDir, "ta01-ablation-summary.csv"), csv(ablation)),
   writeFile(path.join(outputDir, "ta01-robustness-summary.csv"), csv(robustness)),
   writeFile(path.join(outputDir, "ta01-fem-mesh-summary.csv"), csv(mesh)),
@@ -447,6 +485,8 @@ const manifest = {
     "data/validation/ta01-rolling-origin-model-comparison.csv",
     "data/validation/ta01-rolling-origin-bootstrap.json",
     "data/validation/ta01-rolling-model-selection.csv",
+    "data/validation/ta01-rolling-interval-coverage.csv",
+    "data/validation/ta01-rolling-interval-coverage.json",
     "data/validation/ta01-ablation-summary.csv",
     "data/validation/ta01-robustness-summary.csv",
     "data/validation/ta01-fem-mesh-summary.csv",
