@@ -190,3 +190,7 @@ Ejemplo de ingesta:
 El proyecto ya incluye un FEM 2D lineal, una LSTM entrenada, un corrector neuronal físico agregado y una primera aproximación espacial de equilibrio FEM discreto para TA-01. El pronóstico general basado en telemetría todavía usa el estado físico reducido porque los modelos entrenados no deben trasladarse a sensores reales sin calibración. Para sustentar las afirmaciones completas del artículo aún se debe validar el FEM con benchmarks externos y datos de campo, ampliar la PINN espacial a residuos PDE continuos y múltiples escenarios TA-01, y seguir el diseño experimental descrito en [PLAN_IMPLEMENTACION.md](PLAN_IMPLEMENTACION.md).
 
 La correspondencia entre el manuscrito, los módulos implementados y los criterios para avanzar a resultados publicables se documenta en [INTEGRACION_ARTICULO.md](docs/INTEGRACION_ARTICULO.md).
+
+## Licencias y procedencia
+
+El código y la documentación de sslope se distribuyen bajo la [licencia MIT](LICENSE). Las aportaciones originales de los autores en los datos semisintéticos y resultados de investigación de `data/generated/`, `data/models/` y `data/validation/` se distribuyen bajo [CC BY 4.0](data/LICENSE.md). La licencia de datos se aplica solo a los derechos de los autores; los datos de fuentes externas conservan sus propias condiciones y procedencia, detalladas en `data/rainfall/README.md` y `data/sites/raul-rojas-nw-provenance.json`.
