@@ -5,18 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>M-1 | Slope Stability Digital Twin</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/dashboard-layout.css" />
+    <link rel="stylesheet" href="/century-panel.css" />
+    <link rel="stylesheet" href="/mine-twin.css" />
   </head>
-  <body>
+  <body data-mine-case="CENTURY">
     <header>
       <div>
         <p class="eyebrow">M-1 · PROTOTIPO DE INVESTIGACIÓN</p>
         <h1>Gemelo digital de estabilidad de taludes</h1>
-        <p class="subhead">Explora escenarios geotécnicos; FEM 2D y modelos temporales se evalúan por separado en el caso TA-01.</p>
+        <p class="subhead">Explora escenarios geotécnicos: FEM–LSTM semisintético en TA-01 y evaluación temporal con prismas reales de Century Mine, como casos independientes.</p>
       </div>
       <div id="connection-status" class="connection"><span class="dot"></span> Servicio activo</div>
     </header>
     <main>
-      <section class="control-panel" aria-label="Controles de demostración">
+
+      <section class="mine-selector-bar" aria-label="Selección de mina">
+        <label for="mine-case">Mina / caso de estudio
+          <select id="mine-case"><option value="CENTURY" selected>Century Mine · Australia</option><option value="PASCO">Cerro de Pasco · Perú</option><option value="LAB">Laboratorio TA-01 · demostración</option></select>
+        </label>
+        <p id="mine-case-note">Gemelo retrospectivo parcial de Century: coordenadas observadas y superficie interpolada. No es un sistema operacional.</p>
+      </section>
+      <section id="mine-summary" class="mine-summary" aria-label="Estado del caso de mina">
+        <article class="card">
+          <h2 id="mine-name">Century Mine · sector sudoeste</h2>
+          <p id="mine-status" role="status" aria-live="polite">Cargando modelo…</p>
+          <div class="mine-stat-grid">
+            <div><small id="mine-observed-label">Prismas con lectura en la fecha</small><strong id="mine-observed-count">—</strong></div>
+            <div class="century-only"><small>Máximo cambio de posición respecto de la referencia</small><strong id="mine-movement">—</strong></div>
+            <div><small>Fecha reproducida, no tiempo real</small><strong id="mine-frame-date">—</strong></div>
+            <div class="century-only"><small>Lluvia observada BOM (solo Century)</small><strong id="mine-rain">—</strong></div>
+          </div>
+          <p id="mine-safety-note">Sin presión de poros medida, FEM calibrado o alertas de falla. La superficie entre prismas y las texturas son aproximaciones visuales.</p>
+          <a id="mine-download" href="/api/mines/century?download=1">Descargar modelo y fotogramas JSON</a>
+          · <a id="mine-source" href="https://zenodo.org/records/15003054" target="_blank" rel="noopener noreferrer">Fuente original</a>
+          <details class="mine-limitations"><summary>Alcance de la reconstrucción y datos faltantes</summary><ul id="mine-limitations"></ul></details>
+        </article>
+        <article class="card">
+          <p id="mine-series-heading" class="label">PUNTO SELECCIONADO · CURVA HISTÓRICA COMPLETA</p>
+          <p id="mine-selected-detail" class="mine-selected-detail">Selecciona un prisma del modelo o del tablero.</p>
+          <div id="mine-timeseries"></div>
+          <p id="mine-series-note">Curva retrospectiva completa para explorar el registro; no es información disponible antes de cada fecha. La línea naranja marca el 23/02/2014 documentado en el artículo, no una detección del software.</p>
+        </article>
+      </section>
+      <section class="control-panel laboratory-only" aria-label="Controles de demostración">
         <div>
           <label for="scenario">Escenario demostrativo</label>
           <select id="scenario"><option value="normal">Normal</option><option value="critical">Crítico</option></select>
@@ -33,7 +65,7 @@
         <p id="last-update" class="small"></p>
       </section>
 
-      <section class="hero-grid">
+      <section class="hero-grid laboratory-only">
         <article class="card risk-card">
           <p class="label">Riesgo orientativo · no operacional</p>
           <p id="risk-level" class="risk-level">—</p>
@@ -45,7 +77,7 @@
         <article class="card metric"><p class="label">Desplazamiento previsto</p><strong id="displacement">—</strong><span id="interval">Intervalo: —</span></article>
         <article class="card metric"><p class="label">Incertidumbre</p><strong id="uncertainty">—</strong><span id="residual">Residuo físico: —</span></article>
       </section>
-      <section class="twin-flow" aria-label="Flujo del gemelo digital">
+      <section class="twin-flow laboratory-only" aria-label="Flujo del gemelo digital">
         <article class="flow-step"><p class="label">01 · ESTADO ACTUAL</p><strong id="state-current">—</strong><span id="state-detail">Esperando telemetría.</span></article>
         <span class="flow-arrow">→</span>
         <article class="flow-step"><p class="label">02 · PREDICCIÓN</p><strong id="state-prediction">—</strong><span id="prediction-detail">Modelo pendiente.</span></article>
@@ -56,7 +88,7 @@
       <section class="scene-layout">
         <article class="card scene-card">
           <div class="section-title scene-heading">
-            <div><p class="label">SIMULADOR ESPACIAL</p><h2>Talud 3D · estado del gemelo</h2></div>
+            <div><p class="label">SIMULADOR ESPACIAL</p><h2 id="mine-scene-title">Talud 3D · estado del gemelo</h2></div>
             <div class="scene-window-actions">
               <span id="scene-status" class="chip">CARGANDO</span>
               <button id="fullscreen-scene" class="secondary compact" type="button">⛶ Ampliar</button>
@@ -81,134 +113,133 @@
           </div>
           <div class="scene-footer"><span id="layer-legend"></span><span id="coordinate-readout">Sistema local · metros</span><span id="camera-mode">Cámara orbital · arrastra para rotar</span></div>
         </article>
-        <aside class="card scene-tools control-dashboard">
-          <div class="dashboard-heading"><div><p class="label">TABLERO DE CONTROL</p><h2>Simulación y visualización</h2></div><p>Ajusta el escenario desde un solo panel compacto.</p></div>
-          <details class="geometry-ingestion" open>
-            <summary>Geometría del Digital Twin</summary>
-            <label for="geometry-source">Fuente de geometría</label>
-            <select id="geometry-source"><option value="PROCEDURAL">Talud paramétrico</option><option value="PHOTO_APPROXIMATION">Aproximación desde fotografía</option><option value="IMPORTED_MODEL">Modelo / datos topográficos</option></select>
-            <input id="geometry-file" type="file" accept="image/*,.csv,.dxf,.geojson,.json,.obj,.stl,.gltf,.glb" />
-            <button id="load-geometry" class="secondary">Escanear / aplicar fuente</button>
-            <p class="control-hint">Pruebas: <a href="/samples/talud-circular-xyz.csv" download>CSV XYZ</a> · <a href="/samples/perfil-talud-bancado.dxf" download>DXF de perfil</a></p>
-            <img id="photo-preview" alt="Fotografía de referencia del talud" hidden />
-            <p id="geometry-status" class="control-hint">Geometría procedural activa.</p>
-          </details>
-          <details class="telemetry-ingestion" open>
-            <summary>Telemetría de campo</summary>
-            <label for="telemetry-file">Lecturas CSV o JSON</label>
-            <input id="telemetry-file" type="file" accept="text/csv,application/json,.csv,.json" />
-            <div class="telemetry-import-actions">
-              <button id="import-telemetry" class="secondary" type="button" disabled>Importar lecturas</button>
-              <a href="/samples/telemetry-import-template.csv" download>Descargar plantilla CSV</a>
-            </div>
-            <p id="telemetry-import-status" class="control-hint">Máximo 5000 lecturas y 8 MB. La plantilla es demostrativa: cambia la fuente y la calidad al usar sensores reales.</p>
-          </details>
-          <section class="dashboard-block layer-controls">
+        <aside class="card scene-tools control-dashboard"><div class="dashboard-heading"><div><p class="label">TABLERO DE CONTROL</p><h2>Simulación y visualización</h2></div><p>Controles por tarea. Tus ajustes se conservan al cambiar de pestaña.</p></div>
+<div class="dashboard-tabs" role="tablist" aria-label="Grupos del tablero de control"><button class="dashboard-tab" type="button" id="tab-view" role="tab" aria-selected="true" aria-controls="controls-view" tabindex="0">Vista</button><button class="dashboard-tab" type="button" id="tab-simulation" role="tab" aria-selected="false" aria-controls="controls-simulation" tabindex="-1">Simulación</button><button class="dashboard-tab" type="button" id="tab-data" role="tab" aria-selected="false" aria-controls="controls-data" tabindex="-1">Datos</button></div><div class="dashboard-panels"><section id="mine-controls" class="mine-controls" aria-label="Reproducción de mediciones de la mina">
+  <label class="century-only">Fecha medida<select id="mine-date" aria-label="Fecha medida"></select></label>
+  <label>Punto de observación<select id="mine-prism" aria-label="Punto de observación"></select></label>
+  <label class="mine-wide century-only">Recorrido histórico <input id="mine-seek" type="range" min="0" max="217" step="1" value="0" aria-label="Recorrido histórico"></label>
+  <div class="mine-wide mine-actions century-only"><button id="mine-play" type="button">▶ Reproducir mediciones</button><button id="mine-pause" type="button" class="secondary" disabled>Pausar</button><button id="mine-event-date" type="button" class="secondary">Ir al 23/02/2014</button></div>
+  <label class="century-only">Velocidad de reproducción<select id="mine-speed"><option value="2">2 fechas / s</option><option value="5" selected>5 fechas / s</option><option value="10">10 fechas / s</option></select></label>
+  <label class="century-only">Escala del movimiento <output id="mine-amplification-value">1×</output><input id="mine-amplification" type="range" min="1" max="100" step="1" value="1" aria-label="Escala del movimiento observado"></label>
+  <button id="mine-scale-1x" type="button" class="secondary century-only">Escala real 1×</button>
+  <label class="toggle century-only"><input id="mine-show-rain" type="checkbox" checked> Partículas de lluvia observada</label>
+  <p id="mine-replay-note" class="mine-wide">Gris: referencia histórica o fondo esquemático, no desplazamiento cero. El movimiento y los colores analíticos solo se muestran donde hay cobertura suficiente de lecturas actuales. Al desactivar «Movimiento del terreno» aparecen vectores de cambio.</p>
+</section>
+<p class="mine-native-controls-note">La lluvia, las propiedades mecánicas y los modelos TA-01 se prueban en «Laboratorio TA-01». No se aplican a la mina seleccionada.</p>
+<section class="dashboard-tab-panel" id="controls-view" role="tabpanel" aria-labelledby="tab-view"><div class="dashboard-stack"><section class="dashboard-block layer-controls">
             <p class="label">CAPAS DEL MODELO</p>
             <label for="scene-layer">Variable visualizada</label>
             <select id="scene-layer"><option value="risk">Riesgo pronosticado</option><option value="displacement">Desplazamiento previsto</option><option value="pore">Presión de poros</option><option value="safety">Índice de seguridad reducido</option><option value="uncertainty">Incertidumbre</option></select>
-          </section>
-          <section class="dashboard-block camera-projection">
+          </section><section class="dashboard-block camera-projection">
             <p class="label">CÁMARA</p>
             <label for="camera-projection">Proyección</label>
-            <select id="camera-projection"><option value="PERSPECTIVE" selected>Perspectiva 3D</option><option value="ORTHOGRAPHIC">Ortográfica técnica</option></select>
-          </section>
-          <section class="weather-simulation dashboard-block" aria-label="Simulación de lluvia">
-            <p class="label">EVENTO DE LLUVIA</p>
-            <label for="rain-source">Fuente de lluvia</label>
-            <select id="rain-source"><option value="manual">Intensidad manual</option><option value="historical">Histórico NASA POWER · Pasco</option></select>
-            <div id="manual-rain-controls" class="rain-mode-fields">
-              <label class="range-control">Intensidad <output id="rain-intensity-value">35 mm/h</output><input id="rain-intensity" type="range" min="0" max="100" step="5" value="35" /></label>
-            </div>
-            <div id="historical-rain-controls" class="rain-mode-fields" hidden>
-              <label for="rain-history-date">Día histórico</label>
-              <input id="rain-history-date" type="date" />
-              <p id="rain-history-value" class="control-hint">Cargando datos históricos…</p>
-            </div>
-            <label for="rain-duration">Duración</label>
-            <select id="rain-duration"><option value="1">1 hora</option><option value="6" selected>6 horas</option><option value="12">12 horas</option><option value="24">24 horas</option><option value="48">48 horas</option></select>
-            <div class="weather-actions"><button id="simulate-rain" type="button">Simular lluvia</button><button id="clear-weather" class="secondary" type="button">Restablecer</button></div>
-            <p id="weather-status" class="control-hint">Sin evento meteorológico aplicado.</p>
-          </section>
-          <section class="forecast-playback" aria-label="Reproducción temporal del desplazamiento previsto">
-            <p class="label">SIMULACIÓN TEMPORAL</p>
-            <div class="playback-actions"><button id="play-displacement" class="secondary" type="button">▶ Simular desplazamiento</button><button id="pause-displacement" class="secondary" type="button" disabled>❚❚ Pausar</button><button id="reset-displacement" class="secondary" type="button">↺ Reiniciar</button></div>
-            <label for="playback-speed">Velocidad de reproducción</label>
-            <select id="playback-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
-            <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">1200×</output><input id="playback-amplification" type="range" min="0" max="19" step="1" value="11" title="Extremo izquierdo: 1× sin amplificación; después, 200× a 2000×" /></label>
-            <div class="amplification-shortcuts"><button id="playback-scale-1x" class="secondary" type="button">1× · escala real</button><span>1× → 2000×</span></div>
-            <div class="playback-track" role="progressbar" aria-label="Progreso de la simulación temporal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="playback-progress"></span></div>
-            <label class="playback-seek-label" for="playback-seek">Hora visible<input id="playback-seek" type="range" min="0" max="100" step="1" value="0" /></label>
-            <div class="playback-readout"><strong id="playback-time">t = 0.0 h</strong><span id="playback-displacement">Desplazamiento: —</span></div>
-            <p id="playback-note" class="control-hint">Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo.</p>
-          </section>
-          <div class="visual-toggles" aria-label="Opciones de visualización">
-            <label class="toggle realism-toggle"><input id="realism-enabled" type="checkbox" checked /> <span><strong>Terreno realista</strong><small>Luz solar, sombras suaves y marcas naturales</small></span></label>
-            <label class="toggle material-motion-toggle"><input id="material-motion-enabled" type="checkbox" checked /> <span><strong>Movimiento del terreno</strong><small>Deforma suelo, roca y sedimentos en vivo</small></span></label>
-            <label class="toggle"><input id="terrain-enabled" type="checkbox" checked /> <span>Forma y textura del talud</span></label>
-            <label class="toggle"><input id="materials-enabled" type="checkbox" checked /> <span>Color de materiales</span></label>
-            <label class="toggle"><input id="overlay-enabled" type="checkbox" checked /> <span>Capa analítica</span></label>
-            <label class="toggle"><input id="contrast-enabled" type="checkbox" checked /> <span>Contraste alto</span></label>
-            <label class="toggle"><input id="coordinates-enabled" type="checkbox" checked /> <span>Cuadrícula y coordenadas</span></label>
-            <label class="toggle"><input id="freecam-enabled" type="checkbox" /> <span>Vuelo libre (WASD + Q/E)</span></label>
-          </div>
-          <section class="coordinate-inspector" aria-label="Inspector de coordenadas">
-            <p class="label">REFERENCIA ESPACIAL</p>
-            <strong id="coordinate-system">Sistema local del simulador</strong>
-            <div class="coordinate-rows"><span><i class="axis-e"></i>E / X <output id="coordinate-east">—</output></span><span><i class="axis-n"></i>N / Y <output id="coordinate-north">—</output></span><span><i class="axis-z"></i>Cota / Z <output id="coordinate-elevation">—</output></span></div>
-            <p id="coordinate-hover" class="control-hint">Mueve el cursor sobre una marca de la retícula.</p>
-          </section>
-          <section class="report-actions" aria-label="Generación de informes">
-            <p class="label">INFORME DEL GEMELO</p>
-            <p>Genera un resumen trazable del estado actual, simulación y geometría.</p>
-            <div><button id="download-pdf" class="secondary">Descargar PDF</button><button id="download-word" class="secondary">Descargar Word</button></div>
-            <p id="report-status" class="control-hint">El informe se genera con el estado visible actual.</p>
-          </section>
-          <div class="viewpoints" aria-label="Puntos de observación del talud">
+            <select id="camera-projection"><option value="PERSPECTIVE" selected="">Perspectiva 3D</option><option value="ORTHOGRAPHIC">Ortográfica técnica</option></select>
+          </section><div class="viewpoints" aria-label="Puntos de observación del talud">
             <p class="label">PUNTOS DE OBSERVACIÓN</p>
             <button class="viewpoint active" data-viewpoint="overview">▣ Vista completa</button>
             <button class="viewpoint" data-viewpoint="crest">◉ Cresta</button>
             <button class="viewpoint" data-viewpoint="midbench">◉ Banco medio</button>
             <button class="viewpoint" data-viewpoint="toe">◉ Pie del talud</button>
-          </div>
-          <details class="simulation-controls">
+          <button id="reset-camera" class="secondary">Restablecer cámara</button></div></div><div class="dashboard-stack"><div class="visual-toggles" aria-label="Opciones de visualización">
+            <label class="toggle realism-toggle"><input id="realism-enabled" type="checkbox" checked=""> <span><strong>Terreno realista</strong><small>Luz solar, sombras suaves y marcas naturales</small></span></label>
+            <label class="toggle material-motion-toggle"><input id="material-motion-enabled" type="checkbox" checked=""> <span><strong>Movimiento del terreno</strong><small>Deforma suelo, roca y sedimentos en vivo</small></span></label>
+            <label class="toggle"><input id="terrain-enabled" type="checkbox" checked=""> <span>Forma y textura del talud</span></label>
+            <label class="toggle"><input id="materials-enabled" type="checkbox" checked=""> <span>Color de materiales</span></label>
+            <label class="toggle"><input id="overlay-enabled" type="checkbox" checked=""> <span>Capa analítica</span></label>
+            <label class="toggle"><input id="contrast-enabled" type="checkbox" checked=""> <span>Contraste alto</span></label>
+            <label class="toggle"><input id="coordinates-enabled" type="checkbox" checked=""> <span>Cuadrícula y coordenadas</span></label>
+            <label class="toggle"><input id="freecam-enabled" type="checkbox"> <span>Vuelo libre (WASD + Q/E)</span></label>
+          </div><section class="coordinate-inspector" aria-label="Inspector de coordenadas">
+            <p class="label">REFERENCIA ESPACIAL</p>
+            <strong id="coordinate-system">Sistema local del simulador</strong>
+            <div class="coordinate-rows"><span><i class="axis-e"></i>E / X <output id="coordinate-east">—</output></span><span><i class="axis-n"></i>N / Y <output id="coordinate-north">—</output></span><span><i class="axis-z"></i>Cota / Z <output id="coordinate-elevation">—</output></span></div>
+            <p id="coordinate-hover" class="control-hint">Mueve el cursor sobre una marca de la retícula.</p>
+          </section></div><details class="inspection-summary dashboard-wide"><summary>Sensor, materiales y procedencia</summary><div class="inspection-content"><div class="sensor-card"><p class="label">SENSOR SELECCIONADO</p><strong id="selected-sensor">EXT-01</strong><p id="sensor-detail" class="muted">Sensor de desplazamiento principal.</p></div><div class="material-key"><p class="label">MATERIALES</p><span><i class="material-dot rock"></i>Roca competente</span><span><i class="material-dot weathered"></i>Material meteorizado</span><span><i class="material-dot soil"></i>Suelo residual</span></div><div class="model-note"><p class="label">PROCEDENCIA</p><p id="layer-source">Capa pronosticada por el modelo híbrido.</p></div></div></details></section><section class="dashboard-tab-panel" id="controls-simulation" role="tabpanel" aria-labelledby="tab-simulation" hidden=""><div class="dashboard-stack"><section class="weather-simulation dashboard-block" aria-label="Simulación de lluvia">
+            <p class="label">EVENTO DE LLUVIA</p>
+            <label for="rain-source">Fuente de lluvia</label>
+            <select id="rain-source"><option value="manual">Intensidad manual</option><option value="historical">Histórico NASA POWER · Pasco</option></select>
+            <div id="manual-rain-controls" class="rain-mode-fields">
+              <label class="range-control">Intensidad <output id="rain-intensity-value">35 mm/h</output><input id="rain-intensity" type="range" min="0" max="100" step="5" value="35"></label>
+            </div>
+            <div id="historical-rain-controls" class="rain-mode-fields" hidden="">
+              <label for="rain-history-date">Día histórico</label>
+              <input id="rain-history-date" type="date">
+              <p id="rain-history-value" class="control-hint">Cargando datos históricos…</p>
+            </div>
+            <label for="rain-duration">Duración</label>
+            <select id="rain-duration"><option value="1">1 hora</option><option value="6" selected="">6 horas</option><option value="12">12 horas</option><option value="24">24 horas</option><option value="48">48 horas</option></select>
+            <div class="weather-actions"><button id="simulate-rain" type="button">Simular lluvia</button><button id="clear-weather" class="secondary" type="button">Restablecer</button></div>
+            <p id="weather-status" class="control-hint">Sin evento meteorológico aplicado.</p>
+          </section></div><div class="dashboard-stack"><section class="forecast-playback" aria-label="Reproducción temporal del desplazamiento previsto">
+            <p class="label">SIMULACIÓN TEMPORAL</p>
+            <div class="playback-actions"><button id="play-displacement" class="secondary" type="button">▶ Simular desplazamiento</button><button id="pause-displacement" class="secondary" type="button" disabled="">❚❚ Pausar</button><button id="reset-displacement" class="secondary" type="button">↺ Reiniciar</button></div>
+            <label for="playback-speed">Velocidad de reproducción</label>
+            <select id="playback-speed"><option value="0.5">0.5×</option><option value="1" selected="">1×</option><option value="2">2×</option><option value="4">4×</option></select>
+            <label class="playback-amplification">Amplificación visual <output id="playback-amplification-value">1200×</output><input id="playback-amplification" type="range" min="0" max="19" step="1" value="11" title="Extremo izquierdo: 1× sin amplificación; después, 200× a 2000×"></label>
+            <div class="amplification-shortcuts"><button id="playback-scale-1x" class="secondary" type="button">1× · escala real</button><span>1× → 2000×</span></div>
+            <div class="playback-track" role="progressbar" aria-label="Progreso de la simulación temporal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="playback-progress"></span></div>
+            <label class="playback-seek-label" for="playback-seek">Hora visible<input id="playback-seek" type="range" min="0" max="100" step="1" value="0"></label>
+            <div class="playback-readout"><strong id="playback-time">t = 0.0 h</strong><span id="playback-displacement">Desplazamiento: —</span></div>
+            <p id="playback-note" class="control-hint">Visualización espacial interpolada del pronóstico. La deformación está amplificada para ser visible; no representa una falla FEM nodo a nodo.</p>
+          </section></div><details class="simulation-controls dashboard-wide laboratory-only">
             <summary>Política de riesgo del sitio</summary>
+            <div class="advanced-control-grid">
             <p class="control-hint">Valores de demostración. Deben ser aprobados por geotecnia antes de uso operacional.</p>
-            <label class="range-control">Índice: vigilancia <output id="riskWatch-value">0.30</output><input data-policy="riskWatch" type="range" min="0" max="1" step="0.01" value="0.30" /></label>
-            <label class="range-control">Índice: alerta <output id="riskAlert-value">0.55</output><input data-policy="riskAlert" type="range" min="0" max="1" step="0.01" value="0.55" /></label>
-            <label class="range-control">Índice: crítico <output id="riskCritical-value">0.78</output><input data-policy="riskCritical" type="range" min="0" max="1" step="0.01" value="0.78" /></label>
-            <label class="range-control">Índice reducido: vigilancia <output id="fsWatch-value">1.30</output><input data-policy="fsWatch" type="range" min="0.5" max="2" step="0.01" value="1.30" /></label>
-            <label class="range-control">Índice reducido: alerta <output id="fsAlert-value">1.15</output><input data-policy="fsAlert" type="range" min="0.5" max="2" step="0.01" value="1.15" /></label>
-            <label class="range-control">Índice reducido: crítico <output id="fsCritical-value">1.00</output><input data-policy="fsCritical" type="range" min="0.5" max="2" step="0.01" value="1.00" /></label>
-          </details>
-          <details class="simulation-controls">
+            <label class="range-control">Índice: vigilancia <output id="riskWatch-value">0.30</output><input data-policy="riskWatch" type="range" min="0" max="1" step="0.01" value="0.30"></label>
+            <label class="range-control">Índice: alerta <output id="riskAlert-value">0.55</output><input data-policy="riskAlert" type="range" min="0" max="1" step="0.01" value="0.55"></label>
+            <label class="range-control">Índice: crítico <output id="riskCritical-value">0.78</output><input data-policy="riskCritical" type="range" min="0" max="1" step="0.01" value="0.78"></label>
+            <label class="range-control">Índice reducido: vigilancia <output id="fsWatch-value">1.30</output><input data-policy="fsWatch" type="range" min="0.5" max="2" step="0.01" value="1.30"></label>
+            <label class="range-control">Índice reducido: alerta <output id="fsAlert-value">1.15</output><input data-policy="fsAlert" type="range" min="0.5" max="2" step="0.01" value="1.15"></label>
+            <label class="range-control">Índice reducido: crítico <output id="fsCritical-value">1.00</output><input data-policy="fsCritical" type="range" min="0.5" max="2" step="0.01" value="1.00"></label>
+                      </div>
+          </details><details class="simulation-controls dashboard-wide">
             <summary>Factores geotécnicos simulables</summary>
+            <div class="advanced-control-grid">
             <p class="control-hint">Cada ajuste recalcula el índice reducido, pronóstico y nivel de riesgo demostrativo. No es un FoS de diseño.</p>
             <label class="select-control">Tipo de talud<select data-param="geometryType"><option value="LINEAR">Corte recto</option><option value="BENCHED">Mina a cielo abierto con bancos</option><option value="CIRCULAR">Fosa circular / cóncava</option><option value="SEMICIRCULAR">Semicircular / anfiteatro</option><option value="WASTE_DUMP">Botadero radial / terraplén</option></select></label>
-            <label class="range-control">Altura del talud <output id="slopeHeightM-value">90 m</output><input data-param="slopeHeightM" type="range" min="20" max="300" step="5" value="90" /></label>
-            <label class="range-control">Ancho del talud <output id="slopeWidthM-value">160 m</output><input data-param="slopeWidthM" type="range" min="40" max="600" step="10" value="160" /></label>
-            <label class="range-control">Ángulo del talud <output id="slopeAngleDeg-value">42°</output><input data-param="slopeAngleDeg" type="range" min="15" max="75" step="1" value="42" /></label>
-            <label class="range-control">Cohesión <output id="cohesionKpa-value">280 kPa</output><input data-param="cohesionKpa" type="range" min="20" max="500" step="5" value="280" /></label>
-            <label class="range-control">Fricción interna <output id="frictionAngleDeg-value">31°</output><input data-param="frictionAngleDeg" type="range" min="5" max="55" step="1" value="31" /></label>
-            <label class="range-control">Presión de poros <output id="waterPressureFactor-value">100%</output><input data-param="waterPressureFactor" type="range" min="0" max="2" step="0.05" value="1" /></label>
-            <label class="range-control">Lluvia / infiltración <output id="rainfallFactor-value">100%</output><input data-param="rainfallFactor" type="range" min="0" max="3" step="0.05" value="1" /></label>
-            <label class="range-control">Meteorización <output id="weatheringFactor-value">0%</output><input data-param="weatheringFactor" type="range" min="0" max="0.9" step="0.05" value="0" /></label>
-            <label class="range-control">Sismo / voladura <output id="seismicCoefficient-value">0.00 g</output><input data-param="seismicCoefficient" type="range" min="0" max="0.5" step="0.01" value="0" /></label>
-            <label class="range-control">Sobrecarga operativa <output id="surchargeKpa-value">0 kPa</output><input data-param="surchargeKpa" type="range" min="0" max="500" step="10" value="0" /></label>
-            <label class="range-control">Drenaje <output id="drainageEfficiency-value">0%</output><input data-param="drainageEfficiency" type="range" min="0" max="0.9" step="0.05" value="0" /></label>
-            <label class="range-control">Refuerzo <output id="reinforcementKpa-value">0 kPa</output><input data-param="reinforcementKpa" type="range" min="0" max="500" step="10" value="0" /></label>
+            <label class="range-control">Altura del talud <output id="slopeHeightM-value">90 m</output><input data-param="slopeHeightM" type="range" min="20" max="300" step="5" value="90"></label>
+            <label class="range-control">Ancho del talud <output id="slopeWidthM-value">160 m</output><input data-param="slopeWidthM" type="range" min="40" max="600" step="10" value="160"></label>
+            <label class="range-control">Ángulo del talud <output id="slopeAngleDeg-value">42°</output><input data-param="slopeAngleDeg" type="range" min="15" max="75" step="1" value="42"></label>
+            <label class="range-control">Cohesión <output id="cohesionKpa-value">280 kPa</output><input data-param="cohesionKpa" type="range" min="20" max="500" step="5" value="280"></label>
+            <label class="range-control">Fricción interna <output id="frictionAngleDeg-value">31°</output><input data-param="frictionAngleDeg" type="range" min="5" max="55" step="1" value="31"></label>
+            <label class="range-control">Presión de poros <output id="waterPressureFactor-value">100%</output><input data-param="waterPressureFactor" type="range" min="0" max="2" step="0.05" value="1"></label>
+            <label class="range-control">Lluvia / infiltración <output id="rainfallFactor-value">100%</output><input data-param="rainfallFactor" type="range" min="0" max="3" step="0.05" value="1"></label>
+            <label class="range-control">Meteorización <output id="weatheringFactor-value">0%</output><input data-param="weatheringFactor" type="range" min="0" max="0.9" step="0.05" value="0"></label>
+            <label class="range-control">Sismo / voladura <output id="seismicCoefficient-value">0.00 g</output><input data-param="seismicCoefficient" type="range" min="0" max="0.5" step="0.01" value="0"></label>
+            <label class="range-control">Sobrecarga operativa <output id="surchargeKpa-value">0 kPa</output><input data-param="surchargeKpa" type="range" min="0" max="500" step="10" value="0"></label>
+            <label class="range-control">Drenaje <output id="drainageEfficiency-value">0%</output><input data-param="drainageEfficiency" type="range" min="0" max="0.9" step="0.05" value="0"></label>
+            <label class="range-control">Refuerzo <output id="reinforcementKpa-value">0 kPa</output><input data-param="reinforcementKpa" type="range" min="0" max="500" step="10" value="0"></label>
             <label class="select-control">Material bajo suelo<select data-param="bedrockCondition"><option value="NONE">Sin roca competente</option><option value="HARD">Roca dura</option><option value="FRACTURED">Roca fracturada</option></select></label>
-            <label class="range-control">Profundidad a roca <output id="bedrockDepthM-value">30 m</output><input data-param="bedrockDepthM" type="range" min="0" max="150" step="5" value="30" /></label>
-            <label class="range-control">Discontinuidades de roca <output id="rockDiscontinuityFactor-value">0%</output><input data-param="rockDiscontinuityFactor" type="range" min="0" max="0.9" step="0.05" value="0" /></label>
-          </details>
-          <button id="reset-camera" class="secondary">Restablecer cámara</button>
-          <div class="sensor-card"><p class="label">SENSOR SELECCIONADO</p><strong id="selected-sensor">EXT-01</strong><p id="sensor-detail" class="muted">Sensor de desplazamiento principal.</p></div>
-          <div class="material-key"><p class="label">MATERIALES</p><span><i class="material-dot rock"></i>Roca competente</span><span><i class="material-dot weathered"></i>Material meteorizado</span><span><i class="material-dot soil"></i>Suelo residual</span></div>
-          <div class="model-note"><p class="label">PROCEDENCIA</p><p id="layer-source">Capa pronosticada por el modelo híbrido.</p></div>
-        </aside>
+            <label class="range-control">Profundidad a roca <output id="bedrockDepthM-value">30 m</output><input data-param="bedrockDepthM" type="range" min="0" max="150" step="5" value="30"></label>
+            <label class="range-control">Discontinuidades de roca <output id="rockDiscontinuityFactor-value">0%</output><input data-param="rockDiscontinuityFactor" type="range" min="0" max="0.9" step="0.05" value="0"></label>
+                      </div>
+          </details><p class="mine-tab-helper">La reproducción usa los controles de fecha y escala de arriba. El agua mostrada es lluvia diaria observada, no una simulación hidromecánica. Para explorar escenarios físicos usa el laboratorio TA-01.</p></section><section class="dashboard-tab-panel" id="controls-data" role="tabpanel" aria-labelledby="tab-data" hidden=""><div class="dashboard-stack"><details class="geometry-ingestion" open="">
+            <summary>Geometría del Digital Twin</summary>
+            <label for="geometry-source">Fuente de geometría</label>
+            <select id="geometry-source"><option value="PROCEDURAL">Talud paramétrico</option><option value="PHOTO_APPROXIMATION">Aproximación desde fotografía</option><option value="IMPORTED_MODEL">Modelo / datos topográficos</option></select>
+            <input id="geometry-file" type="file" accept="image/*,.csv,.dxf,.geojson,.json,.obj,.stl,.gltf,.glb">
+            <button id="load-geometry" class="secondary">Escanear / aplicar fuente</button>
+            <p class="control-hint">Pruebas: <a href="/samples/talud-circular-xyz.csv" download="">CSV XYZ</a> · <a href="/samples/perfil-talud-bancado.dxf" download="">DXF de perfil</a></p>
+            <img id="photo-preview" alt="Fotografía de referencia del talud" hidden="">
+            <p id="geometry-status" class="control-hint">Geometría procedural activa.</p>
+          </details></div><div class="dashboard-stack"><details class="telemetry-ingestion" open="">
+            <summary>Telemetría de campo</summary>
+            <label for="telemetry-file">Lecturas CSV o JSON</label>
+            <input id="telemetry-file" type="file" accept="text/csv,application/json,.csv,.json">
+            <div class="telemetry-import-actions">
+              <button id="import-telemetry" class="secondary" type="button" disabled="">Importar lecturas</button>
+              <a href="/samples/telemetry-import-template.csv" download="">Descargar plantilla CSV</a>
+            </div>
+            <p id="telemetry-import-status" class="control-hint">Máximo 5000 lecturas y 8 MB. La plantilla es demostrativa: cambia la fuente y la calidad al usar sensores reales.</p>
+          </details></div><section class="report-actions dashboard-wide laboratory-only" aria-label="Generación de informes">
+            <p class="label">INFORME DEL GEMELO</p>
+            <p>Genera un resumen trazable del estado actual, simulación y geometría.</p>
+            <div><button id="download-pdf" class="secondary">Descargar PDF</button><button id="download-word" class="secondary">Descargar Word</button></div>
+            <p id="report-status" class="control-hint">El informe se genera con el estado visible actual.</p>
+          </section><p class="mine-tab-helper">Consulta las coordenadas del punto seleccionado, la atribución y los límites de reconstrucción en el resumen de la mina. El enlace «Descargar modelo y fotogramas JSON» conserva las mediciones y su procedencia; no exporta un informe geotécnico certificado.</p></section></div></aside>
       </section>
 
-      <section class="dashboard-grid">
+      <section class="dashboard-grid laboratory-only">
         <article class="card chart-card">
           <div class="section-title"><div><p class="label">MONITOREO</p><h2>Desplazamiento acumulado</h2></div><span id="sensor" class="chip">—</span></div>
           <canvas id="chart" width="900" height="300" aria-label="Serie temporal de desplazamiento"></canvas>
@@ -222,7 +253,27 @@
         </article>
       </section>
 
-      <section class="card research-panel" aria-label="Validación experimental del artículo">
+      <section id="century-study" class="card century-panel" aria-label="Evaluación con datos reales de Century Mine">
+        <div class="section-title"><div><p class="label">CASO REAL INDEPENDIENTE · AUSTRALIA</p><h2>Century · evaluación temporal West Wall</h2></div><span class="chip">RETROSPECTIVO · NO OPERACIONAL</span></div>
+        <p id="century-provenance">Caso West Wall, independiente de la reconstrucción espacial sudoeste mostrada arriba. Datos de Tjaart de Wit, Colorado School of Mines.</p>
+        <div class="century-controls">
+          <label for="century-sensor">Prisma observado<select id="century-sensor"></select></label>
+          <label for="century-method">Modelo en el gráfico<select id="century-method"><option value="PERSISTENCE">Persistencia</option><option value="TREND">Tendencia lineal</option><option value="RIDGE">Ridge</option><option value="LSTM" selected>LSTM entrenada con datos reales</option></select></label>
+          <button id="century-refresh" type="button">Consultar caso real</button>
+          <a href="/api/research/century?download=daily" download>Descargar series CSV</a>
+          <a href="/api/research/century?download=report" download>Descargar evaluación JSON</a>
+          <a href="https://zenodo.org/records/15003054" target="_blank" rel="noopener noreferrer">Fuente y licencia CC BY 4.0</a>
+        </div>
+        <p id="century-status" role="status">Cargando caso independiente…</p>
+        <p id="century-protocol"></p>
+        <div class="century-content">
+          <div><div id="century-chart"></div><p>Verde: prismas observados. Violeta: predicciones de validación. Amarillo: predicciones de prueba. Objetivo: lectura del día siguiente, no 24 h exactas.</p><p id="century-sensor-metric"></p><p id="century-replay"></p></div>
+          <div><div class="research-table-wrap"><table class="research-table"><thead><tr><th>Modelo</th><th>MAE validación (mm)</th><th>MAE prueba (mm)</th><th>RMSE prueba (mm)</th><th>R² prueba</th></tr></thead><tbody id="century-metrics"></tbody></table></div><p id="century-selection"></p></div>
+        </div>
+        <details><summary>Qué se puede concluir y qué falta</summary><ul id="century-limitations"></ul></details>
+      </section>
+
+      <section class="card research-panel laboratory-only" aria-label="Validación experimental del artículo">
         <div class="section-title research-heading">
           <div><p class="label">MARCO CIENTÍFICO DEL ARTÍCULO</p><h2>Evaluación FEM–LSTM–PINN</h2></div>
           <span id="research-protocol-status" class="chip">CARGANDO</span>
@@ -275,12 +326,40 @@
         <p id="research-status" class="control-hint">La ablación usa escenarios FEM semisintéticos reservados para prueba; no sustituye datos de campo ni una PINN espacial.</p>
       </section>
 
-      <section class="card alerts">
+      <section class="card alerts laboratory-only">
         <div class="section-title"><div><p class="label">TRAZABILIDAD</p><h2>Alertas recientes</h2></div></div>
         <div id="alert-list" class="alert-list"><p class="muted">Aún no hay alertas registradas.</p></div>
       </section>
     </main>
-    <footer>M-1 Digital Twin · MVP académico · Datos sintéticos y reanálisis meteorológico</footer>
+    <footer>M-1 Digital Twin · Prototipo académico · Simulaciones, reanálisis meteorológico y estudio retrospectivo con datos públicos reales</footer>
+    <button id="chat-launcher" class="chat-launcher" type="button" aria-controls="project-chat" aria-expanded="false">✦ Asistente M-1</button>
+    <aside id="project-chat" class="project-chat" aria-label="Chat del proyecto M-1" hidden>
+      <div class="chat-header">
+        <div><p class="eyebrow">CONTEXTO DEL TABLERO</p><h2>Asistente M-1</h2></div>
+        <button id="chat-close" type="button" class="chat-secondary" aria-label="Cerrar chat">✕</button>
+      </div>
+      <p class="chat-intro">Consulta los resultados, la lluvia, el FEM y las comparaciones. Asistente académico, no una autoridad de seguridad.</p>
+      <label class="chat-consent"><input id="chat-consent" type="checkbox"> Autorizo enviar a OpenAI mis preguntas y los datos actuales del tablero, incluida la telemetría importada. No se envían fotos ni archivos originales.</label>
+      <div class="chat-status-row"><span id="chat-status" role="status">Abre el chat para comprobar la configuración.</span><button id="chat-refresh-status" type="button" class="chat-secondary" aria-label="Comprobar configuración del chat">↻</button></div>
+      <p id="chat-context-note" class="chat-context-note">El contexto se actualiza al enviar cada pregunta.</p>
+      <div class="chat-suggestions">
+        <button type="button" data-chat-question="Explícame los resultados actuales del sensor seleccionado en sencillo.">¿Qué indican mis resultados?</button>
+        <button type="button" data-chat-question="¿Cómo afecta la lluvia al talud y qué limitaciones tiene esta simulación?">Lluvia y movimiento</button>
+        <button type="button" data-chat-question="Explícame las comparaciones de modelos y métricas mostradas y qué puedo afirmar en el paper.">Comparaciones y paper</button>
+      </div>
+      <div id="chat-messages" class="chat-messages" role="log" aria-label="Conversación con el asistente" aria-live="off" tabindex="0"></div>
+      <form id="chat-form" class="chat-form">
+        <label for="chat-input">Tu pregunta <span>Enter envía · Shift+Enter nueva línea</span></label>
+        <textarea id="chat-input" maxlength="4000" rows="3" placeholder="¿Por qué cambió el desplazamiento?" required></textarea>
+        <div class="chat-actions">
+          <button id="chat-clear" type="button" class="chat-secondary">Nueva conversación</button>
+          <button id="chat-retry" type="button" class="chat-secondary" hidden>Reintentar</button>
+          <button id="chat-stop" type="button" class="chat-secondary" hidden>Detener</button>
+          <button id="chat-send" type="submit" disabled>Enviar</button>
+        </div>
+      </form>
+      <small class="chat-privacy">Conversación solo en memoria de esta pestaña. Las respuestas pueden contener errores. El contexto es numérico, no una captura del visor.</small>
+    </aside>
     <script type="importmap">
       {
         "imports": {
@@ -290,5 +369,6 @@
       }
     </script>
     <script type="module" src="/app.js"></script>
+    <script type="module" src="/century-panel.js"></script>
   </body>
 </html>

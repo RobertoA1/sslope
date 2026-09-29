@@ -1,5 +1,8 @@
 node_modules/
 data/local/
 .env
+.env.*
+!.env.example
+public/vendor/
 __pycache__/
 *.pyc

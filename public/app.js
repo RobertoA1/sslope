@@ -2,6 +2,9 @@ import { approximateFromPhoto, readModel } from "./geometry-adapters.js";
 import { SlopeScene3D } from "./slope-scene-3d.js";
 import { parseTelemetryFile } from "./telemetry-import.js";
 import { amplificationFromSlider, sliderFromAmplification } from "./displacement-scale.js";
+import { setupProjectChat } from "./vendor/chat-panel.js";
+import { setupDashboardTabs } from "./dashboard-layout.js";
+import { MineTwinController } from "./mine-twin-controller.js";
 
 const $ = (selector) => document.querySelector(selector);
 const api = async (path, options) => {
@@ -13,6 +16,12 @@ const api = async (path, options) => {
 const emptyWeather = () => ({ active: false, rainfallMmH: 0, durationHours: 0, event: null });
 const scene = { yaw: -0.62, pitch: 0.52, zoom: 2.25, panX: 0, panY: 5, drag: null, hits: [], coordinateHits: [], forecast: null, readings: [], freecam: false, camera: { x: 0, y: 0, z: 0 }, geometryAsset: null, photoApproximation: null, twin: null, weather: emptyWeather(), researchExperiment: null, femRun: null, playback: { progress: 0, playing: false, lastFrame: 0, lastDraw: 0, raf: null } };
 let sceneRenderer = null;
+let mineController = null;
+let laboratoryEvidenceLoaded = false;
+function loadLaboratoryEvidence() {
+  if (isViewerWindow || laboratoryEvidenceLoaded) return;
+  laboratoryEvidenceLoaded = true; loadTemporalBaseline(); loadScientificValidation();
+}
 let viewerWindow = null;
 let lastViewerPublish = 0;
 let lastPublishedForecast = null;
@@ -589,7 +598,17 @@ function coordinateInfoForScene(parameters, geometryAsset) {
   };
 }
 
+function mineVisualOptions() {
+  return { realistic:$("#realism-enabled").checked, terrain:$("#terrain-enabled").checked, materials:$("#materials-enabled").checked,
+    overlay:$("#overlay-enabled").checked, highContrast:$("#contrast-enabled").checked, coordinates:$("#coordinates-enabled").checked,
+    materialMotion:$("#material-motion-enabled").checked };
+}
 function drawScene() {
+  if (mineController && mineController.caseId !== "LAB") {
+    mineController.render(mineVisualOptions(), externalViewerActive && !isViewerWindow);
+    publishViewerState();
+    return;
+  }
   if (!sceneRenderer) return drawSceneLegacy();
   if (!scene.forecast) return;
   const forecast = scene.forecast;
@@ -655,6 +674,7 @@ function renderSceneEventHud() {
 function viewerPayload(includeGeometry = false) {
   const payload = {
     type: "M1_SCENE_STATE",
+    mineTwin: mineController?.viewerSnapshot(),
     weather: scene.weather,
     playback: { progress: scene.playback.progress, amplification: visualAmplification() },
     layer: $("#scene-layer").value,
@@ -685,7 +705,7 @@ function viewerPayload(includeGeometry = false) {
 }
 
 function publishViewerState(includeGeometry = false) {
-  if (isViewerWindow || !viewerWindow || viewerWindow.closed || !scene.forecast) return;
+  if (isViewerWindow || !viewerWindow || viewerWindow.closed || (!scene.forecast && !mineController?.asset)) return;
   const now = performance.now();
   if (!includeGeometry && now - lastViewerPublish < 100) return;
   lastViewerPublish = now;
@@ -973,6 +993,8 @@ function setupSceneWindowControls() {
   const card = $(".scene-card");
   const setExternalViewerActive = (active) => {
     externalViewerActive = active;
+    if (active && sceneRenderer?.rainLines) sceneRenderer.rainLines.visible = false;
+    if (!active && sceneRenderer) { sceneRenderer.mineStructureKey = null; sceneRenderer.structureState = null; }
     $("#external-viewer-notice").hidden = !active;
     $("#popout-scene").disabled = active;
     if (viewerCloseTimer) clearInterval(viewerCloseTimer);
@@ -1027,6 +1049,7 @@ function setupSceneWindowControls() {
     }
     if (!isViewerWindow || event.data?.type !== "M1_SCENE_STATE") return;
     const state = event.data;
+    if (state.mineTwin) mineController?.receive(state.mineTwin);
     scene.forecast = state.forecast || scene.forecast;
     scene.readings = state.readings || scene.readings;
     scene.weather = state.weather || scene.weather;
@@ -1042,7 +1065,7 @@ function setupSceneWindowControls() {
     if (state.playback?.amplification !== undefined) $("#playback-amplification").value = sliderFromAmplification(state.playback.amplification);
     const optionSelectors = { realistic:"#realism-enabled", terrain:"#terrain-enabled", materials:"#materials-enabled", overlay:"#overlay-enabled", highContrast:"#contrast-enabled", coordinates:"#coordinates-enabled", materialMotion:"#material-motion-enabled" };
     Object.entries(optionSelectors).forEach(([key, selector]) => { if (state.options?.[key] !== undefined) $(selector).checked = state.options[key]; });
-    renderWeatherStatus();
+    if (!state.mineTwin || state.mineTwin.caseId === "LAB") renderWeatherStatus();
     drawScene();
   });
   if (isViewerWindow && window.opener) {
@@ -1143,7 +1166,7 @@ function setupRiskPolicyControls() {
     });
   });
 }
-function selectSensor(hit) { $("#selected-sensor").textContent=hit.id; $("#sensor-detail").textContent=hit.name+". "+hit.detail; drawScene(); }
+function selectSensor(hit) { if (mineController?.caseId !== "LAB" && mineController?.asset) { mineController.selectPoint(hit); return; } $("#selected-sensor").textContent=hit.id; $("#sensor-detail").textContent=hit.name+". "+hit.detail; drawScene(); }
 function setupSceneControls() {
   const canvas=$("#scene-3d");
   if (sceneRenderer) {
@@ -1249,6 +1272,7 @@ function renderSensorOptions(sensors) {
   if (sensors.some((sensor) => sensor.sensorId === selected)) select.value = selected;
 }
 async function refresh() {
+  if (mineController && mineController.caseId !== "LAB") return;
   try {
     const horizon = $("#horizon").value;
     const sensorData = await api("/api/sensors");
@@ -1274,6 +1298,15 @@ try {
   $("#realism-enabled").disabled = true;
 }
 
+mineController = new MineTwinController({
+  document, renderer:sceneRenderer, redraw:drawScene, viewer:isViewerWindow,
+  onCaseChange:(id)=>{
+    scene.mineCase = id; stopDisplacementPlayback();
+    if(sceneRenderer?.rainLines) sceneRenderer.rainLines.visible = false;
+    if(id === "LAB") { scene.pendingFit = true; loadLaboratoryEvidence(); refresh(); }
+  }
+});
+
 $("#run").addEventListener("click", refresh);
 $("#active-sensor").addEventListener("change", refresh);
 $("#scenario").addEventListener("change", async (event) => {
@@ -1283,6 +1316,7 @@ $("#scenario").addEventListener("change", async (event) => {
   refresh();
 });
 window.addEventListener("resize", () => { drawChart(scene.readings, scene.forecast); drawScene(); });
+setupDashboardTabs(document);
 setupSceneControls();
 setupPlaybackControls();
 setupWeatherControls();
@@ -1294,7 +1328,11 @@ setupRiskPolicyControls();
 setupReportControls();
 setupResearchControls();
 setupFemControls();
-loadTemporalBaseline();
-loadScientificValidation();
-loadPersistenceStatus();
+setupProjectChat(() => ({
+  ...scene, amplification: mineController?.caseId === "LAB" ? visualAmplification() : mineController?.frame?.amplification,
+  externalViewerActive, mineTwinSnapshot:mineController?.snapshot(),
+  ...(mineController?.caseId !== "LAB" ? { forecast:null, readings:[], twin:null, weather:null, femRun:null, researchExperiment:null, geometryAsset:null, photoApproximation:null } : {})
+}));
+if (!isViewerWindow && mineController.caseId === "LAB") loadLaboratoryEvidence();
+if (!isViewerWindow) loadPersistenceStatus();
 refresh();

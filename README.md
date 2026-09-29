@@ -28,7 +28,27 @@ docker compose up --build
 El contenedor publica el puerto `3000`, incluye un `HEALTHCHECK` sobre `/api/health` y conserva `data/local` en el volumen `sslope-local`.
 Tanto `npm start` como Docker Compose solo exponen el servicio a `127.0.0.1` del equipo anfitrión. Si se instala en una red, se necesita una capa de autenticación, TLS y autorización antes de admitir telemetría real.
 
-## Funcionalidades actuales
+## Chat contextual con OpenAI
+
+El botón **Asistente M-1** permite consultar los datos actuales del tablero con Vercel AI SDK y LangChain. Coloca tu clave en `.env` (`OPENAI_API_KEY`), elige `OPENAI_MODEL` y reinicia `npm start`. La clave permanece en el servidor. Cada pregunta incluye el estado visible y requiere autorizar su envío a OpenAI. El chat no modifica simulaciones ni valida decisiones de seguridad. Consulta la [guía del chatbot](docs/CHATBOT.md) para configuración, privacidad y pruebas.
+
+## Elegir una mina: Century o Cerro de Pasco
+
+El selector superior abre **Century** por defecto y mantiene separado el **laboratorio TA-01**. Century incorpora un gemelo retrospectivo parcial del sector sudoeste: 82.401 registros originales, 160 prismas, 215 fechas observadas de enero a agosto de 2014 y lluvia diaria BOM. La superficie 3D es una triangulación interpolada entre prismas, no topografía levantada de toda la mina. Permite recorrer las mediciones, inspeccionar coordenadas, usar escala real **1×** o amplificación visual y abrir un visor sincronizado en otra ventana.
+
+**Cerro de Pasco** muestra el perfil SRTM histórico de la pared NW del tajo Raúl Rojas, con ancho transversal esquemático; no inventa sensores ni desplazamientos diarios. El **laboratorio** conserva el simulador FEM–LSTM y sus controles demostrativos sin aplicar sus alertas, parámetros o pesos a las minas. El chat distingue el caso activo y contrasta su fotograma con los datos del servidor.
+
+Ninguna de estas vistas es todavía un gemelo físico calibrado o un sistema operacional. La reconstrucción, las fuentes, los huecos y los límites se detallan en [MINE_TWINS.md](docs/MINE_TWINS.md). Para regenerar los modelos desde las fuentes conservadas: `npm run prepare:mine-twins` (requiere `unzip`).
+
+## Datos reales: evaluación temporal West Wall (Century, Australia)
+
+El panel **Century · evaluación temporal West Wall** incorpora un caso independiente con 7178 lecturas de 49 prismas y lluvia BOM, obtenido de [Zenodo](https://zenodo.org/records/15003054), CC BY 4.0. Conserva el ZIP original y compara persistencia, tendencia, ridge y una **LSTM nueva entrenada con observaciones reales**, sin aplicar pesos TA-01. Cambia el prisma y el modelo para ver las mediciones y los pronósticos retrospectivos. Descarga series CSV o la evaluación JSON desde el panel.
+
+El objetivo es la lectura del día siguiente, no un horizonte horario fijo. Las métricas y la selección por validación se muestran sin ocultar que la LSTM pierde frente a persistencia en prueba. No incorpora presión de poros ficticia, no activa alertas operacionales y no valida Pasco ni el FEM. El archivo principal termina antes de la falla reportada. Consulta [CENTURY_DATASET.md](docs/CENTURY_DATASET.md) para fechas, límites y reproducción (`npm run prepare:century`, `npm run train:century`; este último requiere Python con NumPy).
+
+## Funcionalidades actuales del laboratorio TA-01
+
+Las siguientes capacidades de simulación y cálculo son demostrativas y se habilitan en **Laboratorio TA-01**; no deben interpretarse como resultados de Century o Pasco.
 
 - Dos escenarios sintéticos reproducibles: normal y crítico.
 - Pronóstico a 1, 6, 24 o 72 horas, con intervalo de incertidumbre.
@@ -38,7 +58,7 @@ Tanto `npm start` como Docker Compose solo exponen el servicio a `127.0.0.1` del
 - Simulador WebGL 3D de bancos y bermas con perfiles recto, circular/cóncavo y semicircular/de anfiteatro; incluye dimensiones configurables, estratos de suelo/roca, sensores seleccionables, sombras, textura procedural del terreno y capas de riesgo, desplazamiento, presión de poros, factor de seguridad e incertidumbre.
 - Evento de lluvia manual por intensidad y duración, y reproducción de precipitación diaria histórica NASA POWER para Pasco (2020–2025). El total diario histórico se conserva y su distribución uniforme en 24 horas queda identificada como estimación; ambos modos generan una respuesta hidrológica demostrativa y visible en el talud.
 - Desplazamiento visible en vivo mediante deformación amplificada del suelo, roca y sedimentos, fragmentos superficiales y malla de referencia sin deformar. Este modo viene activado; al desactivar **Movimiento del terreno**, el modelo queda fijo y muestra flechas vectoriales.
-- Tablero de control rectangular en cuadrícula, con parámetros avanzados plegables, vista 3D a pantalla completa y visor sincronizado en una ventana adicional.
+- Tablero organizado en pestañas Vista, Simulación y Datos, con cuadrículas compactas, parámetros avanzados plegables y visor/controles en paralelo para pantallas 16:9. Conserva la pantalla completa y el visor sincronizado en una ventana adicional.
 - Controles de simulación para ángulo, cohesión, fricción, agua, lluvia, meteorización, sismo/voladura, sobrecarga, drenaje y refuerzo; modifican el cálculo y las alertas en tiempo real.
 - Fuente de geometría integrada al Digital Twin: talud paramétrico, aproximación visual desde una foto, cuadrícula topográfica CSV XYZ, perfil DXF, superficies GeoJSON 3D y carga local de OBJ, STL ASCII/binario y glTF/GLB mediante Three.js.
 - Cámara intercambiable entre perspectiva 3D y proyección ortográfica técnica; la elección se sincroniza con la ventana externa.
@@ -57,6 +77,10 @@ Tanto `npm start` como Docker Compose solo exponen el servicio a `127.0.0.1` del
 - Reproducción separada del benchmark publicado de Griffiths y Lane con XSLOPE 0.5.2: FoS externo 1,371875, dentro de los ensayos 1,35 estable / 1,40 fallido. Es una referencia elastoplástica independiente, **no** una validación del FEM lineal propio.
 
 ## Usar el visor 3D
+
+En Century, utiliza **Fecha medida**, **Punto de observación**, **Reproducir mediciones** y **Escala real 1×**. La lluvia es observada e ilustrativa, no una carga mecánica calculada. Pasco es estático. Ambos casos mantienen separados sus datos; cambiar al laboratorio habilita los controles descritos a continuación.
+
+El tablero agrupa los controles en **Vista** (capas, cámara y apariencia), **Simulación** (lluvia, reproducción, escala y ajustes geotécnicos) y **Datos** (geometría, telemetría e informes). Cambiar de pestaña no reinicia los ajustes. En escritorios desde 1280 px, el visor y el tablero aparecen lado a lado; los controles extensos se desplazan dentro del tablero. En pantallas pequeñas se apilan y las cuadrículas pasan a una columna. Las pestañas también admiten flechas izquierda/derecha e Inicio/Fin; el chatbot conserva el contexto de todas ellas.
 
 El visor se encuentra debajo de los indicadores principales. Usa **Encuadrar modelo** o **Vista completa** para recuperar rápidamente la vista general, y los puntos **Cresta**, **Banco medio** o **Pie del talud** para acercarte a esas zonas. Arrastra para rotar, usa el botón derecho para desplazar y la rueda para acercar o alejar. Selecciona una capa en el tablero y haz clic en un sensor para consultar su detalle. Activa **Vuelo libre** para usar `W`, `A`, `S`, `D` (avance lateral), `Q`/`E` (bajar/subir) y `Shift` (mayor velocidad). **Terreno realista** controla conjuntamente la iluminación solar, sombras suaves, niebla de profundidad y marcas procedurales de suelo/roca; puede deshabilitarse para una vista técnica de alto contraste.
 
@@ -122,6 +146,8 @@ Los archivos glTF deben contener sus buffers e imágenes embebidos; si emplean r
 | Método | Ruta | Uso |
 |---|---|---|
 | GET | `/api/health` | estado del servicio |
+| GET | `/api/mines/century` | reconstrucción parcial, prismas y fechas observadas; `?download=1` descarga JSON |
+| GET | `/api/mines/pasco` | perfil histórico SRTM independiente; `?download=1` descarga JSON |
 | GET | `/api/telemetry?limit=72` | lecturas recientes |
 | GET | `/api/sensors` | sensores registrados, cobertura temporal y cantidad de lecturas |
 | POST | `/api/telemetry` | registrar lectura |

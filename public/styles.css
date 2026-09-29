@@ -36,3 +36,58 @@ body.viewer-only{overflow:hidden;background:#071411}body.viewer-only header,body
 
 /* Importación operativa de telemetría */
 .control-dashboard>.telemetry-ingestion{grid-column:span 2}.telemetry-ingestion summary{cursor:pointer;color:var(--cyan);font:500 .69rem 'DM Mono',monospace;letter-spacing:.06em;margin-bottom:7px}.telemetry-ingestion input[type=file]{width:100%;font-size:.63rem;color:var(--muted);margin:8px 0}.telemetry-import-actions{display:flex;align-items:center;gap:10px}.telemetry-import-actions button{height:32px;padding:0 10px;font-size:.66rem}.telemetry-import-actions a{margin-left:auto;color:var(--cyan);font-size:.67rem}.telemetry-ingestion button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:950px){.control-dashboard>.telemetry-ingestion{grid-column:span 1}}@media(max-width:600px){.telemetry-import-actions{align-items:stretch;flex-direction:column}.telemetry-import-actions a{margin-left:0}}
+
+/* Chat contextual: independiente del renderizado 3D y usable en pantallas pequeñas. */
+[hidden] { display:none !important; }
+.chat-launcher { position:fixed;right:22px;bottom:22px;z-index:90;box-shadow:0 8px 30px #0008;height:44px; }
+.project-chat { position:fixed;right:22px;bottom:78px;z-index:91;width:min(470px,calc(100vw - 32px));height:min(740px,calc(100dvh - 106px));background:var(--surface);border:1px solid var(--cyan);border-radius:16px;box-shadow:0 16px 60px #000a;display:flex;flex-direction:column;padding:16px;gap:10px; }
+.chat-header,.chat-status-row,.chat-actions { display:flex;align-items:center;justify-content:space-between;gap:8px; }
+.chat-header h2 { margin-top:5px; }
+.project-chat .chat-secondary,.chat-suggestions button { background:var(--surface-2);color:var(--ink);border-color:var(--line); }
+.chat-intro,.chat-consent,.chat-status-row,.chat-context-note,.chat-privacy { font-size:.7rem;line-height:1.5;margin:0; }
+.chat-intro,.chat-context-note,.chat-privacy { color:var(--muted); }
+.chat-consent { display:flex;align-items:flex-start;gap:8px;color:var(--ink); }
+.chat-consent input { margin-top:3px;accent-color:var(--cyan);flex-shrink:0; }
+.chat-status-row { color:var(--cyan); }
+.chat-status-row button,.chat-header button { padding:0 10px;height:30px;flex-shrink:0; }
+.chat-suggestions { display:flex;gap:5px;flex-wrap:wrap; }
+.chat-suggestions button { height:auto;min-height:28px;padding:5px 8px;font-size:.65rem; }
+.chat-messages { flex:1;min-height:80px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding:12px 2px; }
+.chat-messages:empty::before { content:"Puedo explicar lo que muestra el tablero y ayudarte a usarlo. Habilita el envío de contexto para comenzar.";font-size:.8rem;line-height:1.7;color:var(--muted); }
+.chat-message { padding:11px;border-radius:10px;background:var(--surface-2);font-size:.8rem;line-height:1.7;overflow-wrap:anywhere; }
+.chat-message > strong { display:block;color:var(--cyan);font-size:.65rem;margin-bottom:5px; }
+.chat-user { background:#164136; }
+.chat-message-text { white-space:pre-wrap; }
+.chat-message small { display:block;color:var(--yellow);margin-top:7px; }
+.chat-form { display:grid;gap:7px; }
+.chat-form label { display:flex;justify-content:space-between;gap:8px; }
+.chat-form label span { font-size:.6rem; }
+.chat-form textarea { resize:vertical;min-height:65px;max-height:130px;width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--surface-2);color:var(--ink);font:inherit;font-size:.8rem; }
+.chat-actions { justify-content:flex-end;flex-wrap:wrap; }
+.chat-actions button { height:32px;font-size:.68rem;padding:0 9px; }
+.chat-actions #chat-clear { margin-right:auto; }
+.project-chat button:disabled { opacity:.45;cursor:not-allowed; }
+.project-chat :focus-visible,.chat-launcher:focus-visible { outline:2px solid var(--cyan);outline-offset:3px; }
+@media(max-width:600px) { .project-chat { right:8px;bottom:68px;width:calc(100vw - 16px);height:calc(100dvh - 84px);padding:12px;gap:8px; }.chat-launcher { right:12px;bottom:12px; }.chat-form label span { display:none; } }
+
+/* Markdown de respuestas: formato compacto y desplazamiento horizontal del código/tablas. */
+.chat-message-text.chat-markdown { white-space:normal; }
+.chat-markdown > :first-child { margin-top:0; }
+.chat-markdown > :last-child { margin-bottom:0; }
+.chat-markdown p { margin:0 0 .75em; }
+.chat-markdown :is(h1,h2,h3,h4,h5,h6) { font-size:1em;line-height:1.4;letter-spacing:normal;margin:1em 0 .5em; }
+.chat-markdown h1 { font-size:1.2em; }
+.chat-markdown h2 { font-size:1.1em; }
+.chat-markdown strong { color:inherit;font-size:inherit;display:inline; }
+.chat-markdown :is(ul,ol) { margin:.5em 0 .8em;padding-left:1.6em; }
+.chat-markdown li { margin:.3em 0; }
+.chat-markdown li > p { margin:.3em 0; }
+.chat-markdown blockquote { margin:.8em 0;padding:.15em .8em;border-left:3px solid var(--cyan);color:var(--muted); }
+.chat-markdown a { color:var(--cyan);text-decoration:underline;text-underline-offset:3px; }
+.chat-markdown code { font-family:'DM Mono',monospace;font-size:.88em;background:#071411;padding:.12em .35em;border-radius:4px; }
+.chat-markdown pre { overflow-x:auto;max-width:100%;white-space:pre;overflow-wrap:normal;background:#071411;border:1px solid var(--line);border-radius:8px;padding:10px;margin:.8em 0; }
+.chat-markdown pre code { white-space:pre;display:block;background:transparent;padding:0; }
+.chat-markdown table { display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;margin:.8em 0;font-size:.93em; }
+.chat-markdown :is(th,td) { border:1px solid var(--line);padding:6px 8px;text-align:left; }
+.chat-markdown th { background:#164136;font-weight:700; }
+.chat-markdown hr { border:0;border-top:1px solid var(--line);margin:1em 0; }

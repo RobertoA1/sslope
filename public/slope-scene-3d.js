@@ -271,6 +271,9 @@ export class SlopeScene3D {
 
   clearRoot() {
     this.rainLines = null;
+    this.mineStructureKey = null;
+    this.mineMarkers = null;
+    this.mineReferenceTerrain = null;
     disposeObject(this.root, this.preservedTextures);
     this.scene.remove(this.root);
     this.root = new Group();
@@ -305,6 +308,14 @@ export class SlopeScene3D {
   }
 
   render(data) {
+    if (this.mineLightingActive) {
+      this.sun.position.set(180,260,-120);
+      const shadow=this.sun.shadow.camera;shadow.left=shadow.bottom=-330;shadow.right=shadow.top=330;shadow.far=850;shadow.updateProjectionMatrix();
+    }
+    this.mineLightingActive = false;
+    this.mineStructureKey = null;
+    this.controls.maxDistance = 1000;
+    this.scene.fog.near = 380; this.scene.fog.far = 950;
     this.lastData = data;
     this.lastParameters = data.forecast.simulationParameters || {};
     const animated = Number(data.weather?.rainfallMmH || 0) > 0 || (data.playback.progress > 0 && data.playback.progress < 1);
@@ -353,6 +364,111 @@ export class SlopeScene3D {
     this.buildRain(data);
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
+  }
+
+
+  clearMineView() {
+    this.clearRoot(); this.terrain = null; this.structureState = null;
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  renderMine({ asset, frame, options, selectedId, showRain }) {
+    const width = Math.max(asset.bounds.max[0] - asset.bounds.min[0], asset.bounds.max[1] - asset.bounds.min[1], 100);
+    const height = Math.max(asset.bounds.max[2] - asset.bounds.min[2], 50);
+    const key = asset.id + "/" + asset.referenceDate + "/" + Object.entries(options).map(([k,v])=>k+":"+v).join("|");
+    const changed = this.mineStructureKey !== key;
+    this.mineLightingActive = true;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    this.resize();
+    this.scene.fog.near = width * 4; this.scene.fog.far = width * 12;
+    this.controls.maxDistance = width * 12;
+    this.lastParameters = { slopeWidthM: width, slopeHeightM: height };
+    if (changed) {
+      this.clearRoot(); this.structureState = null; this.mineStructureKey = key;
+      this.renderer.shadowMap.enabled = options.realistic; this.sun.castShadow = options.realistic;
+      this.scene.background.set(options.realistic ? "#9fb9b2" : "#071511"); this.scene.fog.color.copy(this.scene.background);
+      this.sun.position.set(width * 0.8, height + width * 0.7, -width * 0.5);
+      const shadow = this.sun.shadow.camera; shadow.left = shadow.bottom = -width; shadow.right = shadow.top = width; shadow.far = width * 5; shadow.updateProjectionMatrix();
+      const definitions = asset.geometry.vertices || asset.baseline.map((_,pointIndex)=>({pointIndex}));
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(definitions.length * 3),3));
+      geometry.setAttribute("color", new Float32BufferAttribute(new Float32Array(definitions.length * 3),3));
+      geometry.setAttribute("uv", new Float32BufferAttribute(definitions.flatMap((v)=>{
+        const p=asset.baseline[v.pointIndex]; return p ? [(p[0]-asset.origin[0]+(v.offsetE||0))/120,(p[1]-asset.origin[1]+(v.offsetN||0))/120] : [0,0];
+      }),2));
+      this.terrain = new Mesh(geometry, new MeshStandardMaterial({vertexColors:true, side:DoubleSide, map:options.realistic?this.earthTexture:null, roughness:1, metalness:0}));
+      this.terrain.castShadow = options.realistic; this.terrain.receiveShadow = options.realistic;
+      this.terrain.material.polygonOffset = true; this.terrain.material.polygonOffsetFactor = -1; this.terrain.material.polygonOffsetUnits = -1;
+      this.root.add(this.terrain);
+      // Fondo de referencia constante y gris: la falta de lecturas no borra el terreno.
+      const referenceGeometry = new BufferGeometry();
+      referenceGeometry.setAttribute("position", new Float32BufferAttribute(frame.referenceSurface.vertices.flatMap((p) => p ? [p.x,p.y,p.z] : [0,0,0]),3));
+      referenceGeometry.setIndex(frame.referenceSurface.faces.flat()); referenceGeometry.computeVertexNormals();
+      this.mineReferenceTerrain = new Mesh(referenceGeometry,[
+        new MeshStandardMaterial({color:"#939ba4",side:DoubleSide,roughness:1,metalness:0,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1}),
+        // Referencia tenue bajo zonas medidas: no tapa su superficie desplazada.
+        new MeshBasicMaterial({color:"#939ba4",side:DoubleSide,transparent:true,opacity:.08,depthWrite:false,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1})
+      ]);
+      this.mineReferenceTerrain.castShadow = options.realistic; this.mineReferenceTerrain.receiveShadow = options.realistic;
+      this.root.add(this.mineReferenceTerrain);
+      const ground = new Mesh(new PlaneGeometry(width*3,width*3),new MeshStandardMaterial({color:options.realistic?"#554539":"#102820",roughness:1}));
+      ground.rotation.x=-Math.PI/2; ground.position.y=-5; ground.receiveShadow=options.realistic; this.root.add(ground);
+      if (options.coordinates) { const grid=new GridHelper(width*1.4,12,"#d66a53","#4f756b");grid.position.y=-2;grid.material.transparent=true;grid.material.opacity=.5;this.root.add(grid); }
+      const radius=Math.max(1,width/250), sphere=new SphereGeometry(radius,10,7);
+      this.mineMarkers = asset.sensorIds.map((id)=>{
+        const marker=new Mesh(sphere,new MeshBasicMaterial({color:"#48e2c2",depthTest:false}));
+        marker.renderOrder=20; this.root.add(marker); this.sensors.push(marker); return marker;
+      });
+      this.mineArrows = asset.sensorIds.map(()=> {const arrow=new ArrowHelper(new Vector3(1,0,0),new Vector3(),1,"#ffe16b");arrow.visible=false;this.root.add(arrow);return arrow;});
+      this.mineLabel = null; this.mineLabelId = null;
+    }
+    const position=this.terrain.geometry.getAttribute("position"), colors=this.terrain.geometry.getAttribute("color");
+    const range = Math.max(1,frame.maximumDisplacementMm || 0);
+    frame.vertices.forEach((v,i)=>{
+      if (!v) {position.setXYZ(i,0,0,0);return;}
+      const p=options.materialMotion?v.point.display:(v.point.base||v.point.observed);
+      position.setXYZ(i,p.x+v.offsetE,p.y,p.z+v.offsetN);
+      const color=options.overlay&&asset.id==="CENTURY"&&v.point.displacementMm!==null?analyticalColor(clamp(v.point.displacementMm/range)):new Color(options.materials?"#ab947b":"#7f998d");
+      colors.setXYZ(i,color.r,color.g,color.b);
+    });
+    position.needsUpdate=true;colors.needsUpdate=true;
+    this.terrain.geometry.setIndex(frame.faces.flat());this.terrain.geometry.computeVertexNormals();this.terrain.geometry.computeBoundingSphere();
+    this.terrain.visible=options.terrain;
+    this.mineReferenceTerrain.visible=options.terrain;
+    const referenceGeometry=this.mineReferenceTerrain.geometry;
+    const missingIndex=frame.referenceOnlyFaces.flat(), measuredIndex=frame.faces.flat();
+    referenceGeometry.setIndex([...missingIndex,...measuredIndex]); referenceGeometry.clearGroups();
+    if(missingIndex.length)referenceGeometry.addGroup(0,missingIndex.length,0);
+    if(measuredIndex.length)referenceGeometry.addGroup(missingIndex.length,measuredIndex.length,1);
+    this.mineMarkers.forEach((marker)=>marker.visible=false);this.mineArrows.forEach((arrow)=>arrow.visible=false);
+    frame.points.forEach((point)=>{
+      const marker=this.mineMarkers[point.index], p=options.materialMotion?point.display:(point.base||point.observed);
+      marker.visible=true;marker.position.set(p.x,p.y+Math.max(.4,width/1000),p.z);
+      marker.material.color.set(point.id===selectedId?"#ffffff":point.qcJump?"#ff6374":point.reference?"#48e2c2":"#b3b7bb");
+      marker.userData.sensor={id:point.id,name:asset.id==="CENTURY"?"Prisma observado":"Muestra SRTM",detail:"Coordenadas originales: "+point.coordinate.join(",")+" m."};
+      if (!options.materialMotion&&point.base&&point.delta) {
+        const vector=new Vector3(point.delta[0],point.delta[2],point.delta[1]);
+        const length=vector.length()*frame.amplification;
+        if (length>1e-6) {const arrow=this.mineArrows[point.index];arrow.position.set(point.base.x,point.base.y+.5,point.base.z);arrow.setDirection(vector.normalize());arrow.setLength(length,Math.min(length*.3,width/60),Math.min(length*.12,width/130));arrow.visible=true;}
+      }
+    });
+    const selected=frame.points.find((p)=>p.id===selectedId);
+    if (this.mineLabelId!==selectedId) {
+      if(this.mineLabel){this.root.remove(this.mineLabel);disposeObject(this.mineLabel,this.preservedTextures);}
+      this.mineLabel=createLabel(selectedId||"");this.mineLabel.scale.multiplyScalar(width/300);this.root.add(this.mineLabel);this.mineLabelId=selectedId;
+    }
+    this.mineLabel.visible=Boolean(selected);
+    if(selected){const p=options.materialMotion?selected.display:(selected.base||selected.observed);this.mineLabel.position.set(p.x,p.y+width/35,p.z);}
+    const rainy=showRain&&frame.rain?.periodDays===1&&Number(frame.rain?.rainfallMm)>0;
+    if(rainy&&!this.rainLines) this.buildRain({rainDailyMm:frame.rain.rainfallMm,mineSpatialBounds:{width,height}});
+    if(this.rainLines){
+      this.rainLines.visible=Boolean(rainy);
+      const count=Math.round(180+clamp(Number(frame.rain?.rainfallMm || 0)/100)*720);
+      this.rainLines.geometry.setDrawRange(0,count*2);
+      if(rainy&&!this.rainFrame)this.rainFrame=requestAnimationFrame((t)=>this.animateRain(t));
+    }
+    this.controls.update();this.renderer.render(this.scene,this.camera);
+    if(changed) this.fit();
   }
 
   buildGround(data, realistic) {
@@ -704,12 +820,13 @@ export class SlopeScene3D {
   }
 
   buildRain(data) {
-    const intensity = Number(data.weather?.rainfallMmH || 0);
+    // mine rainDailyMm is only a visual density from a daily total, never an observed hourly intensity.
+    const intensity = Number(data.rainDailyMm ?? data.weather?.rainfallMmH ?? 0);
     if (intensity <= 0) return;
-    const parameters = data.forecast.simulationParameters || {};
-    const width = parameters.slopeWidthM || 160;
-    const height = Math.max(parameters.slopeHeightM || 90, 90);
-    const count = Math.round(180 + clamp(intensity / 100) * 720);
+    const parameters = data.forecast?.simulationParameters || {};
+    const width = data.mineSpatialBounds?.width || parameters.slopeWidthM || 160;
+    const height = Math.max(data.mineSpatialBounds?.height || parameters.slopeHeightM || 90, 90);
+    const count = data.mineSpatialBounds ? 900 : Math.round(180 + clamp(intensity / 100) * 720);
     const positions = [];
     let seed = 3719;
     const random = () => {
@@ -734,7 +851,7 @@ export class SlopeScene3D {
   }
 
   animateRain(timestamp) {
-    if (!this.rainLines) {
+    if (!this.rainLines || !this.rainLines.visible) {
       this.rainFrame = null;
       this.rainLastFrame = 0;
       return;
@@ -803,7 +920,8 @@ export class SlopeScene3D {
 
   fit() {
     if (!this.terrain) return;
-    const bounds = new Box3().setFromObject(this.terrain);
+    const bounds = new Box3().setFromObject(this.mineReferenceTerrain || this.terrain);
+    if (this.mineReferenceTerrain) bounds.expandByObject(this.terrain);
     const centre = bounds.getCenter(new Vector3());
     const size = bounds.getSize(new Vector3());
     const distance = Math.max(size.x, size.y, size.z) * 1.65;

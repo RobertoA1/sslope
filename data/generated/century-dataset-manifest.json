@@ -1,0 +1,111 @@
+{
+  "source": {
+    "id": "CENTURY-ZENODO-15003054",
+    "mine": "Century Mine, Australia",
+    "author": "Tjaart de Wit (Colorado School of Mines)",
+    "doi": "10.5281/zenodo.15003054",
+    "url": "https://zenodo.org/records/15003054",
+    "article": "https://doi.org/10.26443/seismica.v5i1.1902",
+    "license": "CC-BY-4.0",
+    "archiveMd5": "3adeb6c853d2e87249b7d3549a2a00ca",
+    "archiveSha256": "b0d3eca632c5c7831d391f6f90b4d88b1a7384b3eb596c19ddaaf64147a24d22",
+    "deformationFile": "radar-deformation-data/West Wall Prism Movements - 3 months to 20-Feb-14.csv"
+  },
+  "scientificStatus": "OBSERVACIONES_REALES_EVALUACION_RETROSPECTIVA_NO_OPERACIONAL",
+  "warnings": [
+    "Caso Century independiente: no valida Cerro de Pasco ni TA-01.",
+    "Se usan prismas 3D, no radar LOS. No son un campo de deformación FEM.",
+    "No hay presión de poros ni propiedades suficientes para calibrar el híbrido FEM–LSTM.",
+    "Fechas/horas de prismas conservadas sin zona horaria confirmada; no se etiquetan UTC.",
+    "Última lectura por día y sensor; días ausentes no se interpolan. Objetivo: lectura del día siguiente, no 24 h exactas.",
+    "Lluvia BOM con desfase conservador de dos fechas y períodos de un día. No se usa lluvia futura observada.",
+    "La bandera de calidad BOM se conserva; no se presume que todas las lecturas están verificadas.",
+    "Los sensores comparten sitio y fechas: las ventanas no son experimentos independientes.",
+    "El archivo principal termina antes del inicio de falla del 23/02/2014. No evalúa detección de falla ni alertas.",
+    "El archivo South_West y la sismología se inventarían, pero no se mezclan con este primer entrenamiento."
+  ],
+  "audit": {
+    "rawReadingCount": 7178,
+    "sensorCount": 49,
+    "dailyReadingCount": 3163,
+    "identicalDuplicates": 0,
+    "conflictingTimestampCount": 0,
+    "missingLaggedRainCount": 43,
+    "startDate": "2013-11-20",
+    "endDate": "2014-02-20"
+  },
+  "sourceFiles": [
+    {
+      "name": "radar-deformation-data/West Wall Prism Movements - 3 months to 20-Feb-14.csv",
+      "bytes": 505043,
+      "sha256": "cbc1272f1ec0a8fc9b8b4e137a9d2bc007ee81937d0298f12908b2db954f2e02"
+    },
+    {
+      "name": "weather-data/IDCJAC0009_029167_2013_Data.csv",
+      "bytes": 14012,
+      "sha256": "d836033a4a543a641e61c9458e7faa5592b011be4a19c16da83dccbf0df93310"
+    },
+    {
+      "name": "weather-data/IDCJAC0009_029167_2014_Data.csv",
+      "bytes": 14022,
+      "sha256": "da1e56a8fbf5293115060913e3c911e53fba3bc7997b5d63334ec1487b2fd9c7"
+    },
+    {
+      "name": "radar-deformation-data/South_West_Corner_06082014.csv",
+      "bytes": 13371991,
+      "sha256": "3f323535d38ff3700a3d2d9d0c5d2f49ada690f9326a0ef6002f77d4f7b98b69"
+    },
+    {
+      "name": "velocity-change-measurements/mean-velocity-changes.txt",
+      "bytes": 3627,
+      "sha256": "b870e5eba0dcae9dc2de54c0a572b5cd59749df41ecfc9275e05a5093fac331b"
+    },
+    {
+      "name": "seismic-event-data/events-and-blasts.csv",
+      "bytes": 71691,
+      "sha256": "b024b25b188c95c121da9e2f3bb45ec90efd3edc4c5773e9e74a40c2a78a1404"
+    }
+  ],
+  "otherFiles": {
+    "southwestPrismReadings": 82401,
+    "southwestSensorCount": 160,
+    "seismicEventCount": 1171,
+    "velocityChangeCount": 44,
+    "rainfallDayCount": 730
+  },
+  "protocol": {
+    "dailyReduction": "Última lectura real de cada sensor/fecha",
+    "target": "Magnitud 3D publicada (mm), referencia declarada desde 20 de noviembre",
+    "rainfallLagDays": 2,
+    "lookbackDays": 6,
+    "features": [
+      "displacement_mm",
+      "previous_increment_mm",
+      "previous_interval_hours",
+      "rain_lag2_mm"
+    ],
+    "cutoffs": {
+      "trainEnd": "2014-01-31",
+      "validationStart": "2014-02-01",
+      "validationEnd": "2014-02-10",
+      "testStart": "2014-02-11",
+      "testEnd": "2014-02-20"
+    },
+    "sequenceCounts": {
+      "train": 766,
+      "validation": 198,
+      "test": 231
+    },
+    "exclusions": {
+      "gapsOrMissingRain": 1575,
+      "crossingBoundary": 38,
+      "unseenSensor": 16
+    },
+    "horizon": "Siguiente fecha con observación; solo días consecutivos; intervalo horario variable",
+    "operationalDecisionAllowed": false,
+    "ta01WeightsApplied": false,
+    "missingPorePressureImputed": false
+  },
+  "preparedDailySha256": "63f1e58b8d4d38b5d317bbc335ee9662dd15009f38ae6fc8dbfce3352790016c",
+  "sequenceSha256": "90ee3c561cd81dda13b0c8635049c0097bba83be6ac7afd901431b9c3ee495ce"
+}

@@ -8,11 +8,15 @@ RUN npm ci --omit=dev
 
 COPY --chown=node:node public ./public
 COPY --chown=node:node src ./src
+COPY --chown=node:node scripts/build-chat.js ./scripts/build-chat.js
 COPY --chown=node:node data/rainfall ./data/rainfall
 COPY --chown=node:node data/models ./data/models
 COPY --chown=node:node data/generated/ta01-baseline-1h.json ./data/generated/ta01-baseline-1h.json
 COPY --chown=node:node data/generated/ta01-baseline-6h.json ./data/generated/ta01-baseline-6h.json
 COPY --chown=node:node data/validation ./data/validation
+COPY --chown=node:node data/generated/century-prisms-daily.csv ./data/generated/century-prisms-daily.csv
+COPY --chown=node:node data/generated/century-sequences.json ./data/generated/century-sequences.json
+COPY --chown=node:node data/generated/mine-twin-century.json data/generated/mine-twin-pasco.json ./data/generated/
 RUN mkdir -p /app/data/local && chown node:node /app/data/local
 
 USER node

@@ -1,3 +1,4 @@
+import "./chat/env.js";
 import http from "node:http";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -9,6 +10,9 @@ import { predictTa01SpatialRainfall } from "./core/ta01-spatial-inference.js";
 import { parseNasaPowerDailyCsv } from "./core/rainfall-history.js";
 import { OperationalRepository } from "./persistence.js";
 import { TwinStore } from "./store.js";
+import { serveCenturyStudy } from "./century-study.js";
+import { serveMineTwin, mineServerSnapshot } from "./mine-twins.js";
+import { chatConfiguration, createChatGate, serveProjectChat, publicChatError } from "./chat/chat-service.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
@@ -157,19 +161,20 @@ const repository = new OperationalRepository(path.join(__dirname, "..", "data", 
 const store = new TwinStore({ rainfallDataset, lstmModels, physicsGuidedModels, spatialPinnArtifact, ta01SpatialPinnArtifact, repository });
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
+const admitChat = createChatGate();
 
 const sendJson = (res, status, data) => {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(data));
 };
 
-const getBody = (req) => new Promise((resolve, reject) => {
+const getBody = (req, maximumBytes = 8_000_000) => new Promise((resolve, reject) => {
   let raw = "";
   let bytes = 0;
   let exceeded = false;
   req.on("data", (chunk) => {
     bytes += chunk.length;
-    if (bytes > 8_000_000) {
+    if (bytes > maximumBytes) {
       exceeded = true;
       raw = "";
       return;
@@ -177,7 +182,7 @@ const getBody = (req) => new Promise((resolve, reject) => {
     raw += chunk;
   });
   req.on("end", () => {
-    if (exceeded) return reject(new Error("Cuerpo demasiado grande; máximo 8 MB"));
+    if (exceeded) return reject(new Error(`Cuerpo demasiado grande; máximo ${maximumBytes} bytes`));
     try { resolve(raw ? JSON.parse(raw) : {}); } catch { reject(new Error("JSON inválido")); }
   });
   req.on("error", reject);
@@ -214,11 +219,43 @@ const server = http.createServer(async (req, res) => {
       if (originHost !== req.headers.host) return sendJson(res, 403, { error: "Origen no permitido" });
     }
     if (req.method === "GET" && url.pathname === "/api/health") return sendJson(res, 200, { status: "ok", service: "M-1 Digital Twin", version: "0.1.0" });
+    if (req.method === "GET" && url.pathname === "/api/chat/status") {
+      res.setHeader("Cache-Control", "no-store");
+      return sendJson(res, 200, chatConfiguration());
+    }
+    if (req.method === "POST" && url.pathname === "/api/chat") {
+      let release;
+      try {
+        if (!req.headers["content-type"]?.toLowerCase().startsWith("application/json")) return sendJson(res, 415, { error: "El chat requiere application/json." });
+        release = admitChat(req.socket.remoteAddress || "local");
+        let body;
+        try { body = await getBody(req, 600000); }
+        catch { return sendJson(res, 400, { error: "JSON inválido o petición de chat demasiado grande (máximo 600 kB)." }); }
+        const sensorId = body?.context?.forecast?.sensorId;
+        const knownSensor = store.getSensors().some((sensor) => sensor.sensorId === sensorId) ? sensorId : null;
+        const activeMineSnapshot = await mineServerSnapshot(body?.context);
+        await serveProjectChat(req, res, body, { serverSnapshot: activeMineSnapshot || {
+          capturedAt: new Date().toISOString(),
+          source: "Estado del laboratorio demostrativo, no Century ni Pasco; puede ser posterior a la instantánea de pantalla.",
+          activeMine: "LAB",
+          twin: store.getTwinStatus(knownSensor), sensors: store.getSensors(),
+          femStatus: store.getFemStatus(), persistence: repository.status(),
+          operationalDecisionAllowed: false
+        } });
+      } catch (error) {
+        const safe = publicChatError(error);
+        if (!res.headersSent && !res.destroyed) sendJson(res, safe.status, { error: safe.message });
+        else if (!res.writableEnded) res.end();
+      } finally { release?.(); }
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/telemetry") return sendJson(res, 200, { readings: store.getReadings(url.searchParams.get("limit"), url.searchParams.get("sensorId")) });
     if (req.method === "GET" && url.pathname === "/api/sensors") return sendJson(res, 200, { sensors: store.getSensors() });
     if (req.method === "GET" && url.pathname === "/api/alerts") return sendJson(res, 200, { alerts: store.alerts });
     if (req.method === "GET" && url.pathname === "/api/twin") return sendJson(res, 200, store.getTwinStatus(url.searchParams.get("sensorId")));
     if (req.method === "GET" && url.pathname === "/api/simulation") return sendJson(res, 200, { parameters: store.simulationParameters });
+    if (req.method === "GET" && url.pathname.startsWith("/api/mines/")) return await serveMineTwin(res, url);
+    if (req.method === "GET" && url.pathname === "/api/research/century") return await serveCenturyStudy(res, url);
     if (req.method === "GET" && url.pathname === "/api/research") return sendJson(res, 200, store.getResearchStatus());
     if (req.method === "GET" && url.pathname === "/api/research/chronological") {
       const horizon = Number(url.searchParams.get("horizon") || 1);
