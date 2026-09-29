@@ -1,5 +1,13 @@
 # Century Lab
 
+## Nueva entrega: Python + Streamlit y CRISP-DM
+
+La nueva aplicación solicitada está en `streamlit_app.py`: **http://127.0.0.1:8501**. Motor Python con CV temporal anidada, selección por folds externos, repeticiones por semilla, comparaciones entre todas las parejas, HAC/Holm y explicabilidad. Cada gráfico y tabla incluye método, interpretación y límites, disponibles también en reportes HTML autosuficientes. Conserva un historial independiente en `streamlit-runtime/`.
+
+Arranque: `.venv/bin/python -m streamlit run streamlit_app.py` desde esta carpeta. Instalación: `.venv/bin/python -m pip install -r requirements-streamlit.txt`.
+
+**[Guía completa de uso y metodología Streamlit](STREAMLIT.md)**. No necesita Next.js ni FastAPI. La interfaz anterior permanece disponible y sin migrar su historial. Las secciones siguientes describen esa versión anterior.
+
 App de investigación **independiente** del software FEM–LSTM del artículo. Tiene su propia interfaz Next.js/React, API FastAPI, entorno Python, copia del dataset público y base SQLite. No usa la API, modelos, archivos generados ni base de datos del visor original.
 
 Interfaz: **http://127.0.0.1:3001**. API técnica: http://127.0.0.1:8001/docs.

@@ -1,0 +1,1451 @@
+{
+  "paragraphs": [
+    {
+      "index": 0,
+      "style": "Title",
+      "text": "Prototipo semisintético FEM LSTM con corrección guiada por física para pronosticar desplazamientos en taludes"
+    },
+    {
+      "index": 1,
+      "style": "Subtitle",
+      "text": "Semisynthetic FEM LSTM prototype with physics guided correction for slope displacement forecasting\n"
+    },
+    {
+      "index": 2,
+      "style": "Normal",
+      "text": "Roberto Enrique Quezada-Rodríguez. Universidad Nacional de Trujillo. Trujillo, Perú."
+    },
+    {
+      "index": 3,
+      "style": "Normal",
+      "text": "requezadaro@unitru.edu.pe. ORCID 0009-0004-0869-3881 "
+    },
+    {
+      "index": 4,
+      "style": "Normal",
+      "text": "Melanie Celeste Tello Fuentes. Universidad Nacional de Trujillo. Trujillo, Perú."
+    },
+    {
+      "index": 5,
+      "style": "Normal",
+      "text": "mctellofu@unitru.edu.pe.\n"
+    },
+    {
+      "index": 6,
+      "style": "Normal",
+      "text": "RESUMEN"
+    },
+    {
+      "index": 7,
+      "style": "Normal",
+      "text": "Introducción. La actualización frecuente de modelos de taludes exige relacionar lluvia, respuesta mecánica y series temporales sin confundir una demostración computacional con un sistema validado en campo. Objetivo. Evaluar un prototipo semisintético que combina un modelo de elementos finitos bidimensional (FEM), una red de memoria a corto y largo plazo (LSTM) y un corrector residual con restricciones de monotonía para pronosticar el incremento de desplazamiento inducido por lluvia. Métodos. El caso TA-01 empleó geometría supuesta, precipitación diaria de reanálisis NASA POWER de 2020 a 2025 y 500 escenarios horarios de 24 h. Persistencia, regresión ridge, LSTM e híbrido se compararon mediante una partición por fechas y dos cortes cronológicos; la incertidumbre se estimó con 5000 remuestreos por bloques de fecha. Resultados. En la partición por fecha, el error absoluto medio (MAE) del híbrido fue 0,00000798 mm a 1 h y 0,00006176 mm a 6 h, frente a 0,00000858 y 0,00006332 mm de la LSTM. La LSTM obtuvo menor MAE en 2024 y el híbrido en 2025. Los cuatro intervalos de confianza del 95 % de la diferencia incluyeron cero. Conclusiones. El flujo permite estudiar el acoplamiento FEM y aprendizaje temporal bajo condiciones controladas, pero la evidencia no demuestra superioridad general del corrector ni validez para alertas operacionales."
+    },
+    {
+      "index": 8,
+      "style": "Normal",
+      "text": "Palabras clave: estabilidad de taludes; elementos finitos; LSTM; aprendizaje guiado por física; datos semisintéticos."
+    },
+    {
+      "index": 9,
+      "style": "Normal",
+      "text": "ABSTRACT"
+    },
+    {
+      "index": 10,
+      "style": "Normal",
+      "text": "Introduction. Frequent slope-model updates require rainfall, mechanical response, and time-series information to be related without confusing a computational demonstration with a field-validated system. Objective. To evaluate a semisynthetic prototype combining a two-dimensional finite element model (FEM), a long short-term memory network (LSTM), and a residual correction constrained by monotonicity for rainfall-induced displacement-increment forecasting. Methods. The TA-01 case used assumed geometry, daily NASA POWER reanalysis precipitation from 2020 to 2025, and 500 simulated 24-hour scenarios. Persistence, ridge regression, LSTM, and the hybrid were compared using a rainfall-date split and two chronological tests; uncertainty was estimated with 5,000 date-block resamples. Results. In the date-separated test, hybrid mean absolute error (MAE) was 0.00000798 mm at 1 h and 0.00006176 mm at 6 h, compared with 0.00000858 and 0.00006332 mm for LSTM. LSTM had lower MAE in 2024, whereas the hybrid had lower MAE in 2025. All four 95% confidence intervals for the difference included zero. Conclusions. The workflow supports controlled study of FEM and temporal learning, but the evidence does not establish a general advantage for the correction model or validity for operational alerts."
+    },
+    {
+      "index": 11,
+      "style": "Normal",
+      "text": "Keywords: slope stability; finite elements; LSTM; physics-guided learning; semisynthetic data."
+    },
+    {
+      "index": 12,
+      "style": "Heading 2",
+      "text": "Siglas y abreviaturas"
+    },
+    {
+      "index": 13,
+      "style": "Normal",
+      "text": "FEM: método de elementos finitos; FoS: factor de seguridad; LHS: muestreo Latin Hypercube; LSTM: red de memoria a corto y largo plazo; MAE: error absoluto medio; PIELM/RBF: modelo de aprendizaje extremo informado por física con funciones de base radial; PINN: red neuronal informada por la física."
+    },
+    {
+      "index": 14,
+      "style": "Heading 1",
+      "text": "Introducción"
+    },
+    {
+      "index": 15,
+      "style": "Normal",
+      "text": "La estabilidad de los taludes constituye una condición crítica para la continuidad y seguridad de las operaciones en minas a cielo abierto. La excavación modifica de manera progresiva la geometría del macizo rocoso, el estado tensional y los regímenes de infiltración y presión de poros. En consecuencia, una estimación aislada del factor de seguridad (FoS) resulta insuficiente cuando las condiciones geotécnicas y operacionales cambian a lo largo del tiempo. Wang et al. (2023) señalan que el aprendizaje profundo mejora la eficiencia de la predicción del factor de estabilidad y contribuye a la seguridad durante el desarrollo del proyecto. Por ello, una capacidad de previsión que anticipe la tendencia de desplazamientos, las variaciones de presión de poros y la reducción del FoS puede apoyar decisiones de alerta, evacuación, rediseño de bancos y control de producción."
+    },
+    {
+      "index": 16,
+      "style": "Normal",
+      "text": "Los enfoques convencionales de análisis de estabilidad, incluidos los modelos de equilibrio límite y de elementos finitos (FEM), representan de forma explícita la geometría, la resistencia y las condiciones de frontera. Esta base física es indispensable para interpretar mecanismos de falla y evaluar escenarios de lluvia, excavación o cambios en las propiedades del material. Sin embargo, sus resultados suelen depender de parámetros que presentan incertidumbre y de actualizaciones que no siempre acompañan la velocidad del monitoreo en campo. En una aplicación de gemelo digital de talud, Liu et al. (2022, sección «Abstract», párr. 1) reportaron que “The predicted temporal variation of slope stability agrees well with the observed slope failure induced by an extreme rainstorm in June of 2008” [La variación temporal prevista de la estabilidad del talud concuerda bien con la falla observada, inducida por una tormenta extrema en junio de 2008; traducción propia]. Este antecedente muestra el valor de actualizar el modelo con registros de desempeño y observaciones, pero también plantea la necesidad de convertir esa actualización en pronósticos operativos de baja latencia."
+    },
+    {
+      "index": 17,
+      "style": "Normal",
+      "text": "El desarrollo de sensores geotécnicos, estaciones meteorológicas, sistemas IoT y fotogrametría ha ampliado la disponibilidad de series temporales para este propósito. No obstante, el uso exclusivo de aprendizaje automático puede producir predicciones difíciles de interpretar o físicamente inconsistentes, especialmente ante escenarios que no están bien representados en los datos históricos. Pei et al. (2023, sección «Abstract», párr. 1) encontraron que “The three proposed methods were found to outperform both domain knowledge–based models and pure data-driven models” [Se encontró que los tres métodos propuestos superan tanto a los modelos basados en conocimiento del dominio como a los modelos puramente basados en datos; traducción propia]. Esta conclusión respalda la integración explícita de conocimiento geotécnico en el entrenamiento de modelos predictivos, incluida su incorporación en la función de aprendizaje."
+    },
+    {
+      "index": 18,
+      "style": "Normal",
+      "text": "Los gemelos digitales ofrecen una estructura adecuada para dicha integración porque vinculan una representación computacional del talud con sus observaciones actuales y con mecanismos de actualización. Piciullo et al. (2025, p. 1) reportan que “The trained models proved to be effective and were employed to forecast slope stability for the rolling three days” [Los modelos entrenados demostraron ser eficaces y se emplearon para pronosticar la estabilidad del talud durante los tres días móviles siguientes; traducción propia]. Su resultado confirma la viabilidad de articular monitoreo hidrológico, información meteorológica, modelado numérico y predicción automática en una plataforma de alerta. Sin embargo, sigue siendo necesario desarrollar configuraciones específicas para minería a cielo abierto que preserven la respuesta mecánica representada por FEM, incorporen la dependencia temporal de las señales de monitoreo y puedan ejecutarse con la frecuencia requerida por la operación."
+    },
+    {
+      "index": 19,
+      "style": "Normal",
+      "text": "Los trabajos más cercanos cubren componentes parciales del problema. Liu et al. (2022) y Piciullo et al. (2025) actualizaron pronósticos con datos observados; Pei et al. (2023) incorporaron conocimiento del dominio en el aprendizaje; y Zhang, Z., et al. (2024) impusieron ecuaciones y condiciones de contorno en un marco tridimensional. Ninguno de esos antecedentes coincide con el alcance exacto de TA-01: un banco semisintético trazable que compara una LSTM con una corrección residual monótona y examina su estabilidad entre fechas de lluvia. La brecha evaluada aquí es, por tanto, metodológica y acotada: determinar qué aporta esa corrección dentro de un generador FEM controlado antes de atribuirle validez de campo."
+    },
+    {
+      "index": 20,
+      "style": "Normal",
+      "text": "Este estudio presenta el prototipo semisintético TA-01. El aporte verificable consiste en integrar un FEM 2D elástico, un modelo temporal LSTM, un corrector residual guiado por relaciones monotónicas y una evaluación que separa fechas de lluvia y años de prueba. El estudio no valida la latencia de extremo a extremo ni la utilidad de las alertas en campo; tampoco evalúa cambios de excavación, un factor de seguridad operacional por reducción de resistencia o una PINN continua de ecuaciones gobernantes."
+    },
+    {
+      "index": 21,
+      "style": "Normal",
+      "text": "La contribución se interpreta como una evaluación de software bajo un generador controlado: el identificador del escenario y la fecha de lluvia permiten rastrear cada ventana, separar eventos entre conjuntos y repetir las comparaciones. El hallazgo empírico principal es que una restricción monotónica plausible no garantiza menor error al cambiar el periodo de prueba y puede aumentar la sensibilidad a entradas degradadas. Esto delimita el alcance de los métodos guiados por física agregada antes de proponer su uso operacional. Los desplazamientos y las variables geotécnicas son simulados; solo la lluvia procede de una fuente externa."
+    },
+    {
+      "index": 22,
+      "style": "Heading 2",
+      "text": "Posicionamiento frente a trabajos próximos"
+    },
+    {
+      "index": 23,
+      "style": "Normal",
+      "text": "La Tabla 1 delimita la novedad frente a los antecedentes directamente relacionados. Se seleccionaron trabajos de 2022 a 2025 que combinan al menos dos de estos componentes: actualización de taludes, conocimiento físico, aprendizaje temporal, datos de monitoreo o validación numérica. La comparación evita equiparar restricciones monotónicas con una PINN de campo y muestra que la contribución se concentra en la trazabilidad del experimento semisintético y en la evaluación temporal."
+    },
+    {
+      "index": 24,
+      "style": "Normal",
+      "text": "Tabla 1\nComparación del alcance con trabajos directamente relacionados"
+    },
+    {
+      "index": 25,
+      "style": "Normal",
+      "text": "Nota. La tabla resume el alcance descrito en las obras citadas y no sustituye una revisión sistemática."
+    },
+    {
+      "index": 26,
+      "style": "Heading 2",
+      "text": "Preguntas de investigación y contribución"
+    },
+    {
+      "index": 27,
+      "style": "Normal",
+      "text": "El experimento responde cuatro preguntas medibles dentro del caso TA-01:"
+    },
+    {
+      "index": 28,
+      "style": "Normal",
+      "text": "RQ1. ¿Cómo cambia el MAE de persistencia, ridge, LSTM e híbrido en horizontes de 1 y 6 h bajo fechas de lluvia disjuntas y cortes cronológicos?"
+    },
+    {
+      "index": 29,
+      "style": "Normal",
+      "text": "RQ2. ¿La corrección residual monótona aporta una mejora predictiva consistente respecto de la LSTM entre los años de prueba?"
+    },
+    {
+      "index": 30,
+      "style": "Normal",
+      "text": "RQ3. ¿Cuánto se degrada el híbrido ante ruido del 5 % y pérdida aleatoria del 30 % de las entradas reservadas?"
+    },
+    {
+      "index": 31,
+      "style": "Normal",
+      "text": "RQ4. ¿Qué grado de concordancia interna alcanzan la implementación FEM y la aproximación espacial PIELM/RBF dentro del mismo operador numérico?"
+    },
+    {
+      "index": 32,
+      "style": "Normal",
+      "text": "Cada pregunta se vincula con resultados específicos: RQ1 con las Tablas 2 y 3, RQ2 con los intervalos pareados por fecha, RQ3 con las pruebas de perturbación y RQ4 con las verificaciones del FEM y la aproximación espacial."
+    },
+    {
+      "index": 33,
+      "style": "Heading 1",
+      "text": "Materiales y métodos"
+    },
+    {
+      "index": 34,
+      "style": "Heading 2",
+      "text": "Arquitectura y trazabilidad del prototipo"
+    },
+    {
+      "index": 35,
+      "style": "Normal",
+      "text": "El prototipo organiza la generación de escenarios, la simulación mecánica, la construcción de ventanas, el entrenamiento y la validación como etapas separadas. Cada predicción conserva la fecha de lluvia y el identificador del escenario, lo que permite formar particiones sin fuga entre ventanas de un mismo evento y rastrear las cifras hasta los archivos de validación. La Figura 1 resume el flujo evaluado."
+    },
+    {
+      "index": 36,
+      "style": "Normal",
+      "text": "Figura 1\nFlujo de datos y validación del prototipo TA-01"
+    },
+    {
+      "index": 37,
+      "style": "Normal",
+      "text": ""
+    },
+    {
+      "index": 38,
+      "style": "Normal",
+      "text": "Nota. LHS: muestreo Latin Hypercube. La salida evaluada es el incremento simulado de desplazamiento, no una alerta de campo."
+    },
+    {
+      "index": 39,
+      "style": "Heading 2",
+      "text": "Diseño del caso y procedencia de datos"
+    },
+    {
+      "index": 40,
+      "style": "Normal",
+      "text": "TA-01 es un talud experimental definido en el proyecto, no una mina instrumentada. Su sección tiene 100 m de altura, 160 m de ancho, cinco bancos y tres zonas de material: suelo, material meteorizado y roca. Las propiedades mecánicas e hidráulicas se muestrearon dentro de rangos supuestos mediante Latin Hypercube. El conjunto reunió 500 escenarios de 24 estados horarios cada uno (12 000 registros), con semilla 20260915. Cada escenario conserva una geometría común y una fecha de lluvia asignada."
+    },
+    {
+      "index": 41,
+      "style": "Normal",
+      "text": "La precipitación diaria de reanálisis corresponde a NASA POWER/MERRA-2 para el punto −10,68°, −76,26° durante 2020–2025 (National Aeronautics and Space Administration [NASA], s. f.). El archivo usado no contiene valores horarios; el generador distribuyó cada total diario en perfiles rectangulares estimados de 6, 12 o 24 h. Las presiones de poros, los desplazamientos y los índices de seguridad fueron simulados; no proceden de sensores. Esta distinción se mantuvo en el almacenamiento y la interpretación de resultados."
+    },
+    {
+      "index": 42,
+      "style": "Heading 2",
+      "text": "Modelo mecánico y objetivo predictivo"
+    },
+    {
+      "index": 43,
+      "style": "Normal",
+      "text": "El FEM propio usa elementos triangulares de deformación constante en deformación plana, elasticidad lineal isotrópica, peso propio y una carga de presión de poros formulada mediante el coeficiente de Biot. Se impuso base fija y restricción horizontal en el borde izquierdo. Cada hora se resolvió un estado cuasiestático. La respuesta hidrológica es una aproximación de infiltración y drenaje; no se resolvió un campo transitorio de flujo mediante el FEM. El objetivo de pronóstico fue el incremento del desplazamiento máximo inducido por lluvia, expresado en milímetros. No debe confundirse este incremento, de magnitud muy pequeña en TA-01, con el desplazamiento total de un talud real."
+    },
+    {
+      "index": 44,
+      "style": "Normal",
+      "text": "El visor calcula además un índice local basado en tensiones efectivas y el criterio de Mohr–Coulomb. Ese índice no es un factor de seguridad obtenido mediante reducción no lineal de resistencia. Un ensayo externo de reducción de resistencia se conservó como referencia separada, sin usarlo para etiquetar los datos de entrenamiento ni para validar el FEM propio."
+    },
+    {
+      "index": 45,
+      "style": "Heading 2",
+      "text": "Formulación matemática del acoplamiento"
+    },
+    {
+      "index": 46,
+      "style": "Normal",
+      "text": "Para cada hora t, el estado mecánico cuasiestático se representa mediante el sistema discreto siguiente, donde θ agrupa geometría y propiedades, uₜ es el vector de desplazamientos, f_g es la carga gravitatoria y f_p incorpora el efecto de presión de poros."
+    },
+    {
+      "index": 47,
+      "style": "Normal",
+      "text": ""
+    },
+    {
+      "index": 48,
+      "style": "Normal",
+      "text": "La LSTM recibe seis estados horarios y la lluvia futura conocida del experimento. El híbrido suma una corrección residual al pronóstico base. Las dos relaciones de monotonía expresan que la corrección no disminuye al aumentar la lluvia futura y no aumenta al crecer el índice de seguridad, manteniendo las demás entradas constantes."
+    },
+    {
+      "index": 49,
+      "style": "Normal",
+      "text": ""
+    },
+    {
+      "index": 50,
+      "style": "Normal",
+      "text": ""
+    },
+    {
+      "index": 51,
+      "style": "Normal",
+      "text": ""
+    },
+    {
+      "index": 52,
+      "style": "Normal",
+      "text": "Estas expresiones precisan el acoplamiento evaluado. La corrección es guiada por física agregada, pero no resuelve las ecuaciones de campo ni satisface por construcción las condiciones de contorno; por ello se evita denominarla PINN."
+    },
+    {
+      "index": 53,
+      "style": "Heading 2",
+      "text": "Modelos temporales y corrector"
+    },
+    {
+      "index": 54,
+      "style": "Normal",
+      "text": "Se compararon cuatro alternativas sobre las mismas ventanas: persistencia del valor actual, regresión ridge autorregresiva, LSTM y un híbrido que añade a la LSTM una corrección residual. Cada entrada de la LSTM contiene seis horas de historia y produce un pronóstico a 1 o 6 h. La red se entrenó mediante retropropagación a través del tiempo y optimización Adam. La lluvia futura se trató como entrada exógena conocida en el experimento; esa condición sería distinta en una operación con pronósticos meteorológicos imperfectos."
+    },
+    {
+      "index": 55,
+      "style": "Normal",
+      "text": "El corrector residual, implementado como un perceptrón multicapa, se entrenó sobre la salida de la LSTM. Sus restricciones fuerzan que, manteniendo las demás entradas constantes, un aumento de lluvia futura no reduzca su corrección y un índice de seguridad mayor no la aumente. Estas condiciones de monotonía representan conocimiento agregado del problema, pero no constituyen una pérdida de equilibrio espacial o una solución PINN de las ecuaciones de campo. El proyecto también desarrolló una aproximación espacial PIELM/RBF en un evento semisintético; se evaluó por separado para no atribuir sus resultados al pronóstico temporal."
+    },
+    {
+      "index": 56,
+      "style": "Heading 2",
+      "text": "Configuración experimental reportada"
+    },
+    {
+      "index": 57,
+      "style": "Normal",
+      "text": "La Tabla 4 reúne la configuración recuperada de los scripts y de los artefactos de modelos guardados en sslope. Los valores de épocas indicados son máximos solicitados; la detención temprana puede terminar antes el entrenamiento."
+    },
+    {
+      "index": 58,
+      "style": "Normal",
+      "text": "Tabla 4\nConfiguración documentada del experimento"
+    },
+    {
+      "index": 59,
+      "style": "Normal",
+      "text": "Nota. Los valores de arquitectura y entrenamiento proceden de data/models/ta01-lstm-1h.json y data/models/ta01-physics-guided-1h.json; los modelos de 6 h y los cortes cronológicos conservan la configuración base y registran las épocas efectivamente completadas. La versión de Python y el hardware no están fijados en el paquete experimental."
+    },
+    {
+      "index": 60,
+      "style": "Heading 2",
+      "text": "Validación y análisis estadístico"
+    },
+    {
+      "index": 61,
+      "style": "Normal",
+      "text": "La primera comparación separó los 500 escenarios por fecha de lluvia en entrenamiento (350), validación (75) y prueba (75); ningún escenario de una misma fecha cruzó conjuntos. Esta división no es cronológica. Para examinar el cambio temporal se hicieron dos cortes adicionales con pesos reentrenados: entrenamiento 2020–2022, validación 2023 y prueba 2024; y entrenamiento 2020–2023, validación 2024 y prueba 2025. Se evaluaron errores absolutos medios (MAE) en ventanas comparables de 1 y 6 h."
+    },
+    {
+      "index": 62,
+      "style": "Normal",
+      "text": "La diferencia pareada Δ = MAE(LSTM) − MAE(híbrido) se estimó mediante 5000 remuestreos por bloques de fecha de lluvia, con intervalos de confianza percentiles del 95 %. Para controlar las cuatro comparaciones año–horizonte se aplicó Holm a valores p exploratorios de una prueba bilateral de inversión aleatoria de signo por fecha (20 000 permutaciones, semillas fijas). Esta prueba supone simetría de las diferencias de error agregadas por fecha bajo la hipótesis nula; el análisis se considera exploratorio y no demuestra equivalencia cuando p > 0,05. Agrupar por fecha evita tratar las ventanas de un mismo evento como independientes. La prueba de robustez perturbó únicamente las entradas reservadas: ruido gaussiano del 5 % de la desviación de entrenamiento y pérdida aleatoria del 30 %, imputada con medias de entrenamiento. Las cifras proceden de predicciones guardadas del proyecto, no de observaciones de campo."
+    },
+    {
+      "index": 63,
+      "style": "Heading 2",
+      "text": "Procedimiento de reproducción"
+    },
+    {
+      "index": 64,
+      "style": "Normal",
+      "text": "La secuencia reproducible es: (1) utilizar el CSV diario NASA POWER conservado en data/rainfall/; (2) generar 500 escenarios con semilla 20260915 mediante npm run generate:fem -- --scenarios=500 --output=data/generated/ta01-fem-500.csv; (3) crear la partición por fechas con npm run split:fem y los cortes cronológicos con npm run split:fem:chronological y los parámetros documentados en docs/CASO_TA01_FEM.md; (4) entrenar ridge, LSTM e híbrido por horizonte mediante npm run train:baseline, npm run train:lstm y npm run train:physics; (5) ejecutar npm run validate:fem y npm run validate:robustness; y (6) consolidar los resultados mediante npm run report:research. El README y los manifiestos de partición conservan las opciones y la procedencia. La ejecución requiere Node.js 24 o superior y NumPy 2.x para los scripts Python."
+    },
+    {
+      "index": 65,
+      "style": "Normal",
+      "text": "Las salidas citadas se encuentran en data/validation/ta01-model-comparison.csv, ta01-rolling-origin-model-comparison.csv y ta01-rolling-origin-bootstrap.json, junto con ta01-replication-manifest.json y las huellas SHA-256 de fuentes y resultados. El repositorio público de sslope contiene el README, los scripts npm y Docker Compose para el servicio web; este contenedor no constituye por sí solo un pipeline cerrado de entrenamiento y análisis. El código y la documentación tienen licencia MIT, y los aportes originales de los autores en los datos semisintéticos y resultados tienen licencia CC BY 4.0. La versión de Python no está fijada para todos los experimentos, lo que limita la réplica exacta."
+    },
+    {
+      "index": 66,
+      "style": "Heading 1",
+      "text": "Resultados"
+    },
+    {
+      "index": 67,
+      "style": "Heading 2",
+      "text": "RQ4 Verificación interna del FEM"
+    },
+    {
+      "index": 68,
+      "style": "Normal",
+      "text": "La prueba de parche con deformación constante reprodujo el campo afín con error máximo de deformación de 1,14 × 10⁻¹⁸. Dos comprobaciones analíticas globales dieron errores máximos de desplazamiento de 1,62 × 10⁻¹¹ m en elasticidad lineal y 1,60 × 10⁻¹¹ m al incluir presión uniforme de Biot. Frente a una malla interna de 48 × 32, la malla habitual de 30 × 20 presentó una diferencia de 2,13 % en desplazamiento. La secuencia de refinamiento no fue monótona: las mallas de 36 × 24 y 42 × 28 difirieron 8,49 % y 7,41 % de la referencia, respectivamente. Estas pruebas verifican aspectos de la implementación, pero no demuestran convergencia de malla ni validez de los parámetros geotécnicos de TA-01."
+    },
+    {
+      "index": 69,
+      "style": "Heading 2",
+      "text": "RQ1 Comparación predictiva por fecha de lluvia"
+    },
+    {
+      "index": 70,
+      "style": "Normal",
+      "text": "En la partición con fechas disjuntas, el híbrido presentó el menor MAE de las cuatro alternativas a ambos horizontes (Tabla 2). Frente a la LSTM, la reducción relativa fue 6,99 % a 1 h y 2,46 % a 6 h. Las magnitudes corresponden al incremento simulado de desplazamiento inducido por lluvia."
+    },
+    {
+      "index": 71,
+      "style": "Normal",
+      "text": "Tabla 2\nError absoluto medio en la prueba separada por fecha de lluvia"
+    },
+    {
+      "index": 72,
+      "style": "Normal",
+      "text": "Nota. Valores de MAE en mm; las cuatro alternativas se evaluaron sobre las mismas ventanas de cada horizonte. Fuente: data/validation/ta01-model-comparison.csv del proyecto."
+    },
+    {
+      "index": 73,
+      "style": "Heading 2",
+      "text": "RQ1 y RQ2 Pruebas cronológicas e incertidumbre"
+    },
+    {
+      "index": 74,
+      "style": "Normal",
+      "text": "Tabla 3\nMAE de LSTM e híbrido en pruebas cronológicas"
+    },
+    {
+      "index": 75,
+      "style": "Normal",
+      "text": "Nota. Fuente: data/validation/ta01-rolling-origin-model-comparison.csv y ta01-rolling-origin-bootstrap.json del repositorio sslope. MAE expresado en mm."
+    },
+    {
+      "index": 76,
+      "style": "Normal",
+      "text": "Al mover el año de prueba, el orden entre LSTM e híbrido cambió (Tabla 3). En 2024, el MAE del híbrido fue 1,15 % mayor a 1 h y 1,89 % mayor a 6 h; en 2025 fue 3,89 % menor a 1 h y 4,63 % menor a 6 h. Los cuatro intervalos del 95 % incluyeron cero. Los valores p bilaterales ajustados por Holm fueron 0,535, 0,334, 0,535 y 0,383, respectivamente; ninguno alcanzó 0,05. Estos resultados no sustentan una mejora consistente del corrector y tampoco prueban equivalencia de los modelos."
+    },
+    {
+      "index": 77,
+      "style": "Normal",
+      "text": "Los intervalos del 95 % para Δ fueron [−1,44 × 10⁻⁷; 4,25 × 10⁻⁸] mm a 1 h y [−1,15 × 10⁻⁶; 6,64 × 10⁻⁸] mm a 6 h en 2024; en 2025 fueron [−2,59 × 10⁻⁷; 6,88 × 10⁻⁷] mm y [−3,83 × 10⁻⁷; 6,25 × 10⁻⁶] mm. Las 82 fechas de prueba de 2024 y las 76 de 2025 constituyeron las unidades de remuestreo y permutación. Los intervalos describen variación entre fechas semisintéticas y no cuantifican incertidumbre geotécnica real."
+    },
+    {
+      "index": 78,
+      "style": "Normal",
+      "text": "Los controles conservan utilidad en los cortes cronológicos: en 2024, la persistencia y ridge obtuvieron MAE de 0,00001049 y 0,00000662 mm a 1 h, y 0,00006888 y 0,00005232 mm a 6 h; en 2025 fueron 0,00002167 y 0,00002055 mm a 1 h, y 0,00014399 y 0,00015151 mm a 6 h. La LSTM y el híbrido mejoraron esos dos controles en los cuatro cortes, aunque su orden mutuo cambió. Fuente: data/validation/ta01-rolling-origin-model-comparison.csv."
+    },
+    {
+      "index": 79,
+      "style": "Normal",
+      "text": "La selección por menor MAE de validación no identificó al modelo con menor MAE de prueba en tres de cuatro combinaciones año–horizonte. En el subconjunto con lluvia ≥5 mm/día, la cobertura de intervalos nominales del 95 % fue 33,3 % y 76,9 % a 1 y 6 h en 2024, y 59,3 % y 43,6 % en 2025. Solo hubo dos y tres fechas de esa categoría, respectivamente. Estos diagnósticos describen inestabilidad de selección y calibración condicional dentro del banco, sin permitir una tasa fiable para tormentas reales."
+    },
+    {
+      "index": 80,
+      "style": "Heading 2",
+      "text": "RQ4 Aproximación espacial del equilibrio discreto"
+    },
+    {
+      "index": 81,
+      "style": "Normal",
+      "text": "En un evento semisintético, la aproximación espacial PIELM/RBF del sistema incremental FEM obtuvo un error L2 relativo de desplazamiento de 12,57 % en 354 nodos sin supervisión de desplazamiento y un residuo relativo de equilibrio discreto de 14,39 %. El entrenamiento y la referencia compartieron la misma matriz de rigidez y carga; esos porcentajes miden concordancia interna, no validación independiente ni capacidad de transferirse a otra geometría."
+    },
+    {
+      "index": 82,
+      "style": "Heading 2",
+      "text": "RQ3 Robustez frente a perturbaciones"
+    },
+    {
+      "index": 83,
+      "style": "Normal",
+      "text": "Con ruido del 5 % en las entradas, el MAE de la LSTM aumentó 5,13 % a 1 h y 5,97 % a 6 h; el del híbrido aumentó 53,88 % y 46,10 %. Con 30 % de valores faltantes, los aumentos fueron 102,80 % y 60,88 % para la LSTM, frente a 133,96 % y 70,77 % para el híbrido. En estos dos tipos de perturbación, la corrección perdió su pequeña ventaja de MAE limpio. El ensayo utiliza faltantes aleatorios e imputación por media sin reentrenamiento; no reproduce todas las fallas posibles de sensores ni prueba comportamiento en campo. Fuente: data/validation/ta01-model-robustness.json."
+    },
+    {
+      "index": 84,
+      "style": "Heading 1",
+      "text": "Discusión"
+    },
+    {
+      "index": 85,
+      "style": "Normal",
+      "text": "El valor del prototipo reside en reunir una sección mecánica reproducible, un modelo temporal entrenado y un registro de procedencia para cada pronóstico. En trabajos con monitoreo real, la actualización de parámetros y el contraste con eventos observados son elementos centrales para sostener la interpretación del gemelo digital (Liu et al., 2022; Piciullo et al., 2025). TA-01 todavía no dispone de ese contraste: solo la lluvia diaria tiene origen externo y la respuesta geotécnica se genera con hipótesis del propio modelo. En consecuencia, un error de pronóstico bajo mide la reproducción de ese generador, no la precisión de una alerta de mina."
+    },
+    {
+      "index": 86,
+      "style": "Normal",
+      "text": "La literatura ha mostrado interés por introducir conocimiento físico en predictores de estabilidad (Dahal & Lombardo, 2025; Pei et al., 2023). Aquí, las restricciones de monotonía aportan una propiedad verificable al corrector; su efecto sobre el MAE cambia de signo entre los dos años examinados. Esa variación y los intervalos que incluyen cero aconsejan presentar ambos modelos como alternativas experimentales. La evaluación espacial, aunque incorpora equilibrio discreto, depende del mismo operador FEM empleado para construir su referencia. No demuestra que se haya entrenado una PINN completa para el talud TA-01."
+    },
+    {
+      "index": 87,
+      "style": "Normal",
+      "text": "No se registraron medidas comparables de tiempo de entrenamiento, inferencia, consumo energético o latencia de extremo a extremo. Por ello, el experimento evalúa precisión y robustez interna, pero no eficiencia operacional. La mejora de MAE en la partición por fechas es pequeña en valor absoluto y no compensa por sí sola la degradación del corrector con entradas perturbadas."
+    },
+    {
+      "index": 88,
+      "style": "Normal",
+      "text": "El FEM supone deformación plana y elasticidad lineal, mientras que la inestabilidad real puede involucrar plasticidad, discontinuidades, heterogeneidad y flujo transitorio. La comparación con una malla interna más fina no muestra convergencia monótona y la reproducción externa de un benchmark de reducción de resistencia no valida el FEM lineal propio. El índice mostrado por el visor tampoco sustituye un factor de seguridad obtenido por reducción de resistencia. Para avanzar hacia el objetivo original de M-1 harían falta parámetros y series de sensores observados, verificación geotécnica independiente, comparación con eventos no utilizados en el ajuste, análisis de incertidumbre y criterios de alerta contrastados. Un estudio de sensibilidad a excavaciones requeriría representar esos cambios geométricos en la simulación y evaluarlos con datos pertinentes."
+    },
+    {
+      "index": 89,
+      "style": "Heading 2",
+      "text": "Amenazas a la validez"
+    },
+    {
+      "index": 90,
+      "style": "Normal",
+      "text": "Validez interna. El generador y los modelos comparten variables derivadas del mismo FEM, lo que puede favorecer la concordancia. La separación por fecha, los cortes cronológicos y la perturbación exclusiva de entradas reservadas reducen la fuga temporal, pero no eliminan la dependencia respecto del generador."
+    },
+    {
+      "index": 91,
+      "style": "Normal",
+      "text": "Validez de constructo. El resultado pronosticado es un incremento de desplazamiento, no el desplazamiento total ni un FoS por reducción de resistencia. La corrección monótona representa conocimiento físico agregado y no una PINN completa. Las conclusiones se formulan con esas definiciones."
+    },
+    {
+      "index": 92,
+      "style": "Normal",
+      "text": "Validez externa. TA-01 usa una sola geometría, rangos supuestos y perfiles simplificados de lluvia. No se evaluaron otras litologías, excavaciones, sensores ni eventos de falla observados; por ello no se generaliza a una mina real."
+    },
+    {
+      "index": 93,
+      "style": "Normal",
+      "text": "Validez de conclusión. Las fechas, no las ventanas horarias, fueron las unidades de remuestreo y permutación. Se corrigieron cuatro valores p mediante Holm, pero el ensayo de inversión de signo requiere simetría de las diferencias por fecha; no se registró un cálculo de potencia ni un umbral de equivalencia antes del análisis. La inclusión de cero y los valores p ajustados mayores que 0,05 indican evidencia insuficiente de mejora, no equivalencia. Los subconjuntos de lluvia ≥5 mm/día incluyen solo dos fechas en 2024 y tres en 2025; sus estimaciones de cobertura son inestables."
+    },
+    {
+      "index": 94,
+      "style": "Heading 2",
+      "text": "Gobernanza y uso responsable"
+    },
+    {
+      "index": 95,
+      "style": "Normal",
+      "text": "El prototipo no debe emitir alertas autónomas. Un falso negativo podría retrasar una inspección o evacuación, mientras que un falso positivo podría interrumpir innecesariamente la operación. Cualquier aplicación futura requiere umbrales validados con datos de campo, redundancia de sensores, registro de versiones, revisión de un profesional geotécnico y un procedimiento de escalamiento. Las predicciones fuera del dominio de lluvia, geometría o materiales de entrenamiento deben marcarse como no confiables."
+    },
+    {
+      "index": 96,
+      "style": "Heading 1",
+      "text": "Conclusiones"
+    },
+    {
+      "index": 97,
+      "style": "Normal",
+      "text": "RQ1 mostró que el híbrido obtuvo el menor MAE en la partición por fechas, con reducciones relativas de 6,99 % a 1 h y 2,46 % a 6 h frente a la LSTM. Sin embargo, el orden cambió entre las pruebas cronológicas."
+    },
+    {
+      "index": 98,
+      "style": "Normal",
+      "text": "RQ2 no encontró una ventaja consistente de la corrección residual: la LSTM fue mejor en 2024, el híbrido en 2025 y los cuatro valores p ajustados fueron mayores que 0,05. RQ3 mostró que ambos modelos se degradaron con ruido y faltantes, pero el híbrido perdió más MAE relativo y absoluto en las condiciones evaluadas. La calidad de entrada es, por tanto, una condición crítica del prototipo."
+    },
+    {
+      "index": 99,
+      "style": "Normal",
+      "text": "RQ4 confirmó la implementación del FEM mediante pruebas internas y obtuvo concordancia parcial de la aproximación espacial con el mismo operador. Estas verificaciones no constituyen validación geotécnica independiente. En conjunto, TA-01 es una prueba de concepto semisintética para estudiar el flujo FEM LSTM; no valida alertas, tiempo real, FoS operacional ni una PINN de ecuaciones gobernantes."
+    },
+    {
+      "index": 100,
+      "style": "Heading 1",
+      "text": "Disponibilidad de datos, código y materiales"
+    },
+    {
+      "index": 101,
+      "style": "Normal",
+      "text": "El código, los scripts, los escenarios semisintéticos, los pesos entrenados y los archivos de validación están disponibles en el repositorio público sslope (https://github.com/RobertoA1/sslope). El manifiesto data/validation/ta01-replication-manifest.json registra huellas SHA-256 de fuentes y resultados. El código y la documentación se distribuyen bajo MIT (LICENSE); las contribuciones originales de los autores en data/generated/, data/models/ y data/validation/ se distribuyen bajo CC BY 4.0 (data/LICENSE.md). La precipitación de reanálisis procede de NASA POWER; su procedencia y las condiciones de las demás fuentes externas se documentan por separado y no quedan sustituidas por la licencia de los autores. El README explica la ejecución y Docker Compose reproduce el servicio web local. Aún deben fijarse la versión de Python para todos los experimentos y un archivo inmutable de la versión publicada para facilitar la réplica exacta. En TA-01 no se procesaron datos personales ni confidenciales."
+    },
+    {
+      "index": 102,
+      "style": "Heading 1",
+      "text": "Declaraciones"
+    },
+    {
+      "index": 103,
+      "style": "Normal",
+      "text": "Ética. El estudio utiliza precipitación pública y datos geotécnicos simulados; no involucra participantes humanos, animales ni información personal. Por ese alcance no requirió revisión de un comité de ética."
+    },
+    {
+      "index": 104,
+      "style": "Normal",
+      "text": "Financiación. Este estudio no recibió financiación, becas ni apoyo institucional específico."
+    },
+    {
+      "index": 105,
+      "style": "Normal",
+      "text": "Conflictos de interés. Ambos autores declaran no tener conflictos de interés relacionados con este trabajo."
+    },
+    {
+      "index": 106,
+      "style": "Normal",
+      "text": "Uso de inteligencia artificial generativa. OpenAI Codex se utilizó para contrastar esta versión con el código y los artefactos de sslope, revisar redacción y formato, y apoyar el cálculo exploratorio de pruebas pareadas por fecha a partir de predicciones guardadas. No generó los datos originales ni entrenó los modelos. La verificación y aprobación final de cifras, método, referencias y declaraciones de autoría corresponde a los autores antes del envío."
+    },
+    {
+      "index": 107,
+      "style": "Normal",
+      "text": "Uso responsable. El prototipo se limita a investigación y no está autorizado para decisiones de seguridad, evacuación o producción sin validación independiente y supervisión profesional."
+    },
+    {
+      "index": 108,
+      "style": "Heading 1",
+      "text": "Referencias"
+    },
+    {
+      "index": 109,
+      "style": "Normal",
+      "text": "Anchiraico Alderete, J. K., Orellana Mendoza, E. E., Ayre Balbin, V., & Toykin Mucha, C. R. (2026). Tecnologías de la información aplicadas a la simulación probabilística de estabilidad geotécnica mediante Python. Zenodo. https://doi.org/10.5281/zenodo.21273130"
+    },
+    {
+      "index": 110,
+      "style": "Normal",
+      "text": "Arias-Valencia, D. C., & Aristizábal-Arias, J. A. (2024). Análisis probabilístico de estabilidad de taludes con falla planar en la Comuna Universitaria de la ciudad de Manizales (Colombia). Información Tecnológica, 35(3), 1–10. https://doi.org/10.4067/S0718-07642024000300001"
+    },
+    {
+      "index": 111,
+      "style": "Normal",
+      "text": "Avellán, E., Carrera, J., & Sánchez, D. (2023). Análisis tenso-deformacional del talud ubicado en la Avenida Mariscal Sucre, sector La Comuna. Green World Journal, 6(3). https://doi.org/10.53313/gwj62090"
+    },
+    {
+      "index": 112,
+      "style": "Normal",
+      "text": "Blas Cano, J. W., & Milla Vergara, E. A. (2023). Caracterización geotécnica para determinar el modelo de estabilización del talud a escala reducida. Revista del Instituto de Investigación de la Facultad de Minas, Metalurgia y Ciencias Geográficas, 26(51), e24403. https://doi.org/10.15381/iigeo.v26i51.24403"
+    },
+    {
+      "index": 113,
+      "style": "Normal",
+      "text": "Briceño, J., Guillén, M., Belandria, N., & León, F. (2023). Análisis de estabilidad de taludes de secciones típicas en la construcción de carreteras a través de modelos numéricos. Tekhné, 26(3), 62–72. https://doi.org/10.62876/tekhn.v26i3.6137"
+    },
+    {
+      "index": 114,
+      "style": "Normal",
+      "text": "Briceño Balza, J. E., Belandria Rodriguez, N. T., & León Oviedo, F. M. (2022). Ubicación y profundidad de la grieta de tracción en taludes con el empleo de modelos numéricos. Revista Técnica de la Facultad de Ingeniería Universidad del Zulia, 45(2), 111–121. https://doi.org/10.22209/rt.v45n2a04"
+    },
+    {
+      "index": 115,
+      "style": "Normal",
+      "text": "Bustillos Cotrado, J. A. (2024). Análisis bidimensional de estabilidad del talud en una zona de falla geológica en Chinchao, Huánuco, Perú. Revista Peruana de Ingeniería, Arquitectura y Medio Ambiente, 1(1), 9–17. https://doi.org/10.37711/repiama.2024.1.1.2"
+    },
+    {
+      "index": 116,
+      "style": "Normal",
+      "text": "Caballero, C., Castillo, P., Castrellón, J., & Rodríguez, S. (2023). Análisis geomecánico mediante modelo de estabilidad de laderas en la zona de Bambito (Chiriquí). Revista de Iniciación Científica, 9(2), 91–97. https://doi.org/10.33412/rev-ric.v9.2.3846"
+    },
+    {
+      "index": 117,
+      "style": "Normal",
+      "text": "Campos, F., Mora, R., Sequeira, J., & Garnier, M. (2022). Aplicación de análisis de admisibilidad cinemática y equilibrio límite para optimizar la geometría de explotación de una cantera en el cantón de León Cortes, San José, Costa Rica. Revista Geológica de América Central, (66), 1–25. https://doi.org/10.15517/rgac.v66i0.49786"
+    },
+    {
+      "index": 118,
+      "style": "Normal",
+      "text": "Catari Colque, P. P., Barriga Paria, C. J., Villanueva Ari, C. R., Gomez Velasquez, J. M., Alvarado Ramirez, H. L., Melgar Raymundo, D. R., & Chirinos Quintanilla, E. A. (2025). Optimización del diseño de talud en minería superficial mediante el método de elementos finitos. Novasinergia Revista Digital de Ciencia, Ingeniería y Tecnología, 8(1), 33–51. https://doi.org/10.37135/ns.01.15.09"
+    },
+    {
+      "index": 119,
+      "style": "Normal",
+      "text": "Chilon Chilon, R. (2025). Análisis de relaves filtrados para la estabilización física en la conformación de una presa. Aporte Santiaguino, 18(2), 157–168. https://doi.org/10.32911/as.2025.v18.n2.1232"
+    },
+    {
+      "index": 120,
+      "style": "Normal",
+      "text": "Cusme Intriago, R. R., Herrera Martínez, Y. A., Lagla Guishcasho, A. E., & Cruz Aguinda, E. A. (2026). Análisis de estabilidad de taludes para el reservorio de la comunidad de Maca Atapulo. RECIAMUC, 10(1 especial), 189–197. https://doi.org/10.26820/reciamuc/10.(1).especial.2026.189-197"
+    },
+    {
+      "index": 121,
+      "style": "Normal",
+      "text": "Dahal, A., & Lombardo, L. (2025). Towards physics-informed neural networks for landslide prediction. Engineering Geology, 344, 107852. https://doi.org/10.1016/j.enggeo.2024.107852"
+    },
+    {
+      "index": 122,
+      "style": "Normal",
+      "text": "Dong, X., Li, S., Ma, R., Tian, W., Zhao, K., Xiang, H., Zhu, J., & Qiu, Y. (2025). Cloud-based slope risk monitoring and early warning system for open-pit coal mines: A case study of Zhonglian Runshi. Scientific Reports, 15, 44396. https://doi.org/10.1038/s41598-025-28190-4"
+    },
+    {
+      "index": 123,
+      "style": "Normal",
+      "text": "Du, K., Li, S., & Li, C. (2026). An integrated simulation–AI framework for fast stability evaluation and risk-control-oriented design of open-pit mine slopes. Applied Sciences, 16(10), 4932. https://doi.org/10.3390/app16104932"
+    },
+    {
+      "index": 124,
+      "style": "Normal",
+      "text": "González Serrano, D. H. (2025). Metodología aplicada al análisis geotécnico y evaluación de la estabilidad de taludes mediante SIG en entornos mineros. Revista Científica de Salud y Desarrollo Humano, 6(4), 797–829. https://doi.org/10.61368/r.s.d.h.v6i4.907"
+    },
+    {
+      "index": 125,
+      "style": "Normal",
+      "text": "Guan, Z., & Wang, Y. (2024). Fusion of three-dimensional geotechnical and geophysical data for developing digital twin of underground space. Soils and Foundations, 64(6), 101528. https://doi.org/10.1016/j.sandf.2024.101528"
+    },
+    {
+      "index": 126,
+      "style": "Normal",
+      "text": "Guevara-Sánchez, D. F., Gómez-Intriago, E. C., & Ortiz-Hernández, E. (2024). Diseño de estabilidad de talud del sector de la Simbocal, vía Margarita-San Vicente, provincia de Manabí. Polo del Conocimiento, 9(3), 1905–1917. https://doi.org/10.23857/pc.v9i3.6761"
+    },
+    {
+      "index": 127,
+      "style": "Normal",
+      "text": "Hamzaban, M.-T., Kanoundoust, S., & Geraili Mikola, R. (2026). Evaluating 2D and 3D slope stability in a complex open-pit mine: A CAD-based numerical study. Scientific Reports, 16, 28126. https://doi.org/10.1038/s41598-026-58822-2"
+    },
+    {
+      "index": 128,
+      "style": "Normal",
+      "text": "Liu, X., Wang, Y., Koo, R. C. H., & Kwan, J. S. H. (2022). Development of a slope digital twin for predicting temporal variation of rainfall-induced slope instability using past slope performance records and monitoring data. Engineering Geology, 308, 106825. https://doi.org/10.1016/j.enggeo.2022.106825"
+    },
+    {
+      "index": 129,
+      "style": "Normal",
+      "text": "Liu, Y., & Jia, C. (2026). Integrating deep neural network with elastoplastic analysis: A hybrid approach for slope stability analysis. Environmental Earth Sciences, 85(14), 368. https://doi.org/10.1007/s12665-026-13107-9"
+    },
+    {
+      "index": 130,
+      "style": "Normal",
+      "text": "Lyu, J., Hu, T., Liu, G., Cao, B., Wang, W., & Li, S. (2024). Stability evaluation of open-pit mine slope based on Bayesian optimization 1D-CNN. Scientific Reports, 14, 13995. https://doi.org/10.1038/s41598-024-64663-8"
+    },
+    {
+      "index": 131,
+      "style": "Normal",
+      "text": "Montúfar Chiriboga, G. J. (2025). Estudio de la estabilidad de taludes en Panamá bajo diferentes condiciones de carga utilizando elementos finitos. Revista Saberes APUDEP, 8(1), 40–54. https://doi.org/10.48204/j.saberes.v8n1.a6780"
+    },
+    {
+      "index": 132,
+      "style": "Normal",
+      "text": "Nanda, S., & Patel, S. (2026). Evaluating LEM, FEM, and DFN approaches for rock slope stability across GSI ranges for open-pit mine. Scientific Reports. Publicación anticipada en línea. https://doi.org/10.1038/s41598-026-62662-5"
+    },
+    {
+      "index": 133,
+      "style": "Normal",
+      "text": "National Aeronautics and Space Administration. (s. f.). Prediction Of Worldwide Energy Resources (POWER) [Conjunto de datos]. Recuperado el 22 de septiembre de 2026, de https://power.larc.nasa.gov/"
+    },
+    {
+      "index": 134,
+      "style": "Normal",
+      "text": "Oliva González, A. O., Berumen Rodríguez, M. A., & Mascareño Jiménez, D. (2023). Procedimiento práctico para evaluar la estabilidad y probabilidad de falla de taludes de corte en el área urbana de Tijuana, México. Revista Ingenio, 20(1), 16–23. https://doi.org/10.22463/2011642X.3364"
+    },
+    {
+      "index": 135,
+      "style": "Normal",
+      "text": "Pei, T., Qiu, T., & Shen, C. (2023). Applying knowledge-guided machine learning to slope stability prediction. Journal of Geotechnical and Geoenvironmental Engineering, 149(10), 04023089. https://doi.org/10.1061/JGGEFK.GTENG-11053"
+    },
+    {
+      "index": 136,
+      "style": "Normal",
+      "text": "Peña Anampa, I. V., Vera Teves, R. M., Vasquez Ramirez, A. A., & Gálvez Quintana, M. A. (2023). Evaluación del peligro por inestabilidad de taludes en la ruta PE-3S, Abancay. Hatun Yachay Wasi, 2(2), 40–51. https://doi.org/10.57107/hyw.v2i2.45"
+    },
+    {
+      "index": 137,
+      "style": "Normal",
+      "text": "Piciullo, L., Abraham, M. T., Drøsdal, I. N., & Paulsen, E. S. (2025). An operational IoT-based slope stability forecast using a digital twin. Environmental Modelling & Software, 183, 106228. https://doi.org/10.1016/j.envsoft.2024.106228"
+    },
+    {
+      "index": 138,
+      "style": "Normal",
+      "text": "Ragam, P., Kushal Kumar, N., Ajith, J. E., Karthik, G., Himanshu, V. K., Sree Machupalli, D., & Ramesh Murlidhar, B. (2024). Estimation of slope stability using ensemble-based hybrid machine learning approaches. Frontiers in Materials, 11, 1330609. https://doi.org/10.3389/fmats.2024.1330609"
+    },
+    {
+      "index": 139,
+      "style": "Normal",
+      "text": "Sequeira-Arguedas, J. M. (2023). Contexto de inestabilidad de laderas en la Ruta Nacional 613 en 2020, Coto Brus, Costa Rica. Infraestructura Vial, 25(44), 1–14. https://doi.org/10.15517/iv.v25i44.54752"
+    },
+    {
+      "index": 140,
+      "style": "Normal",
+      "text": "Tan, W., Wu, S., Li, Y., & Guo, Q. (2025). Digital twins’ application for geotechnical engineering: A review of current status and future directions in China. Applied Sciences, 15(15), 8229. https://doi.org/10.3390/app15158229"
+    },
+    {
+      "index": 141,
+      "style": "Normal",
+      "text": "Tian, Y., Yang, Y., Ma, L., Qi, X., & Lu, X. (2026). Enhancing the safety assessment of open-pit mine slopes with interpretable, data-driven stacking learning and three-dimensional stability analysis. Engineering Applications of Artificial Intelligence, 177, 114862. https://doi.org/10.1016/j.engappai.2026.114862"
+    },
+    {
+      "index": 142,
+      "style": "Normal",
+      "text": "Úcar Navarro, R., Arlegui Crespo, L., Belandria Rodríguez, N., & Toro Mora, R. (2024). Criterios de rotura no lineales para la estabilidad de taludes en macizos rocosos con deslizamiento plano. Geogaceta, 75, 99–102. https://doi.org/10.55407/geogaceta100833"
+    },
+    {
+      "index": 143,
+      "style": "Normal",
+      "text": "Wang, S., Zhang, Z., & Wang, C. (2023). Prediction of stability coefficient of open-pit mine slope based on artificial intelligence deep learning algorithm. Scientific Reports, 13, 12017. https://doi.org/10.1038/s41598-023-38896-y"
+    },
+    {
+      "index": 144,
+      "style": "Normal",
+      "text": "Yiğit, A. Y., & Şenol, H. İ. (2025). Surface change and stability analysis in open-pit mines using UAV photogrammetric data and geospatial analysis. Drones, 9(7), 472. https://doi.org/10.3390/drones9070472"
+    },
+    {
+      "index": 145,
+      "style": "Normal",
+      "text": "Yin, L., Wang, D., Xing, X., Meng, X., & Wu, Y. (2025). Research on 3D stability algorithm of spatial concave slope. Scientific Reports, 15, 22656. https://doi.org/10.1038/s41598-025-07733-9"
+    },
+    {
+      "index": 146,
+      "style": "Normal",
+      "text": "Yuan, J., Liu, G., & Chai, S. (2024). 3D geological fine modeling and dynamic updating method of fault slope in open-pit coal mine. Scientific Reports, 14, 29906. https://doi.org/10.1038/s41598-024-81872-3"
+    },
+    {
+      "index": 147,
+      "style": "Normal",
+      "text": "Zamora Nevado, R. M., & Medina Vásquez, Y. E. (2023). Diseño de aplicativo en Python como soporte de enseñanza aprendizaje para la estabilidad de taludes. Revista del Instituto de Investigación de la Facultad de Minas, Metalurgia y Ciencias Geográficas, 26(52), e25004. https://doi.org/10.15381/iigeo.v26i52.25004"
+    },
+    {
+      "index": 148,
+      "style": "Normal",
+      "text": "Zhang, S., Ding, L., Xie, M., He, X., Yang, R., & Tong, C. (2024). Reliability analysis of slope stability by neural network, principal component analysis, and transfer learning techniques. Journal of Rock Mechanics and Geotechnical Engineering, 16(10), 4034–4045. https://doi.org/10.1016/j.jrmge.2023.06.023"
+    },
+    {
+      "index": 149,
+      "style": "Normal",
+      "text": "Zhang, Z., Wang, B., Li, Z., Ye, X., Sun, Z., & Dias, D. (2024). Physics-guided neural network-based framework for 3D modeling of slope stability. Computers and Geotechnics, 176, 106801. https://doi.org/10.1016/j.compgeo.2024.106801"
+    },
+    {
+      "index": 150,
+      "style": "Heading 1",
+      "text": "Material suplementario A"
+    },
+    {
+      "index": 151,
+      "style": "Normal",
+      "text": "Este material suplementario reúne la matriz de 40 antecedentes y los fragmentos clave utilizados para la síntesis. Se mantiene fuera del cuerpo principal para preservar el cierre IMRD del artículo."
+    },
+    {
+      "index": 152,
+      "style": "Normal",
+      "text": "Tabla A1"
+    },
+    {
+      "index": 153,
+      "style": "Normal",
+      "text": "Matriz de antecedentes con resultados y DOI"
+    },
+    {
+      "index": 154,
+      "style": "Normal",
+      "text": "Tabla A2"
+    },
+    {
+      "index": 155,
+      "style": "Normal",
+      "text": "Fragmentos clave y traducciones de los 40 antecedentes"
+    }
+  ],
+  "tables": [
+    [
+      [
+        "Estudio",
+        "Datos",
+        "Componente físico",
+        "Modelo temporal",
+        "Validación informada"
+      ],
+      [
+        "Liu et al. (2022)",
+        "Monitoreo y desempeño observados",
+        "Modelo de estabilidad actualizado",
+        "Evolución temporal",
+        "Evento de falla observado"
+      ],
+      [
+        "Pei et al. (2023)",
+        "Conjuntos de estabilidad",
+        "Pérdida guiada por conocimiento",
+        "No es el foco",
+        "Comparación con modelos físicos y de datos"
+      ],
+      [
+        "Zhang, Z., et al. (2024)",
+        "Casos numéricos",
+        "Ecuaciones y condiciones de contorno",
+        "Excitación externa",
+        "Referencia numérica"
+      ],
+      [
+        "Piciullo et al. (2025)",
+        "Monitoreo IoT y meteorología",
+        "Modelos numéricos",
+        "Pronóstico móvil",
+        "Uso operacional documentado"
+      ],
+      [
+        "Este estudio",
+        "Lluvia externa y respuesta simulada",
+        "FEM 2D y monotonía agregada",
+        "LSTM a 1 y 6 h",
+        "Fechas disjuntas, 2024 y 2025"
+      ]
+    ],
+    [
+      [
+        "Componente",
+        "Valor documentado",
+        "Trazabilidad"
+      ],
+      [
+        "Escenarios",
+        "500 escenarios de 24 estados horarios; semilla 20260915",
+        "Sección Diseño del caso"
+      ],
+      [
+        "Malla FEM",
+        "30 × 20; contraste interno 48 × 32",
+        "Verificación interna del FEM"
+      ],
+      [
+        "Ventanas",
+        "6 h de historia; horizontes 1 y 6 h",
+        "Modelos temporales"
+      ],
+      [
+        "Optimización",
+        "Adam",
+        "Modelos temporales"
+      ],
+      [
+        "Partición principal",
+        "350 entrenamiento, 75 validación, 75 prueba por fecha",
+        "Validación"
+      ],
+      [
+        "Cortes temporales",
+        "Pruebas 2024 y 2025 con reentrenamiento",
+        "Validación"
+      ],
+      [
+        "Incertidumbre",
+        "5000 remuestreos por bloques de fecha; IC 95 %",
+        "Análisis estadístico"
+      ],
+      [
+        "Robustez",
+        "Ruido 5 %; faltantes 30 % con imputación",
+        "Análisis de robustez"
+      ],
+      [
+        "Arquitectura exacta",
+        "LSTM: 15 entradas, 12 unidades ocultas; corrector MLP residual: 19 entradas, 16 unidades ocultas",
+        "data/models/ta01-lstm-1h.json y ta01-physics-guided-1h.json"
+      ],
+      [
+        "Entrenamiento",
+        "LSTM: Adam, MSE, máximo 320 épocas, lote 128, tasa 0,003, semilla 20260916; corrector: Adam, máximo 360 épocas, lote 128, tasa 0,0015, semilla 20260917",
+        "Artefactos de modelos y scripts/train-lstm.py; scripts/train-physics-guided.py"
+      ],
+      [
+        "Entorno",
+        "Node.js ≥24; NumPy ≥2, <3; versión Python y hardware no fijados",
+        "package.json; requirements-ml.txt"
+      ]
+    ],
+    [
+      [
+        "Horizonte",
+        "Ventanas",
+        "Persistencia",
+        "Ridge",
+        "LSTM",
+        "Híbrido"
+      ],
+      [
+        "1 h",
+        "1350",
+        "0,00002081",
+        "0,00001181",
+        "0,00000858",
+        "0,00000798"
+      ],
+      [
+        "6 h",
+        "975",
+        "0,00013169",
+        "0,00008855",
+        "0,00006332",
+        "0,00006176"
+      ]
+    ],
+    [
+      [
+        "Año de prueba",
+        "Horizonte",
+        "Ventanas",
+        "LSTM",
+        "Híbrido"
+      ],
+      [
+        "2024",
+        "1 h",
+        "1476",
+        "0,00000435",
+        "0,00000440"
+      ],
+      [
+        "2024",
+        "6 h",
+        "1066",
+        "0,00002909",
+        "0,00002964"
+      ],
+      [
+        "2025",
+        "1 h",
+        "1404",
+        "0,00000540",
+        "0,00000519"
+      ],
+      [
+        "2025",
+        "6 h",
+        "1014",
+        "0,00005769",
+        "0,00005502"
+      ]
+    ],
+    [
+      [
+        "ID",
+        "Autor (año)",
+        "Título del artículo",
+        "Resultados",
+        "DOI / enlace"
+      ],
+      [
+        "E-01",
+        "Liu, X., Wang, Y., Koo, R. C. H. y Kwan, J. S. H. (2022)",
+        "Development of a slope digital twin for predicting temporal variation of rainfall-induced slope instability using past slope performance records and monitoring data",
+        "Propone y valida un gemelo digital de talud que actualiza parámetros hidráulicos y resistentes con lluvia, presión de poros y registros de desempeño; la variación prevista de estabilidad concuerda con una falla observada.",
+        "https://doi.org/10.1016/j.enggeo.2022.106825"
+      ],
+      [
+        "E-02",
+        "Liu, Y. y Jia, C. (2026)",
+        "Integrating deep neural network with elastoplastic analysis: a hybrid approach for slope stability analysis",
+        "El PINN con elastoplasticidad de Mohr–Coulomb predice desplazamiento, tensiones y FOS sin un conjunto de entrenamiento preconstruido; los ejemplos validan alta precisión frente a software comercial.",
+        "https://doi.org/10.1007/s12665-026-13107-9"
+      ],
+      [
+        "E-03",
+        "Pei, T., Qiu, T. y Shen, C. (2023)",
+        "Applying Knowledge-Guided Machine Learning to Slope Stability Prediction",
+        "Los modelos híbridos conocimiento-datos y la función de pérdida guiada por conocimiento superan a modelos puramente físicos y puramente basados en datos, y se alinean mejor con el FOS reportado.",
+        "https://doi.org/10.1061/JGGEFK.GTENG-11053"
+      ],
+      [
+        "E-04",
+        "Wang, S., Zhang, Z. y Wang, C. (2023)",
+        "Prediction of stability coefficient of open-pit mine slope based on artificial intelligence deep learning algorithm",
+        "El algoritmo de aprendizaje profundo estimó FOS de 1.086 antes y 1.227 después del tratamiento, y mejoró la eficiencia de predicción frente al algoritmo tradicional.",
+        "https://doi.org/10.1038/s41598-023-38896-y"
+      ],
+      [
+        "E-05",
+        "Lyu, J., Hu, T., Liu, G., Cao, B., Wang, W. y Li, S. (2024)",
+        "Stability evaluation of open-pit mine slope based on Bayesian optimization 1D-CNN",
+        "Desarrolla una B-1D CNN para evaluar estabilidad de taludes y optimiza sus hiperparámetros con Bayes; el enfoque mejora la extracción de características y el desempeño de clasificación.",
+        "https://doi.org/10.1038/s41598-024-64663-8"
+      ],
+      [
+        "E-06",
+        "Zhang, Z., Wang, B., Li, Z., Ye, X., Sun, Z. y Dias, D. (2024)",
+        "Physics-guided neural network-based framework for 3D modeling of slope stability",
+        "Presenta un PINN sin datos etiquetados para el análisis 3D y un PINN híbrido para excitaciones externas; la validación muestra viabilidad para estabilidad sísmica.",
+        "https://doi.org/10.1016/j.compgeo.2024.106801"
+      ],
+      [
+        "E-07",
+        "Guan, Z. y Wang, Y. (2024)",
+        "Fusion of three-dimensional geotechnical and geophysical data for developing digital twin of underground space",
+        "Propone fusión 3D de datos geotécnicos y geofísicos para construir un modelo confiable de propiedades geotécnicas, base para gemelos digitales del subsuelo.",
+        "https://doi.org/10.1016/j.sandf.2024.101528"
+      ],
+      [
+        "E-08",
+        "Ragam, P., Kushal Kumar, N., Ajith, J. E., Karthik, G., Himanshu, V. K., Sree Machupalli, D. y Ramesh Murlidhar, B. (2024)",
+        "Estimation of slope stability using ensemble-based hybrid machine learning approaches",
+        "Compara MLR, árbol de decisión, RF, XGBoost y un modelo híbrido XGBoost-RF para estimar el FOS de un talud de mina a cielo abierto.",
+        "https://doi.org/10.3389/fmats.2024.1330609"
+      ],
+      [
+        "E-09",
+        "Zhang, S., Ding, L., Xie, M., He, X., Yang, R. y Tong, C. (2024)",
+        "Reliability analysis of slope stability by neural network, principal component analysis, and transfer learning techniques",
+        "PCA-NN reduce variables y costo computacional, y PCAeNN-eTL conserva potencial de evaluación con menos datos de entrenamiento para diferentes distribuciones espaciales.",
+        "https://doi.org/10.1016/j.jrmge.2023.06.023"
+      ],
+      [
+        "E-10",
+        "Yuan, J., Liu, G. y Chai, S. (2024)",
+        "3D geological fine modeling and dynamic updating method of fault slope in open-pit coal mine",
+        "Desarrolla modelado geológico 3D fino y actualización dinámica de estratos y fallas para que el modelo represente los cambios conforme avanza la excavación.",
+        "https://doi.org/10.1038/s41598-024-81872-3"
+      ],
+      [
+        "E-11",
+        "Yiğit, A. Y. y Şenol, H. İ. (2025)",
+        "Surface Change and Stability Analysis in Open-Pit Mines Using UAV Photogrammetric Data and Geospatial Analysis",
+        "La fotogrametría UAV multitemporal y el análisis M3C2 cuantifican cambios y detectan zonas inestables mediante umbrales de variación, rugosidad y verticalidad.",
+        "https://doi.org/10.3390/drones9070472"
+      ],
+      [
+        "E-12",
+        "Dahal, A. y Lombardo, L. (2025)",
+        "Towards physics-informed neural networks for landslide prediction",
+        "Un PINN recupera parámetros geotécnicos desde variables proxy y genera mapas regionales; los resultados abren la posibilidad de predicción casi en tiempo real.",
+        "https://doi.org/10.1016/j.enggeo.2024.107852"
+      ],
+      [
+        "E-13",
+        "Yin, L., Wang, D., Xing, X., Meng, X. y Wu, Y. (2025)",
+        "Research on 3D stability algorithm of spatial concave slope",
+        "Deriva un método de equilibrio límite para taludes cóncavos 3D; encuentra una superficie potencial elipsoidal y una relación exponencial entre FOS 3D y radio de curvatura.",
+        "https://doi.org/10.1038/s41598-025-07733-9"
+      ],
+      [
+        "E-14",
+        "Piciullo, L., Abraham, M. T., Drøsdal, I. N. y Paulsen, E. S. (2025)",
+        "An operational IoT-based slope stability forecast using a digital twin",
+        "Integra monitoreo hidrológico en tiempo real, pronóstico meteorológico, modelos numéricos y RF/PR para pronosticar FOS diario a tres días y emitir alertas automáticas.",
+        "https://doi.org/10.1016/j.envsoft.2024.106228"
+      ],
+      [
+        "E-15",
+        "Tan, W., Wu, S., Li, Y. y Guo, Q. (2025)",
+        "Digital Twins’ Application for Geotechnical Engineering: A Review of Current Status and Future Directions in China",
+        "Revisión de gemelos digitales geotécnicos: identifica retos de sensado multi-fuente, modelos geológicos 3D, interoperabilidad, plataformas de ciclo de vida y estándares de datos.",
+        "https://doi.org/10.3390/app15158229"
+      ],
+      [
+        "E-16",
+        "Dong, X., Li, S., Ma, R., Tian, W., Zhao, K., Xiang, H., Zhu, J. y Qiu, Y. (2025)",
+        "Cloud-based slope risk monitoring and early warning system for openpit coal mines: a case study of Zhonglian Runshi",
+        "EWS en nube combina IoT, LSTM y Dempster–Shafer; en campo logró R² = 0.91, RMSE < 0.11 mm, 69 sensores y menor costo que Transformer.",
+        "https://doi.org/10.1038/s41598-025-28190-4"
+      ],
+      [
+        "E-17",
+        "Nanda, S. y Patel, S. (2026)",
+        "Evaluating LEM, FEM, and DFN approaches for rock slope stability across GSI ranges for open pit mine",
+        "La comparación LEM–FEM–DFN muestra que LEM entrega el FoS más alto y DFN el más conservador; la selección depende del GSI y de discontinuidades.",
+        "https://doi.org/10.1038/s41598-026-62662-5"
+      ],
+      [
+        "E-18",
+        "Hamzaban, M.-T., Kanoundoust, S. y Geraili Mikola, R. (2026)",
+        "Evaluating 2D and 3D slope stability in a complex open-pit mine: a CAD-based numerical study",
+        "El modelo 3D predijo FOS global de 1.285 y falla rotacional, mientras los cortes 2D produjeron FOS de 1.04 a 4.11 y no capturaron toda la superficie de falla.",
+        "https://doi.org/10.1038/s41598-026-58822-2"
+      ],
+      [
+        "E-19",
+        "Tian, Y., Yang, Y., Ma, L., Qi, X. y Lu, X. (2026)",
+        "Enhancing the safety assessment of open-pit mine slopes with interpretable, data-driven stacking learning and three-dimensional stability analysis",
+        "Combina equilibrio límite 3D y stacking interpretable; logra AUC de 0.9515 y valida buena precisión en ocho casos reales.",
+        "https://doi.org/10.1016/j.engappai.2026.114862"
+      ],
+      [
+        "E-20",
+        "Du, K., Li, S. y Li, C. (2026)",
+        "An Integrated Simulation–AI Framework for Fast Stability Evaluation and Risk-Control-Oriented Design of Open-Pit Mine Slopes",
+        "El marco simulación–IA emplea escenarios numéricos y BO-SVR; obtiene R² > 0.98 y permite evaluación rápida de riesgo y optimización del ángulo de banco.",
+        "https://doi.org/10.3390/app16104932"
+      ],
+      [
+        "S-01",
+        "Catari Colque, P. P., Barriga Paria, C. J., Villanueva Ari, C. R., Gomez Velasquez, J. M., Alvarado Ramirez, H. L., Melgar Raymundo, D. R. y Chirinos Quintanilla, E. A. (2025)",
+        "Optimización del diseño de talud en minería superficial mediante el método de elementos finitos",
+        "Para la mina Cuajone, el modelo de elementos finitos recomienda un ángulo interrampa de 43° con FS 1.1 al sur y 38° con FS 1.57 al norte, facilitando un diseño de talud más seguro.",
+        "https://doi.org/10.37135/ns.01.15.09"
+      ],
+      [
+        "S-02",
+        "Bustillos Cotrado, J. A. (2024)",
+        "Análisis bidimensional de estabilidad del talud en una zona de falla geológica en Chinchao, Huánuco, Perú",
+        "El análisis de equilibrio límite encontró FS de 0.381 en condición estática y 0.214 en condición pseudoestática; el talud es inestable aunque la falla geológica está inactiva.",
+        "https://doi.org/10.37711/repiama.2024.1.1.2"
+      ],
+      [
+        "S-03",
+        "Cusme Intriago, R. R., Herrera Martínez, Y. A., Lagla Guishcasho, A. E. y Cruz Aguinda, E. A. (2026)",
+        "Análisis de estabilidad de taludes para el reservorio de la comunidad de Maca Atapulo",
+        "El análisis Bishop y GEO5 obtuvo un FS promedio de 0.85 en suelo limoso de baja cohesión, por debajo del valor admisible; recomienda refuerzo para reducir la susceptibilidad a deslizamientos.",
+        "https://doi.org/10.26820/reciamuc/10.(1).especial.2026.189-197"
+      ],
+      [
+        "S-04",
+        "Peña Anampa, I. V., Vera Teves, R. M., Vasquez Ramirez, A. A. y Gálvez Quintana, M. A. (2023)",
+        "Evaluación del peligro por inestabilidad de taludes en la ruta PE-3S, Abancay",
+        "Los cinco subtramos evaluados presentan peligro muy alto y factores de seguridad que indican alta probabilidad de deslizamiento, asociados a saturación, pendiente y lluvia.",
+        "https://doi.org/10.57107/hyw.v2i2.45"
+      ],
+      [
+        "S-05",
+        "Briceño, J., Guillén, M., Belandria, N. y León, F. (2023)",
+        "Análisis de estabilidad de taludes de secciones típicas en la construcción de carreteras a través de modelos numérico",
+        "Compara el método de equilibrio límite y el método de elementos finitos en secciones viales de diferentes materiales, y propone dimensiones geométricas de taludes que conservan condiciones de seguridad.",
+        "https://doi.org/10.62876/tekhn.v26i3.6137"
+      ],
+      [
+        "S-06",
+        "Guevara-Sánchez, D. F., Gómez-Intriago, E. C. y Ortiz-Hernández, E. (2024)",
+        "Diseño de estabilidad de talud del sector de la Simbocal, vía Margarita-San Vicente, provincia de Manabí",
+        "El estudio integra caracterización geotécnica, topografía, ensayos de laboratorio y modelación para plantear un diseño de talud orientado a reducir el riesgo vial en Simbocal.",
+        "https://doi.org/10.23857/pc.v9i3.6761"
+      ],
+      [
+        "S-07",
+        "Oliva González, A. O., Berumen Rodríguez, M. A. y Mascareño Jiménez, D. (2023)",
+        "Procedimiento práctico para evaluar la estabilidad y probabilidad de falla de taludes de corte en el área urbana de Tijuana, México",
+        "El procedimiento estima el nivel de seguridad y la probabilidad anual de falla para distintas geometrías, sismicidad y saturación; los casos reales muestran que es útil para diseño y corrección de taludes.",
+        "https://doi.org/10.22463/2011642X.3364"
+      ],
+      [
+        "S-08",
+        "Caballero, C., Castillo, P., Castrellón, J. y Rodríguez, S. (2023)",
+        "Análisis geomecánico mediante modelo de estabilidad de laderas en la zona de Bambito (Chiriquí)",
+        "El análisis de cuatro estaciones con GeoSlope vinculó los principales factores de riesgo con el material, la estratigrafía y la topografía, e identificó configuraciones favorables a deslizamientos.",
+        "https://doi.org/10.33412/rev-ric.v9.2.3846"
+      ],
+      [
+        "S-09",
+        "Blas Cano, J. W. y Milla Vergara, E. A. (2023)",
+        "Caracterización geotécnica para determinar el modelo de estabilización del talud a escala reducida",
+        "El modelo experimental elevó el FS de 0.86 en el talud natural a 1.20 en el estabilizado, un aumento de 28.33 %.",
+        "https://doi.org/10.15381/iigeo.v26i51.24403"
+      ],
+      [
+        "S-10",
+        "Avellán, E., Carrera, J. y Sánchez, D. (2023)",
+        "Análisis tenso-deformacional del talud ubicado en la Avenida Mariscal Sucre, sector La Comuna",
+        "El análisis de muestras y escenarios de saturación y sismo identifica al contenido de humedad y al factor sísmico como la combinación crítica para la estabilidad del talud urbano.",
+        "https://doi.org/10.53313/gwj62090"
+      ],
+      [
+        "S-11",
+        "Úcar Navarro, R., Arlegui Crespo, L., Belandria Rodríguez, N. y Toro Mora, R. (2024)",
+        "Criterios de rotura no lineales para la estabilidad de taludes en macizos rocosos con deslizamiento plano",
+        "Compara los criterios no lineales de Úcar y Hoek-Brown para hallar el plano de deslizamiento crítico y el factor de seguridad mínimo en taludes rocosos.",
+        "https://doi.org/10.55407/geogaceta100833"
+      ],
+      [
+        "S-12",
+        "Montúfar Chiriboga, G. J. (2025)",
+        "Estudio de la estabilidad de taludes en Panamá bajo diferentes condiciones de carga utilizando elementos finitos",
+        "GEO5 muestra que la saturación y las sobrecargas incrementan la vulnerabilidad, especialmente en condiciones sísmicas, y pueden comprometer el factor de seguridad en un proyecto residencial.",
+        "https://doi.org/10.48204/j.saberes.v8n1.a6780"
+      ],
+      [
+        "S-13",
+        "Chilon Chilon, R. (2025)",
+        "Análisis de relaves filtrados para la estabilización física en la conformación de una presa",
+        "Las pruebas de relaves filtrados para una presa minera establecen condiciones de seguridad superiores a 1.5 en análisis estático y a 1.0 en condición pseudoestática.",
+        "https://doi.org/10.32911/as.2025.v18.n2.1232"
+      ],
+      [
+        "S-14",
+        "Campos, F., Mora, R., Sequeira, J. y Garnier, M. (2022)",
+        "Aplicación de análisis de admisibilidad cinemática y equilibrio límite para optimizar la geometría de explotación de una cantera en el cantón de León Cortes, San José, Costa Rica",
+        "La caracterización geomecánica y los análisis cinemáticos y de equilibrio límite definen orientaciones de explotación que favorecen taludes estables y una operación más segura de cantera.",
+        "https://doi.org/10.15517/rgac.v66i0.49786"
+      ],
+      [
+        "S-15",
+        "Sequeira-Arguedas, J. M. (2023)",
+        "Contexto de inestabilidad de laderas en la Ruta Nacional 613 en 2020, Coto Brus, Costa Rica",
+        "La zonificación regional concluye que al menos el 24 % del corredor es susceptible a remoción en masa, influida por controles geológico-estructurales y eventos extremos de precipitación.",
+        "https://doi.org/10.15517/iv.v25i44.54752"
+      ],
+      [
+        "S-16",
+        "González Serrano, D. H. (2025)",
+        "Metodología aplicada al análisis geotécnico y evaluación de la estabilidad de taludes mediante SIG en entornos mineros",
+        "La integración de sondeos, ensayos geotécnicos, SIG, análisis cinemático y medidas de mitigación identifica sectores críticos y eleva los factores de seguridad de la mina por encima de 1.2.",
+        "https://doi.org/10.61368/r.s.d.h.v6i4.907"
+      ],
+      [
+        "S-17",
+        "Arias-Valencia, D. C. y Aristizábal-Arias, J. A. (2024)",
+        "Análisis probabilístico de estabilidad de taludes con falla planar en la Comuna Universitaria de la ciudad de Manizales (Colombia)",
+        "La simulación Monte Carlo con 5000 iteraciones identificó que factores de seguridad determinísticos aceptables pueden coexistir con amenaza alta; el análisis probabilístico sirve para detección temprana.",
+        "https://doi.org/10.4067/S0718-07642024000300001"
+      ],
+      [
+        "S-18",
+        "Anchiraico Alderete, J. K., Orellana Mendoza, E. E., Ayre Balbin, V. y Toykin Mucha, C. R. (2026)",
+        "Tecnologías de la Información aplicadas a la simulación probabilística de estabilidad geotécnica mediante Python",
+        "La herramienta Python obtuvo FS medio de 3.602, β de 4.512 y probabilidad de falla aproximada de 0.00 %, con una discrepancia menor de 1.5 % entre Monte Carlo y Rosenblueth.",
+        "https://doi.org/10.5281/zenodo.21273130"
+      ],
+      [
+        "S-19",
+        "Zamora Nevado, R. M. y Medina Vásquez, Y. E. (2023)",
+        "Diseño de aplicativo en Python como soporte de enseñanza aprendizaje para la estabilidad de taludes",
+        "El aplicativo Python calcula y grafica el FS de un talud mediante una interfaz gráfica; obtuvo FS = 1.26, coincidente con el procedimiento manual.",
+        "https://doi.org/10.15381/iigeo.v26i52.25004"
+      ],
+      [
+        "S-20",
+        "Briceño Balza, J. E., Belandria Rodriguez, N. T. y León Oviedo, F. M. (2022)",
+        "Ubicación y profundidad de la grieta de tracción en taludes con el empleo de modelos numéricos",
+        "Las simulaciones por elementos finitos muestran que al aumentar la altura e inclinación del talud crece la profundidad de la grieta de tracción y disminuyen su distancia a la cara y el factor de seguridad.",
+        "https://doi.org/10.22209/rt.v45n2a04"
+      ]
+    ],
+    [
+      [
+        "ID",
+        "Fragmento clave en el idioma original",
+        "Fragmento clave traducido"
+      ],
+      [
+        "E-01",
+        "“The predicted temporal variation of slope stability agrees well with the observed slope failure induced by an extreme rainstorm in June of 2008.”",
+        "“La variación temporal prevista de la estabilidad del talud concuerda bien con la falla observada, inducida por una tormenta extrema en junio de 2008.”"
+      ],
+      [
+        "E-02",
+        "“The PINN functions as a surrogate model that requires no pre-constructed training dataset and automatically satisfies both the governing equations and the boundary conditions.”",
+        "“El PINN funciona como un modelo sustituto que no requiere un conjunto de datos de entrenamiento preconstruido y satisface automáticamente tanto las ecuaciones gobernantes como las condiciones de contorno.”"
+      ],
+      [
+        "E-03",
+        "“The three proposed methods were found to outperform both domain knowledge–based models and pure data-driven models.”",
+        "“Se encontró que los tres métodos propuestos superan tanto a los modelos basados en conocimiento del dominio como a los modelos puramente basados en datos.”"
+      ],
+      [
+        "E-04",
+        "“It also shows that the deep learning algorithm effectively improves the efficiency of the slope stability factor prediction and improves security during project development.”",
+        "“También muestra que el algoritmo de aprendizaje profundo mejora eficazmente la eficiencia de la predicción del factor de estabilidad del talud y mejora la seguridad durante el desarrollo del proyecto.”"
+      ],
+      [
+        "E-05",
+        "“The study employs hyperparameters optimized using a Bayesian algorithm, introduces additional convolutional layers, and combines the Adam optimizer with dropout techniques to enhance the feature extraction and performance of one-dimensional convolutional neural networks (1D-CNN).”",
+        "“El estudio emplea hiperparámetros optimizados mediante un algoritmo bayesiano, introduce capas convolucionales adicionales y combina el optimizador Adam con técnicas de dropout para mejorar la extracción de características y el desempeño de redes neuronales convolucionales unidimensionales (1D-CNN).”"
+      ],
+      [
+        "E-06",
+        "“The entire training process of the PINN-based framework is conducted without the need for any labeled data.”",
+        "“Todo el proceso de entrenamiento del marco basado en PINN se realiza sin necesidad de datos etiquetados.”"
+      ],
+      [
+        "E-07",
+        "“Geological information on the subsurface domain, particularly three-dimensional (3D) models of geotechnical properties, is the cornerstone of the underground digital twin.”",
+        "“La información geológica del dominio subsuperficial, en particular los modelos tridimensionales (3D) de propiedades geotécnicas, es la piedra angular del gemelo digital subterráneo.”"
+      ],
+      [
+        "E-08",
+        "“Totally five machine learning (ML) models named MLR, Decision Tree, RF, XGBoost and an ensemble hybrid model combining eXtreme Gradient Boosting and Random Forest (XGBoost-RF) were used to estimate the Slope’s FOS.”",
+        "“En total, se utilizaron cinco modelos de aprendizaje automático (ML), denominados MLR, árbol de decisión, RF, XGBoost y un modelo híbrido de conjunto que combina eXtreme Gradient Boosting y Random Forest (XGBoost-RF), para estimar el FOS del talud.”"
+      ],
+      [
+        "E-09",
+        "“Furthermore, the PCAeNNeTL algorithm shows great potential in assessing the stability of slope even with fewer training data.”",
+        "“Además, el algoritmo PCAeNNeTL muestra un gran potencial para evaluar la estabilidad del talud incluso con menos datos de entrenamiento.”"
+      ],
+      [
+        "E-10",
+        "“In order to meet the demand for dynamic updating of stratum surfaces in the slope geological ground state model, we propose a method for locally updating and correcting slope geological models based on actual stratigraphic point data.”",
+        "“Para satisfacer la demanda de actualización dinámica de las superficies estratigráficas en el modelo geológico base del talud, proponemos un método para actualizar y corregir localmente los modelos geológicos de taludes a partir de datos reales de puntos estratigráficos.”"
+      ],
+      [
+        "E-11",
+        "“Point cloud modeling derived from UAVs and GIS-based spatial analysis were integrated to show that morphological anomalies are spatially correlated with possible failure zones.”",
+        "“El modelado de nubes de puntos derivado de UAV y el análisis espacial basado en SIG se integraron para mostrar que las anomalías morfológicas se correlacionan espacialmente con posibles zonas de falla.”"
+      ],
+      [
+        "E-12",
+        "“The results are promising because our model not only produces excellent predictive performance in the form of standard susceptibility output but, in the process, also generates maps of the expected geotechnical properties at a regional scale.”",
+        "“Los resultados son prometedores porque nuestro modelo no solo produce un excelente desempeño predictivo en forma de una salida estándar de susceptibilidad, sino que, durante el proceso, también genera mapas de las propiedades geotécnicas esperadas a escala regional.”"
+      ],
+      [
+        "E-13",
+        "“The findings suggest that the potential landslide surface on concave slopes resembles an ellipsoidal form.”",
+        "“Los hallazgos sugieren que la superficie potencial de deslizamiento en taludes cóncavos se asemeja a una forma elipsoidal.”"
+      ],
+      [
+        "E-14",
+        "“The trained models proved to be effective and were employed to forecast slope stability for the rolling three days.”",
+        "“Los modelos entrenados demostraron ser eficaces y se emplearon para pronosticar la estabilidad del talud durante los tres días móviles siguientes.”"
+      ],
+      [
+        "E-15",
+        "“current digital twin applications in geotechnical engineering remain in their nascent stage.”",
+        "“las aplicaciones actuales de gemelos digitales en ingeniería geotécnica permanecen en una etapa incipiente.”"
+      ],
+      [
+        "E-16",
+        "“Field deployment at the Zhonglian Runshi open-pit mine demonstrated that the proposed LSTM model achieved a prediction accuracy of R^2 = 0.91 (RMSE < 0.11 mm), while maintaining a tenfold lower computational cost than Transformer-based models.”",
+        "“La implementación en campo en la mina a cielo abierto Zhonglian Runshi demostró que el modelo LSTM propuesto alcanzó una precisión de predicción de R² = 0.91 (RMSE < 0.11 mm), manteniendo a la vez un costo computacional diez veces menor que los modelos basados en Transformer.”"
+      ],
+      [
+        "E-17",
+        "“The results demonstrate that the LEM consistently predicts the highest Factors of Safety (FoS), whereas the DFN approach provides the most conservative estimates by explicitly accounting for structurally controlled failure mechanisms.”",
+        "“Los resultados demuestran que el LEM predice sistemáticamente los factores de seguridad (FoS) más altos, mientras que el enfoque DFN proporciona las estimaciones más conservadoras al considerar explícitamente mecanismos de falla controlados estructuralmente.”"
+      ],
+      [
+        "E-18",
+        "“The integration of 3D numerical modeling with CAD-based geometry management is crucial for achieving reliable slope stability assessments and for minimizing design uncertainties in large-scale mining projects.”",
+        "“La integración del modelado numérico 3D con la gestión de geometría basada en CAD es crucial para lograr evaluaciones confiables de estabilidad de taludes y minimizar las incertidumbres de diseño en proyectos mineros a gran escala.”"
+      ],
+      [
+        "E-19",
+        "“Validation across eight real cases confirmed high prediction accuracy, significantly improving both physical realism and assessment reliability.”",
+        "“La validación en ocho casos reales confirmó una alta precisión de predicción, mejorando significativamente tanto el realismo físico como la fiabilidad de la evaluación.”"
+      ],
+      [
+        "E-20",
+        "“Among the RF, SVR, and ELM models, the Bayesian-optimized support vector regression (BO-SVR) exhibits the best predictive performance (R^2 > 0.98).”",
+        "“Entre los modelos RF, SVR y ELM, la regresión por vectores de soporte optimizada bayesianamente (BO-SVR) presenta el mejor desempeño predictivo (R² > 0.98).”"
+      ],
+      [
+        "S-01",
+        "“En la zona sur (sección A-A'), se determina que un IRA de 43° genera un FS de 1.1. En la zona norte (sección B-B'), se recomienda un IRA de 38° para lograr un FS de 1.57.”",
+        "“En la zona sur (sección A-A'), se determina que un IRA de 43° genera un FS de 1.1. En la zona norte (sección B-B'), se recomienda un IRA de 38° para lograr un FS de 1.57.”"
+      ],
+      [
+        "S-02",
+        "“El factor de seguridad para el análisis estático fue de 0,381 y para el pseudoestático de 0,214.”",
+        "“El factor de seguridad para el análisis estático fue de 0,381 y para el pseudoestático de 0,214.”"
+      ],
+      [
+        "S-03",
+        "“dando como resultados que es un suelo limoso con baja cohesión de 0.19 KPa y un ángulo de fricción de 23º.”",
+        "“dando como resultados que es un suelo limoso con baja cohesión de 0.19 KPa y un ángulo de fricción de 23º.”"
+      ],
+      [
+        "S-04",
+        "“Todos los subtramos evaluados, evidenciaron un nivel muy alto de peligro y los factores de seguridad por cada subtramo correspondiente, mostraron que hay mayor probabilidad de deslizamiento.”",
+        "“Todos los subtramos evaluados, evidenciaron un nivel muy alto de peligro y los factores de seguridad por cada subtramo correspondiente, mostraron que hay mayor probabilidad de deslizamiento.”"
+      ],
+      [
+        "S-05",
+        "“Se presentó para algunos de los casos de análisis nuevas dimensiones geométricas de taludes que garantizan seguridad.”",
+        "“Se presentó para algunos de los casos de análisis nuevas dimensiones geométricas de taludes que garantizan seguridad.”"
+      ],
+      [
+        "S-06",
+        "“Por ello dentro de esta investigación se propone la modelación matemática por medio del Programa GeoSlope, el cual funciona como un analizador de estabilidad de taludes.”",
+        "“Por ello dentro de esta investigación se propone la modelación matemática por medio del Programa GeoSlope, el cual funciona como un analizador de estabilidad de taludes.”"
+      ],
+      [
+        "S-07",
+        "“Dicho procedimiento permite determinar el nivel de seguridad de taludes con diferentes geometrías, condiciones de sismicidad y de saturación; y estimar la probabilidad de que se presenten fenómenos de inestabilidad.”",
+        "“Dicho procedimiento permite determinar el nivel de seguridad de taludes con diferentes geometrías, condiciones de sismicidad y de saturación; y estimar la probabilidad de que se presenten fenómenos de inestabilidad.”"
+      ],
+      [
+        "S-08",
+        "“Fue posible determinar la presencia de materiales con índice de plasticidad baja y poco cohesivos, así como configuraciones en la matriz rocosa favorables a la propagación de deslizamientos.”",
+        "“Fue posible determinar la presencia de materiales con índice de plasticidad baja y poco cohesivos, así como configuraciones en la matriz rocosa favorables a la propagación de deslizamientos.”"
+      ],
+      [
+        "S-09",
+        "“Finalmente, se obtuvo que el factor de seguridad aumentó en un 28.33%, debido a la estabilización propuesta; lo que permite contrastar la hipótesis de la investigación.”",
+        "“Finalmente, se obtuvo que el factor de seguridad aumentó en un 28.33%, debido a la estabilización propuesta; lo que permite contrastar la hipótesis de la investigación.”"
+      ],
+      [
+        "S-10",
+        "“Una vez realizado el análisis se llegó a la conclusión que el contenido de humedad y el factor sísmico son la combinación crítica capaz de llevar al talud a un estado de equilibrio límite e incluso provocar la falla de este.”",
+        "“Una vez realizado el análisis se llegó a la conclusión que el contenido de humedad y el factor sísmico son la combinación crítica capaz de llevar al talud a un estado de equilibrio límite e incluso provocar la falla de este.”"
+      ],
+      [
+        "S-11",
+        "“En base a los aspectos señalados, se ha minimizado el factor de seguridad, y por ende la inclinación más crítica del plano potencial de deslizamiento, teniendo en cuenta la sobrecarga, la inclinación de la corona del talud, el efecto sísmico y las presiones intersticiales.”",
+        "“En base a los aspectos señalados, se ha minimizado el factor de seguridad, y por ende la inclinación más crítica del plano potencial de deslizamiento, teniendo en cuenta la sobrecarga, la inclinación de la corona del talud, el efecto sísmico y las presiones intersticiales.”"
+      ],
+      [
+        "S-12",
+        "“Los resultados muestran que la saturación del suelo y la sobrecarga inducida por la construcción de estructuras aumentan considerablemente la vulnerabilidad a la inestabilidad del talud, especialmente bajo condiciones sísmicas.”",
+        "“Los resultados muestran que la saturación del suelo y la sobrecarga inducida por la construcción de estructuras aumentan considerablemente la vulnerabilidad a la inestabilidad del talud, especialmente bajo condiciones sísmicas.”"
+      ],
+      [
+        "S-13",
+        "“Con el análisis de estabilidad física garantizamos la seguridad para condiciones estatistas mayores a 1.5 y condiciones pseudoestáticas mayores a 1.0 según las normativas del Ministerio de Energía y Minas.”",
+        "“Con el análisis de estabilidad física garantizamos la seguridad para condiciones estatistas mayores a 1.5 y condiciones pseudoestáticas mayores a 1.0 según las normativas del Ministerio de Energía y Minas.”"
+      ],
+      [
+        "S-14",
+        "“Se han definido las orientaciones de las familias de discontinuidades principales, para ejecutar los análisis de admisibilidad cinemática y equilibrio límite que propicien el diseño de una geometría de taludes de explotación estable.”",
+        "“Se han definido las orientaciones de las familias de discontinuidades principales, para ejecutar los análisis de admisibilidad cinemática y equilibrio límite que propicien el diseño de una geometría de taludes de explotación estable.”"
+      ],
+      [
+        "S-15",
+        "“al menos 24 % de la ruta es susceptible a procesos de remoción en masa, con influencia de controles geológico-estructurales.”",
+        "“al menos 24 % de la ruta es susceptible a procesos de remoción en masa, con influencia de controles geológico-estructurales.”"
+      ],
+      [
+        "S-16",
+        "“Los resultados permitieron identificar sectores con factores de seguridad inferiores a 1,0, diseñar estrategias de control de taludes y elevar dichos valores a niveles superiores a 1,2, garantizando la estabilidad estructural, la seguridad operativa y la sostenibilidad del proyecto minero.”",
+        "“Los resultados permitieron identificar sectores con factores de seguridad inferiores a 1,0, diseñar estrategias de control de taludes y elevar dichos valores a niveles superiores a 1,2, garantizando la estabilidad estructural, la seguridad operativa y la sostenibilidad del proyecto minero.”"
+      ],
+      [
+        "S-17",
+        "“para factores de seguridad aceptables calculados por métodos determinísticos, se pueden tener niveles de amenaza altos en función de probabilidad de falla.”",
+        "“para factores de seguridad aceptables calculados por métodos determinísticos, se pueden tener niveles de amenaza altos en función de probabilidad de falla.”"
+      ],
+      [
+        "S-18",
+        "“la herramienta digital desarrollada obtiene un FS medio de 3,602 (σ = 0,577), un índice de confiabilidad β = 4,512 y una probabilidad de falla P(FS<1) ≈ 0,00%.”",
+        "“la herramienta digital desarrollada obtiene un FS medio de 3,602 (σ = 0,577), un índice de confiabilidad β = 4,512 y una probabilidad de falla P(FS<1) ≈ 0,00%.”"
+      ],
+      [
+        "S-19",
+        "“El factor de seguridad obtenido por el aplicativo es de 1.26, que coincide con el obtenido por el procedimiento manual.”",
+        "“El factor de seguridad obtenido por el aplicativo es de 1.26, que coincide con el obtenido por el procedimiento manual.”"
+      ],
+      [
+        "S-20",
+        "“Se demostró que al aumentar las condiciones geométricas, la profundidad de la grieta aumenta, la distancia de ubicación disminuye, al igual que el factor de seguridad.”",
+        "“Se demostró que al aumentar las condiciones geométricas, la profundidad de la grieta aumenta, la distancia de ubicación disminuye, al igual que el factor de seguridad.”"
+      ]
+    ]
+  ]
+}

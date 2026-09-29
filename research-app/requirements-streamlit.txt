@@ -1,0 +1,16 @@
+# Python 3.11. Install in this app's own virtual environment.
+streamlit==1.64.0
+plotly==6.9.0
+statsmodels==0.15.0
+numpy==2.4.6
+pandas==2.3.3
+scipy==1.17.1
+scikit-learn==1.9.1
+optuna==5.0.0
+tensorflow-cpu==2.21.0
+keras==3.15.1
+h5py==3.14.0
+pydantic>=2.12,<3
+joblib>=1.5,<2
+threadpoolctl>=3.6,<4
+pytest>=8,<10

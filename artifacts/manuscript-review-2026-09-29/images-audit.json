@@ -1,0 +1,42 @@
+[
+  {
+    "file": "word/media/image1.png",
+    "pixels": [
+      2500,
+      390
+    ],
+    "metadata": {}
+  },
+  {
+    "file": "word/media/image2.png",
+    "pixels": [
+      2400,
+      300
+    ],
+    "metadata": {}
+  },
+  {
+    "file": "word/media/image3.png",
+    "pixels": [
+      3000,
+      340
+    ],
+    "metadata": {}
+  },
+  {
+    "file": "word/media/image4.png",
+    "pixels": [
+      3000,
+      340
+    ],
+    "metadata": {}
+  },
+  {
+    "file": "word/media/image5.png",
+    "pixels": [
+      2600,
+      340
+    ],
+    "metadata": {}
+  }
+]

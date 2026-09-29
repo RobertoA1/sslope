@@ -1,0 +1,14 @@
+{
+  "sheets": [
+    "Tabla 1",
+    "Tabla 2",
+    "Tabla 3",
+    "Tabla 4",
+    "Tabla 5",
+    "Tabla 6"
+  ],
+  "table_cells_matched": 172,
+  "excel_error_cells": 0,
+  "formulas": 0,
+  "purpose": "Copia editorial de métricas archivadas; no recalcular resultados."
+}

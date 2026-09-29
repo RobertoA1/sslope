@@ -1,0 +1,296 @@
+[
+  {
+    "number": 1,
+    "title": "Alcance frente a antecedentes",
+    "rows": [
+      [
+        "Estudio",
+        "Datos",
+        "Componente físico",
+        "Modelo temporal",
+        "Validación informada"
+      ],
+      [
+        "Liu et al. (2022)",
+        "Monitoreo y desempeño observados",
+        "Modelo de estabilidad actualizado",
+        "Evolución temporal",
+        "Evento de falla observado"
+      ],
+      [
+        "Pei et al. (2023)",
+        "Conjuntos de estabilidad",
+        "Pérdida guiada por conocimiento",
+        "No es el foco",
+        "Comparación con modelos físicos y de datos"
+      ],
+      [
+        "Zhang, Z., et al. (2024)",
+        "Casos numéricos",
+        "Ecuaciones y condiciones de contorno",
+        "Excitación externa",
+        "Referencia numérica"
+      ],
+      [
+        "Piciullo et al. (2025)",
+        "Monitoreo IoT y meteorología",
+        "Modelos numéricos",
+        "Pronóstico móvil",
+        "Uso operacional documentado"
+      ],
+      [
+        "Este estudio",
+        "Lluvia externa y respuesta simulada",
+        "FEM 2D y monotonía agregada",
+        "LSTM a 1 y 6 h",
+        "Fechas disjuntas, 2024 y 2025"
+      ]
+    ],
+    "source": "Referencias citadas en Tabla 1"
+  },
+  {
+    "number": 2,
+    "title": "Configuración experimental",
+    "rows": [
+      [
+        "Componente",
+        "Valor documentado",
+        "Trazabilidad"
+      ],
+      [
+        "Escenarios",
+        "500 escenarios de 24 estados horarios; semilla 20260915",
+        "Sección Diseño del caso"
+      ],
+      [
+        "Malla FEM",
+        "30 × 20; contraste interno 48 × 32",
+        "Verificación interna del FEM"
+      ],
+      [
+        "Ventanas",
+        "6 h de historia; horizontes 1 y 6 h",
+        "Modelos temporales"
+      ],
+      [
+        "Optimización",
+        "Adam",
+        "Modelos temporales"
+      ],
+      [
+        "Partición principal",
+        "350 entrenamiento, 75 validación, 75 prueba por fecha",
+        "Validación"
+      ],
+      [
+        "Cortes temporales",
+        "Pruebas 2024 y 2025 con reentrenamiento",
+        "Validación"
+      ],
+      [
+        "Incertidumbre",
+        "5000 remuestreos por conglomerados de fecha; IC 95 %",
+        "Análisis estadístico"
+      ],
+      [
+        "Robustez",
+        "Ruido 5 %; faltantes 30 % con imputación",
+        "Análisis de robustez"
+      ],
+      [
+        "Arquitectura exacta",
+        "LSTM: 15 entradas, 12 unidades ocultas; corrector MLP residual: 19 entradas, 16 unidades ocultas",
+        "data/models/ta01-lstm-1h.json y ta01-physics-guided-1h.json"
+      ],
+      [
+        "Entrenamiento",
+        "LSTM: Adam, MSE, máximo 320 épocas, lote 128, tasa 0,003, semilla 20260916; corrector: Adam, máximo 360 épocas, lote 128, tasa 0,0015, semilla 20260917",
+        "Artefactos de modelos y scripts/train-lstm.py; scripts/train-physics-guided.py"
+      ],
+      [
+        "Entorno",
+        "Node.js ≥24; NumPy ≥2, <3; versión Python y hardware no fijados",
+        "package.json; requirements-ml.txt"
+      ]
+    ],
+    "source": "data/models/ta01-lstm-1h.json; data/models/ta01-physics-guided-1h.json"
+  },
+  {
+    "number": 3,
+    "title": "MAE por fecha disjunta",
+    "rows": [
+      [
+        "Horizonte",
+        "Ventanas",
+        "Persistencia",
+        "Ridge",
+        "LSTM",
+        "Híbrido"
+      ],
+      [
+        "1 h",
+        "1350",
+        "0,00002081",
+        "0,00001181",
+        "0,00000858",
+        "0,00000798"
+      ],
+      [
+        "6 h",
+        "975",
+        "0,00013169",
+        "0,00008855",
+        "0,00006332",
+        "0,00006176"
+      ]
+    ],
+    "source": "data/validation/ta01-model-comparison.csv"
+  },
+  {
+    "number": 4,
+    "title": "MAE cronológico",
+    "rows": [
+      [
+        "Año de prueba",
+        "Horizonte",
+        "Ventanas",
+        "LSTM",
+        "Híbrido"
+      ],
+      [
+        "2024",
+        "1 h",
+        "1476",
+        "0,00000435",
+        "0,00000440"
+      ],
+      [
+        "2024",
+        "6 h",
+        "1066",
+        "0,00002909",
+        "0,00002964"
+      ],
+      [
+        "2025",
+        "1 h",
+        "1404",
+        "0,00000540",
+        "0,00000519"
+      ],
+      [
+        "2025",
+        "6 h",
+        "1014",
+        "0,00005769",
+        "0,00005502"
+      ]
+    ],
+    "source": "data/validation/ta01-rolling-origin-model-comparison.csv"
+  },
+  {
+    "number": 5,
+    "title": "Verificación numérica",
+    "rows": [
+      [
+        "Comprobación",
+        "Magnitud",
+        "Resultado",
+        "Alcance"
+      ],
+      [
+        "Parche CST",
+        "Deformación",
+        "1,14 × 10⁻¹⁸",
+        "Campo afín; adimensional"
+      ],
+      [
+        "Elasticidad global",
+        "Desplazamiento",
+        "1,62 × 10⁻¹¹ m",
+        "Solución analítica manufacturada"
+      ],
+      [
+        "Biot uniforme",
+        "Desplazamiento",
+        "1,60 × 10⁻¹¹ m",
+        "Solución analítica manufacturada"
+      ],
+      [
+        "Malla 30 × 20",
+        "Diferencia",
+        "2,13 %",
+        "Frente a referencia interna 48 × 32"
+      ],
+      [
+        "PIELM/RBF TA-01",
+        "Error L2 relativo",
+        "12,57 %",
+        "354 nodos sin supervisión de desplazamiento"
+      ],
+      [
+        "PIELM/RBF TA-01",
+        "Residuo relativo",
+        "14,39 %",
+        "Mismo operador FEM de referencia"
+      ]
+    ],
+    "source": "data/validation/ta01-fem-mesh-sensitivity.json; data/validation/ta01-spatial-pinn-validation.json"
+  },
+  {
+    "number": 6,
+    "title": "Robustez predictiva",
+    "rows": [
+      [
+        "Horizonte",
+        "Condición",
+        "Ventanas",
+        "LSTM (mm)",
+        "Híbrido (mm)"
+      ],
+      [
+        "1 h",
+        "Limpio",
+        "1350",
+        "0,00000858",
+        "0,00000798"
+      ],
+      [
+        "1 h",
+        "Ruido 5 %",
+        "1350",
+        "0,00000902",
+        "0,00001228"
+      ],
+      [
+        "1 h",
+        "Faltantes 30 %",
+        "1350",
+        "0,0000174",
+        "0,00001867"
+      ],
+      [
+        "6 h",
+        "Limpio",
+        "975",
+        "0,00006332",
+        "0,00006176"
+      ],
+      [
+        "6 h",
+        "Ruido 5 %",
+        "975",
+        "0,0000671",
+        "0,00009023"
+      ],
+      [
+        "6 h",
+        "Faltantes 30 %",
+        "975",
+        "0,00010187",
+        "0,00010547"
+      ]
+    ],
+    "source": "data/validation/ta01-robustness-summary.csv"
+  }
+]

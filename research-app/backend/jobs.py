@@ -64,7 +64,7 @@ def refresh():
             PROCESSES.pop(job_id, None)
 
 
-def create(config):
+def create(config, worker_module="backend.worker"):
     with LOCK:
         refresh()
         job_id = str(uuid.uuid4())
@@ -78,7 +78,7 @@ def create(config):
                        "queued", 0, "Preparando datos reales", config.model_dump_json()))
         try:
             with (folder/"worker.log").open("w") as log:
-                PROCESSES[job_id] = subprocess.Popen([sys.executable, "-m", "backend.worker", job_id, str(os.getpid())],
+                PROCESSES[job_id] = subprocess.Popen([sys.executable, "-m", worker_module, job_id, str(os.getpid())],
                     cwd=APP_ROOT, stdout=log, stderr=log, env={**os.environ, "CENTURY_LAB_RUNTIME": str(RUNTIME)},
                     stdin=subprocess.DEVNULL)
         except Exception:

@@ -1,0 +1,518 @@
+[
+  {
+    "file": "data/rainfall/pasco-nasa-power-2020-2025.csv",
+    "expected": "929141bc669ced424ce537d372e231fcaa9f9566010bcf9914af7ea32cb639d2",
+    "actual": "929141bc669ced424ce537d372e231fcaa9f9566010bcf9914af7ea32cb639d2",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500.csv",
+    "expected": "c05e507388577f3f15d6cd0740f6730a17d3d9242d8e3de7a4b5d55ef4effb3b",
+    "actual": "c05e507388577f3f15d6cd0740f6730a17d3d9242d8e3de7a4b5d55ef4effb3b",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-manifest.json",
+    "expected": "d1035296bf2e476ecbb91d8ec8202a169d7e9993c82559e4e5214206ad9b874e",
+    "actual": "d1035296bf2e476ecbb91d8ec8202a169d7e9993c82559e4e5214206ad9b874e",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-split-manifest.json",
+    "expected": "629239d6a22aa7f5193d752d004fe44fe64fac1d1d404ad79b3abfd8f338db0a",
+    "actual": "629239d6a22aa7f5193d752d004fe44fe64fac1d1d404ad79b3abfd8f338db0a",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-train.csv",
+    "expected": "6015faf78fac4329503e8d1524b7b0b0ca286fe76fd71cb8cf9d95f1ed15811f",
+    "actual": "6015faf78fac4329503e8d1524b7b0b0ca286fe76fd71cb8cf9d95f1ed15811f",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-validation.csv",
+    "expected": "0110d260106ed3c12c77f20866b1c0b7ed3ca755883c92e9753dd8964d8e5447",
+    "actual": "0110d260106ed3c12c77f20866b1c0b7ed3ca755883c92e9753dd8964d8e5447",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-test.csv",
+    "expected": "a5977389cfce11984b4aae046fa0651d24984ca1ef4bd9e2bb0d5db65677e711",
+    "actual": "a5977389cfce11984b4aae046fa0651d24984ca1ef4bd9e2bb0d5db65677e711",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-chronological-split-manifest.json",
+    "expected": "cb80c3e8627872fa5597452a434cac72bec27f280898938469a097cb1ae065d6",
+    "actual": "cb80c3e8627872fa5597452a434cac72bec27f280898938469a097cb1ae065d6",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-chronological-train.csv",
+    "expected": "26eb247014a3af6195cec322bbebf9ccd94a15464a1517cbc4cb9ca9881045ef",
+    "actual": "26eb247014a3af6195cec322bbebf9ccd94a15464a1517cbc4cb9ca9881045ef",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-chronological-validation.csv",
+    "expected": "2a0bd08afce1d1b41b1346227094f7b4e3dd846e70abf8c4f3afb634ceec4747",
+    "actual": "2a0bd08afce1d1b41b1346227094f7b4e3dd846e70abf8c4f3afb634ceec4747",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-chronological-test.csv",
+    "expected": "1eaf564586850838fc6c9756607ca3538607827060915bee6a71103ba007e1f5",
+    "actual": "1eaf564586850838fc6c9756607ca3538607827060915bee6a71103ba007e1f5",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-backtest-2024-split-manifest.json",
+    "expected": "621f6f8c9ad899f7d6e798791f8bd4534e44f0bc07d856528baa4e1fd3f9c636",
+    "actual": "621f6f8c9ad899f7d6e798791f8bd4534e44f0bc07d856528baa4e1fd3f9c636",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-backtest-2024-train.csv",
+    "expected": "ff24b54604ea56dd9b6b9b2a85dcb10c90fe5ae1a22135093b04119c989fa85f",
+    "actual": "ff24b54604ea56dd9b6b9b2a85dcb10c90fe5ae1a22135093b04119c989fa85f",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-backtest-2024-validation.csv",
+    "expected": "c6ba4aadbf3fbf3988a17ad9be2539f5a21c2b28da83351e70f47b90810c3996",
+    "actual": "c6ba4aadbf3fbf3988a17ad9be2539f5a21c2b28da83351e70f47b90810c3996",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-fem-500-backtest-2024-test.csv",
+    "expected": "2a0bd08afce1d1b41b1346227094f7b4e3dd846e70abf8c4f3afb634ceec4747",
+    "actual": "2a0bd08afce1d1b41b1346227094f7b4e3dd846e70abf8c4f3afb634ceec4747",
+    "match": true
+  },
+  {
+    "file": "src/core/fem-2d.js",
+    "expected": "cc4607c6a5fffd642c8fa8879dca31cae66eaceb86881873572f7dc4e02af70f",
+    "actual": "cc4607c6a5fffd642c8fa8879dca31cae66eaceb86881873572f7dc4e02af70f",
+    "match": true
+  },
+  {
+    "file": "src/core/study-case-ta01.js",
+    "expected": "ab2c0f19487d05e08afb337d3480f532d5c28321e9d85959d037edd501814be7",
+    "actual": "ab2c0f19487d05e08afb337d3480f532d5c28321e9d85959d037edd501814be7",
+    "match": true
+  },
+  {
+    "file": "src/core/temporal-baseline.js",
+    "expected": "ff02459a41abef7e76ae4460bc1f87f2953c2c9460b156e1ee41075d0ea58ed4",
+    "actual": "ff02459a41abef7e76ae4460bc1f87f2953c2c9460b156e1ee41075d0ea58ed4",
+    "match": true
+  },
+  {
+    "file": "src/core/model-selection.js",
+    "expected": "1ad1f2698343a63579d09a30b76069a69860d2201feecf916c4969fc67a62cb3",
+    "actual": "1ad1f2698343a63579d09a30b76069a69860d2201feecf916c4969fc67a62cb3",
+    "match": true
+  },
+  {
+    "file": "scripts/generate-fem-dataset.js",
+    "expected": "7d3ffaf7fc7b0bc9bf10285d1b60840024f16a7ff62dcdf09299f1ae11cb5d68",
+    "actual": "7d3ffaf7fc7b0bc9bf10285d1b60840024f16a7ff62dcdf09299f1ae11cb5d68",
+    "match": true
+  },
+  {
+    "file": "scripts/split-fem-dataset.js",
+    "expected": "00d8e90accbfcae4ad5446a92be74e33449eca9e17a24d0889e05a5a3da5c038",
+    "actual": "00d8e90accbfcae4ad5446a92be74e33449eca9e17a24d0889e05a5a3da5c038",
+    "match": true
+  },
+  {
+    "file": "scripts/split-fem-chronological.js",
+    "expected": "1752cc506c05e4124b339b1a4e4e4224ae147ac4d639357ce899b17c4c551ae3",
+    "actual": "1752cc506c05e4124b339b1a4e4e4224ae147ac4d639357ce899b17c4c551ae3",
+    "match": true
+  },
+  {
+    "file": "scripts/train-temporal-baseline.js",
+    "expected": "693d22ee930b93cb69cefbe56487398fc18013f3ba8d2146448818fda3696a06",
+    "actual": "693d22ee930b93cb69cefbe56487398fc18013f3ba8d2146448818fda3696a06",
+    "match": true
+  },
+  {
+    "file": "scripts/train-lstm.py",
+    "expected": "17ca3ad0a6764550b9dac3946f051494341749fa7179ba9f56acafd5b89af35d",
+    "actual": "17ca3ad0a6764550b9dac3946f051494341749fa7179ba9f56acafd5b89af35d",
+    "match": true
+  },
+  {
+    "file": "scripts/train-physics-guided.py",
+    "expected": "3e89719b6f79ca2579049b8bda087bba934da9767dc3307f0f1e11b26a207aa6",
+    "actual": "3e89719b6f79ca2579049b8bda087bba934da9767dc3307f0f1e11b26a207aa6",
+    "match": true
+  },
+  {
+    "file": "scripts/generate-research-summary.js",
+    "expected": "a80568ef97ef275afa95d49fe9205f3fff0a96f9a5ee0154800f7ca7e29d1771",
+    "actual": "a80568ef97ef275afa95d49fe9205f3fff0a96f9a5ee0154800f7ca7e29d1771",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-baseline-1h.json",
+    "expected": "0084d9baced0ddf09bb33fddb0837b9044753fbc7e48e150e9da0c6d20b58284",
+    "actual": "0084d9baced0ddf09bb33fddb0837b9044753fbc7e48e150e9da0c6d20b58284",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-baseline-1h-test-predictions.csv",
+    "expected": "2f70e44a63ead821ce2fc1e541e677d5332e1fe07a7380733532841e7004b4d0",
+    "actual": "2f70e44a63ead821ce2fc1e541e677d5332e1fe07a7380733532841e7004b4d0",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-lstm-1h.json",
+    "expected": "aded8eb9eba27b4a830100ceab6fa6b655f148a7646291ee91bb645b3870d13c",
+    "actual": "aded8eb9eba27b4a830100ceab6fa6b655f148a7646291ee91bb645b3870d13c",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-lstm-1h-test-predictions.csv",
+    "expected": "274af1291703d68d24add7f8dc657f35f44c1097123ea35f010c98d8a3628a47",
+    "actual": "274af1291703d68d24add7f8dc657f35f44c1097123ea35f010c98d8a3628a47",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-physics-guided-1h.json",
+    "expected": "15ea8cc7e5f9dbd968c126ee16598f68a22d772607b76254259a4c123bc34dc3",
+    "actual": "15ea8cc7e5f9dbd968c126ee16598f68a22d772607b76254259a4c123bc34dc3",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-physics-guided-1h-test-predictions.csv",
+    "expected": "30d7ff6afae4897d6daf2e620fc3e561435df740ca1d69fb3d25ea3945840b97",
+    "actual": "30d7ff6afae4897d6daf2e620fc3e561435df740ca1d69fb3d25ea3945840b97",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-chronological-baseline-1h.json",
+    "expected": "742d33a54699042ec2c2a17cb3fe9df6411e40694e4c979faa68183df17e4c45",
+    "actual": "742d33a54699042ec2c2a17cb3fe9df6411e40694e4c979faa68183df17e4c45",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-chronological-baseline-1h-test-predictions.csv",
+    "expected": "3c0dd6a5e3964518057e230118cd574914486680c252313f1f6b4212826db55c",
+    "actual": "3c0dd6a5e3964518057e230118cd574914486680c252313f1f6b4212826db55c",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-chronological-lstm-1h.json",
+    "expected": "0c44fbd04d809a7f71ab1e7614a0bafa73f66c1e51e6c573cb3984e0ff16b9e1",
+    "actual": "0c44fbd04d809a7f71ab1e7614a0bafa73f66c1e51e6c573cb3984e0ff16b9e1",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-chronological-lstm-1h-test-predictions.csv",
+    "expected": "7c80115734f9d0138bdab787836a56b0e5480afdd549dbdd3526e89b87dd83a9",
+    "actual": "7c80115734f9d0138bdab787836a56b0e5480afdd549dbdd3526e89b87dd83a9",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-chronological-physics-guided-1h.json",
+    "expected": "3404b9d0614f9f0b737a530fd45b62af0aff226253eccc2317d20745b3ea3e2c",
+    "actual": "3404b9d0614f9f0b737a530fd45b62af0aff226253eccc2317d20745b3ea3e2c",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-chronological-physics-guided-1h-test-predictions.csv",
+    "expected": "9e0957203ac3cb1acf56af607588427a6a3eb6e840b943c40855f8d3c89bd9eb",
+    "actual": "9e0957203ac3cb1acf56af607588427a6a3eb6e840b943c40855f8d3c89bd9eb",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-baseline-6h.json",
+    "expected": "d4d2da5b9350e53caba86b0f92ef348352def647f9cd0adf6ec88cdc47ffeed7",
+    "actual": "d4d2da5b9350e53caba86b0f92ef348352def647f9cd0adf6ec88cdc47ffeed7",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-baseline-6h-test-predictions.csv",
+    "expected": "71fad4de1e42d9d8add8045a0cbab27feee6417fc1e47a5395fb23b552d74c0e",
+    "actual": "71fad4de1e42d9d8add8045a0cbab27feee6417fc1e47a5395fb23b552d74c0e",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-lstm-6h.json",
+    "expected": "549f37a0d7410709ad97327d2d3a517bfd42e6a643abb30a1c5cb55b3aa3d4c2",
+    "actual": "549f37a0d7410709ad97327d2d3a517bfd42e6a643abb30a1c5cb55b3aa3d4c2",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-lstm-6h-test-predictions.csv",
+    "expected": "d98254f04495fc564a792da905b89850cc1276fad94a6e469f735b53f2cf0482",
+    "actual": "d98254f04495fc564a792da905b89850cc1276fad94a6e469f735b53f2cf0482",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-physics-guided-6h.json",
+    "expected": "3c6bc70ccebbc7c9efb6ed1245cce09a04b964182b484c0bf9ed409790f87aa4",
+    "actual": "3c6bc70ccebbc7c9efb6ed1245cce09a04b964182b484c0bf9ed409790f87aa4",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-physics-guided-6h-test-predictions.csv",
+    "expected": "e05c6be3ec7fda5776f71abadf7077acd87f3727207e0c4483ef116f6c38d318",
+    "actual": "e05c6be3ec7fda5776f71abadf7077acd87f3727207e0c4483ef116f6c38d318",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-chronological-baseline-6h.json",
+    "expected": "732400437bc82be7351707ce6259113a7cd575fae6d21e70c735a990f4199994",
+    "actual": "732400437bc82be7351707ce6259113a7cd575fae6d21e70c735a990f4199994",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-chronological-baseline-6h-test-predictions.csv",
+    "expected": "a6688b459c18ea04686e2ebc019239adaa0c19e29d1ff5929fe032fad5ca08a4",
+    "actual": "a6688b459c18ea04686e2ebc019239adaa0c19e29d1ff5929fe032fad5ca08a4",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-chronological-lstm-6h.json",
+    "expected": "85a99090eb1532ce17c1b3a3a5add4a680899ae3325e6532125cb5dd0eeaef4d",
+    "actual": "85a99090eb1532ce17c1b3a3a5add4a680899ae3325e6532125cb5dd0eeaef4d",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-chronological-lstm-6h-test-predictions.csv",
+    "expected": "2caade57e72dd218ed5ed2d673d15a55667d79f2985daca4b12d6b54907f63d9",
+    "actual": "2caade57e72dd218ed5ed2d673d15a55667d79f2985daca4b12d6b54907f63d9",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-chronological-physics-guided-6h.json",
+    "expected": "ca6348ff2eb8c41a5fe758fdddd3c0c226daeb6e0011c401bbd2b0d11ad20f2e",
+    "actual": "ca6348ff2eb8c41a5fe758fdddd3c0c226daeb6e0011c401bbd2b0d11ad20f2e",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-chronological-physics-guided-6h-test-predictions.csv",
+    "expected": "8545aeeb412e47d1fa320bb09fb2913b4f5c5b572bf5c3a1bc3fc96744296a8b",
+    "actual": "8545aeeb412e47d1fa320bb09fb2913b4f5c5b572bf5c3a1bc3fc96744296a8b",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-backtest-2024-baseline-1h.json",
+    "expected": "4c8eb0f184e61f05fc038c646ef532c798d6a0347dfed52e75fb615b59bd052b",
+    "actual": "4c8eb0f184e61f05fc038c646ef532c798d6a0347dfed52e75fb615b59bd052b",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-backtest-2024-baseline-1h-test-predictions.csv",
+    "expected": "eb5c69f840285bd59525df289c103a58e807d746d1e2dcb3f1d2ba74f390337f",
+    "actual": "eb5c69f840285bd59525df289c103a58e807d746d1e2dcb3f1d2ba74f390337f",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-backtest-2024-lstm-1h.json",
+    "expected": "f58ed65d71c9434da6583872f2fee1e3286ee9bd8c6dc03c0241b6ab37d78d84",
+    "actual": "f58ed65d71c9434da6583872f2fee1e3286ee9bd8c6dc03c0241b6ab37d78d84",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-backtest-2024-lstm-1h-test-predictions.csv",
+    "expected": "9f40b538c3d1610d67fd4b090e8fabd056b143c1545576facd47fc8737c46617",
+    "actual": "9f40b538c3d1610d67fd4b090e8fabd056b143c1545576facd47fc8737c46617",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-backtest-2024-physics-guided-1h.json",
+    "expected": "aba6303a68ceec0368ab8a9e1629d370f2e79ce97e48bd6a331e25c84c7668e6",
+    "actual": "aba6303a68ceec0368ab8a9e1629d370f2e79ce97e48bd6a331e25c84c7668e6",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-backtest-2024-physics-guided-1h-test-predictions.csv",
+    "expected": "575a6aba1eba7b3080a44b683645567dffd2c5547902b8c72b1e2fe682784662",
+    "actual": "575a6aba1eba7b3080a44b683645567dffd2c5547902b8c72b1e2fe682784662",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-backtest-2024-baseline-6h.json",
+    "expected": "3f3e2c1f84e7cff761ba205d1037e599c97fb1d648993447725ef35d0c074f7b",
+    "actual": "3f3e2c1f84e7cff761ba205d1037e599c97fb1d648993447725ef35d0c074f7b",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-backtest-2024-baseline-6h-test-predictions.csv",
+    "expected": "3672499b6fa7cc9719fb3bba3032b157e533b52f4e44d136d187c453d783efb1",
+    "actual": "3672499b6fa7cc9719fb3bba3032b157e533b52f4e44d136d187c453d783efb1",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-backtest-2024-lstm-6h.json",
+    "expected": "0dfd5bb35677a3cd9daf8e55e03ec7c9fab554656f5331e82362cebe8455881b",
+    "actual": "0dfd5bb35677a3cd9daf8e55e03ec7c9fab554656f5331e82362cebe8455881b",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-backtest-2024-lstm-6h-test-predictions.csv",
+    "expected": "bc5dc8503b1ab6fab379d840457bc891488c95f88dcd56a558aa09965856cbe8",
+    "actual": "bc5dc8503b1ab6fab379d840457bc891488c95f88dcd56a558aa09965856cbe8",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-backtest-2024-physics-guided-6h.json",
+    "expected": "962ce7aa2c61dccd2b433d4893f7ed4a1817b3fe2b490031fcc09c9ae6fe4813",
+    "actual": "962ce7aa2c61dccd2b433d4893f7ed4a1817b3fe2b490031fcc09c9ae6fe4813",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-backtest-2024-physics-guided-6h-test-predictions.csv",
+    "expected": "a6fcbe04fec08511a78f0c83266c5c62e7c4198cf1ad9fb7714ab4356a33260c",
+    "actual": "a6fcbe04fec08511a78f0c83266c5c62e7c4198cf1ad9fb7714ab4356a33260c",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-model-robustness.json",
+    "expected": "a36963db2aabb221c485a2875f9ff7b0716e37778efea2809f0fc42f08d5461a",
+    "actual": "a36963db2aabb221c485a2875f9ff7b0716e37778efea2809f0fc42f08d5461a",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-fem-mesh-sensitivity.json",
+    "expected": "f70fb044d82ea66aac5c95e4de4e69309bff0dc7a049d2018a9ed91d760bffd8",
+    "actual": "f70fb044d82ea66aac5c95e4de4e69309bff0dc7a049d2018a9ed91d760bffd8",
+    "match": true
+  },
+  {
+    "file": "data/validation/spatial-pinn-manufactured-elasticity.json",
+    "expected": "7cfe0599a539c8c4e80770510192b0167a1fcd3a3085e0faefe210f6b2415d49",
+    "actual": "7cfe0599a539c8c4e80770510192b0167a1fcd3a3085e0faefe210f6b2415d49",
+    "match": true
+  },
+  {
+    "file": "data/generated/ta01-spatial-equilibrium-benchmark.json",
+    "expected": "6b0ee3e1497e50751331dc9fe1f7aeba831487463c268e5e5f5d1a6596b134fe",
+    "actual": "6b0ee3e1497e50751331dc9fe1f7aeba831487463c268e5e5f5d1a6596b134fe",
+    "match": true
+  },
+  {
+    "file": "data/models/ta01-spatial-pinn.json",
+    "expected": "8eb449feaa9446c264ff37daba930ce8b812a20fd1e0468cf1cc72519c3a98b0",
+    "actual": "8eb449feaa9446c264ff37daba930ce8b812a20fd1e0468cf1cc72519c3a98b0",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-spatial-pinn-validation.json",
+    "expected": "9fcd62231e615c31b7bb13fca21c0d2616bda94b224b66ff9e6c61dabf22e2e1",
+    "actual": "9fcd62231e615c31b7bb13fca21c0d2616bda94b224b66ff9e6c61dabf22e2e1",
+    "match": true
+  },
+  {
+    "file": "data/validation/external-ssrm-griffiths-lane.json",
+    "expected": "bd4a644c21523bc52357c68255c492de8e891babed77afdb7a2f4cfa18ce5fa6",
+    "actual": "bd4a644c21523bc52357c68255c492de8e891babed77afdb7a2f4cfa18ce5fa6",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-external-ssrm-input.json",
+    "expected": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+    "actual": "53fde09f06200e086d8ee3ec61f9b7519fc7697faaa96397b94fac8faecae860",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-external-ssrm.json",
+    "expected": "3c1ac3a24659ba03491e5a827e90e83cdeca683ced4427638fce7711968e26bf",
+    "actual": "3c1ac3a24659ba03491e5a827e90e83cdeca683ced4427638fce7711968e26bf",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-external-ssrm-mesh-sensitivity.json",
+    "expected": "373612a091099d25b43fbe777a94a1ef150e42c17d14f6dc4dc07f12a94864c8",
+    "actual": "373612a091099d25b43fbe777a94a1ef150e42c17d14f6dc4dc07f12a94864c8",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-transient-seep.json",
+    "expected": "c6af75f408f073a9304f1488a033bc4f7a88c2921935efce69d98b5af7bd9c3f",
+    "actual": "c6af75f408f073a9304f1488a033bc4f7a88c2921935efce69d98b5af7bd9c3f",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-transient-seep-mesh-sensitivity.json",
+    "expected": "0b78dfa3d547bac80330a4235bc8e0d908794b77f78e672f4ae6cc1ab403e299",
+    "actual": "0b78dfa3d547bac80330a4235bc8e0d908794b77f78e672f4ae6cc1ab403e299",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-transient-seep-field-sensitivity.json",
+    "expected": "26d96b38f90129802bfeb1e65cd641636def2f64fd03f53b3746bfc482a61681",
+    "actual": "26d96b38f90129802bfeb1e65cd641636def2f64fd03f53b3746bfc482a61681",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-transient-seep-field-6m.json",
+    "expected": "8cb66287aaffba154a771eecb85424a4620673f3d09205e30f1326fe41b2002c",
+    "actual": "8cb66287aaffba154a771eecb85424a4620673f3d09205e30f1326fe41b2002c",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-rainfall-external-ssrm.json",
+    "expected": "b546110069e2c3181ef29fed5caecbe72ed1dcc45d3dcc9c731dcb1ec471d234",
+    "actual": "b546110069e2c3181ef29fed5caecbe72ed1dcc45d3dcc9c731dcb1ec471d234",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-transient-seep-wet-scenario-6m.json",
+    "expected": "87d0b7f684722aa4ec74eeed4596fec702bee050784f9f23cb376a8041ceb4de",
+    "actual": "87d0b7f684722aa4ec74eeed4596fec702bee050784f9f23cb376a8041ceb4de",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-transient-seep-wet-scenario-field-sensitivity.json",
+    "expected": "d9494c0da73462bfa434b0a42973abb866e5c4d792f2708a88c8ebd88e7af4b5",
+    "actual": "d9494c0da73462bfa434b0a42973abb866e5c4d792f2708a88c8ebd88e7af4b5",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-transient-seep-wet-scenario-fine-time-mesh-sensitivity.json",
+    "expected": "997aa3dec1b37a7848dc2a8cf15155ed603c21ef79873c203070eb977290139e",
+    "actual": "997aa3dec1b37a7848dc2a8cf15155ed603c21ef79873c203070eb977290139e",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-transient-seep-wet-scenario-time-sensitivity.json",
+    "expected": "62aeafd079db4a23c18c11a64ed9e7cd9c8593d0c570d4cc4ac63ebb981da758",
+    "actual": "62aeafd079db4a23c18c11a64ed9e7cd9c8593d0c570d4cc4ac63ebb981da758",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-wet-scenario-ssrm-pressure-mesh-sensitivity.json",
+    "expected": "2529ce1f1d3aa9bc088d93ebb5aa33c7c04805f805fe4528298eb7a8d6ab4e0f",
+    "actual": "2529ce1f1d3aa9bc088d93ebb5aa33c7c04805f805fe4528298eb7a8d6ab4e0f",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-rainfall-wet-scenario-external-ssrm.json",
+    "expected": "db694c43b16b53a81c51a1a61b8e4afbe2d5c315b0d32c393d5b948d4d265c9e",
+    "actual": "db694c43b16b53a81c51a1a61b8e4afbe2d5c315b0d32c393d5b948d4d265c9e",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-rainfall-wet-scenario-external-ssrm-mesh10.json",
+    "expected": "1c78ca8606166239531d3f27f987e8f4a6f24691d09d632a28a6c127febc1a82",
+    "actual": "1c78ca8606166239531d3f27f987e8f4a6f24691d09d632a28a6c127febc1a82",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-rainfall-wet-scenario-external-ssrm-mesh6.json",
+    "expected": "c38f7c8c7920a93459494f1393d7b780d5fd2e78511bf44cdf72b50b60841121",
+    "actual": "c38f7c8c7920a93459494f1393d7b780d5fd2e78511bf44cdf72b50b60841121",
+    "match": true
+  },
+  {
+    "file": "data/validation/ta01-rainfall-wet-scenario-ssrm-mesh-sensitivity.json",
+    "expected": "6e89accd84008d5bba714fd1fedd19e8584eb2864a38943f363978b5fa040f6b",
+    "actual": "6e89accd84008d5bba714fd1fedd19e8584eb2864a38943f363978b5fa040f6b",
+    "match": true
+  }
+]

@@ -1,0 +1,1 @@
+{"kind":"table","sheet":"Tabla 4","address":"A5:F10","rows":6,"cols":6,"values":[["Año de prueba","Horizonte","Ventanas","LSTM","Híbrido",null],[2024,"1 h",1476,0.00000435,0.0000044,null],[2024,"6 h",1066,0.00002909,0.00002964,null],[2025,"1 h",1404,0.0000054,0.00000519,null],[2025,"6 h",1014,0.00005769,0.00005502,null],[null,null,null,null,null,null]]}

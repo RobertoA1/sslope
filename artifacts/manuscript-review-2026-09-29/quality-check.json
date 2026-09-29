@@ -1,0 +1,75 @@
+{
+  "original_performance_tables_unchanged": true,
+  "result_paragraph_numbers_unchanged": true,
+  "abstract_words": {
+    "es": 210,
+    "en": 188
+  },
+  "word_comments": 22,
+  "figure_images_and_equations": 10,
+  "main_tables": 6,
+  "total_tables_including_two_appendices": 8,
+  "figure_resolution": {
+    "Figura_1.png": {
+      "pixels": [
+        2135,
+        1044
+      ],
+      "dpi": [
+        399.9992,
+        399.9992
+      ]
+    },
+    "Figura_2.png": {
+      "pixels": [
+        2686,
+        1166
+      ],
+      "dpi": [
+        399.9992,
+        399.9992
+      ]
+    },
+    "Figura_3.png": {
+      "pixels": [
+        2707,
+        1166
+      ],
+      "dpi": [
+        399.9992,
+        399.9992
+      ]
+    },
+    "Figura_4.png": {
+      "pixels": [
+        2686,
+        1206
+      ],
+      "dpi": [
+        399.9992,
+        399.9992
+      ]
+    },
+    "Figura_5.png": {
+      "pixels": [
+        2686,
+        1291
+      ],
+      "dpi": [
+        399.9992,
+        399.9992
+      ]
+    },
+    "Figura_6.png": {
+      "pixels": [
+        2686,
+        1206
+      ],
+      "dpi": [
+        399.9992,
+        399.9992
+      ]
+    }
+  },
+  "manuscript_sha256": "d6d7163947f7a2b5a42b0aa635b915288a7cf1a3df55d633985f77ceb7355602"
+}

@@ -1,0 +1,62 @@
+{
+  "Figura_1": {
+    "classification": "ESQUEMA",
+    "source_files": [
+      "scripts/generate-fem-dataset.js",
+      "scripts/train-lstm.py",
+      "scripts/train-physics-guided.py",
+      "scripts/generate-research-summary.js"
+    ],
+    "sha256": {
+      "scripts/generate-fem-dataset.js": "7d3ffaf7fc7b0bc9bf10285d1b60840024f16a7ff62dcdf09299f1ae11cb5d68",
+      "scripts/train-lstm.py": "17ca3ad0a6764550b9dac3946f051494341749fa7179ba9f56acafd5b89af35d",
+      "scripts/train-physics-guided.py": "3e89719b6f79ca2579049b8bda087bba934da9767dc3307f0f1e11b26a207aa6",
+      "scripts/generate-research-summary.js": "a80568ef97ef275afa95d49fe9205f3fff0a96f9a5ee0154800f7ca7e29d1771"
+    }
+  },
+  "Figura_2": {
+    "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+    "source_files": [
+      "data/validation/ta01-fem-mesh-summary.csv"
+    ],
+    "sha256": {
+      "data/validation/ta01-fem-mesh-summary.csv": "fe67e3bbb1e93b00a4551faed30e075e851fd08055eec3bffb89e95a5d27686f"
+    }
+  },
+  "Figura_3": {
+    "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+    "source_files": [
+      "data/validation/ta01-rolling-origin-bootstrap.json"
+    ],
+    "sha256": {
+      "data/validation/ta01-rolling-origin-bootstrap.json": "37445d7bba5b50fccb2b16d02e6ac7a886bc11568093123652d69f2b64edf16b"
+    }
+  },
+  "Figura_4": {
+    "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+    "source_files": [
+      "data/validation/ta01-rolling-interval-coverage.csv"
+    ],
+    "sha256": {
+      "data/validation/ta01-rolling-interval-coverage.csv": "e115337536f1b8a3c42624550f542cb33e1de01577614001b26e49bf80e2fea1"
+    }
+  },
+  "Figura_5": {
+    "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+    "source_files": [
+      "data/validation/ta01-robustness-summary.csv"
+    ],
+    "sha256": {
+      "data/validation/ta01-robustness-summary.csv": "ca0f8d3fe31d320b7e37e1c1f531adb01a15e930b35059b24146d10913117a39"
+    }
+  },
+  "Figura_6": {
+    "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+    "source_files": [
+      "data/validation/ta01-ablation-summary.csv"
+    ],
+    "sha256": {
+      "data/validation/ta01-ablation-summary.csv": "f56575d00937fb969c7d0163dcebc63fc54abb229fd78a4c9c548bea5f8c1e07"
+    }
+  }
+}
