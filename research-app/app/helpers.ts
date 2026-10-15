@@ -1,4 +1,6 @@
 import type { Series } from './types';
+import { researchApiPath } from '../lib/paths.mjs';
+export { LAB_BASE_PATH, researchApiPath } from '../lib/paths.mjs';
 
 export const labels: Record<string, string> = {
   movement: 'Desplazamiento (mm)', increment: 'Incremento (mm)', interval: 'Intervalo (h)', rain: 'Lluvia, desfase 2 d (mm)',
@@ -10,7 +12,7 @@ export const fmt = (value: number | null | undefined, digits = 2) => value == nu
 export const dateLabel = (value: string) => value.slice(5, 10).replace('-', '/');
 
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, { cache: 'no-store', ...options, headers: { 'Content-Type': 'application/json', ...options?.headers } });
+  const res = await fetch(researchApiPath(path), { cache: 'no-store', ...options, headers: { 'Content-Type': 'application/json', ...options?.headers } });
   if (!res.ok) {
     let detail = '';
     try {

@@ -175,6 +175,27 @@ def test_api_configured_remote_origin_is_exact(client, config, monkeypatch):
         assert client.post("/api/preview", json=config.model_dump(), headers={"Origin": origin}).status_code == 403
 
 
+def test_vercel_exploration_never_initializes_storage_or_starts_training(config, monkeypatch):
+    monkeypatch.setenv("VERCEL", "1")
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("The exploration deployment must not touch job storage or spawn workers")
+
+    monkeypatch.setattr(jobs, "initialize", forbidden)
+    monkeypatch.setattr(jobs, "shutdown", forbidden)
+    monkeypatch.setattr(jobs, "connect", forbidden)
+    monkeypatch.setattr(jobs.subprocess, "Popen", forbidden)
+    with TestClient(app) as remote:
+        health = remote.get("/api/health").json()
+        assert health["training_enabled"] is False
+        assert health["max_concurrent_jobs"] == 0
+        assert remote.get("/api/experiments").json() == []
+        assert remote.get("/api/dataset?sensor=22-1917").status_code == 200
+        assert remote.post("/api/preview", json=config.model_dump()).status_code == 200
+        assert remote.post("/api/experiments", json=config.model_dump()).status_code == 503
+        assert remote.get("/api/experiments/11111111-1111-4111-8111-111111111111/report").status_code == 503
+
+
 def test_api_no_report_for_missing_or_failed_job(client, config):
     assert client.get("/api/experiments/not-a-uuid/report").status_code == 422
     missing = "11111111-1111-4111-8111-111111111111"

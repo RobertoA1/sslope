@@ -20,3 +20,10 @@ export function requestHostAllowed(hostname, runtime) {
   // La aplicación conserva la comprobación de Origin para las escrituras.
   return runtime.isVercel || runtime.allowedHosts.has(hostname);
 }
+
+export function requestOriginAllowed(origin, headers, runtime) {
+  try {
+    const publicHost = runtime.isVercel ? headers['x-forwarded-host'] || headers.host : headers.host;
+    return new URL(origin).host === publicHost;
+  } catch { return false; }
+}

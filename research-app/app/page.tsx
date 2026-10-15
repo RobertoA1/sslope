@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Activity, ArrowUpRight, BarChart3, Beaker, ChartNoAxesCombined, CircleCheck, Database, FlaskConical, Layers3, LoaderCircle, Play, SlidersHorizontal, X } from 'lucide-react';
 import type { Artifact, Config, DataSet, Job, Preview, Report, Trial } from './types';
-import { api, fmt, labels } from './helpers';
+import { api, fmt, labels, LAB_BASE_PATH, researchApiPath } from './helpers';
 import { DatasetView } from './dataset-view';
 import { ExperimentView } from './experiment-view';
 import { ResultsView } from './results-view';
@@ -42,6 +42,8 @@ export default function Lab() {
   const [reportLoading, setReportLoading] = useState(false);
   const [error, setError] = useState('');
   const [online, setOnline] = useState(false);
+  const [trainingEnabled, setTrainingEnabled] = useState(false);
+  const [trainingMessage, setTrainingMessage] = useState('');
   const selected = jobs.find(j => j.id === selectedId);
   const active = jobs.find(j => j.status === 'running' || j.status === 'queued');
 
@@ -55,6 +57,9 @@ export default function Lab() {
   }, []);
 
   useEffect(() => {
+    api<{ training_enabled: boolean; training_message: string }>('/health').then(health => {
+      setTrainingEnabled(health.training_enabled); setTrainingMessage(health.training_message);
+    }).catch(() => {});
     refreshJobs();
     const timer = setInterval(refreshJobs, 3000);
     return () => clearInterval(timer);
@@ -103,7 +108,7 @@ export default function Lab() {
     finally { setBusy(false); }
   }
   async function train() {
-    if (!preview || active) return;
+    if (!trainingEnabled || !preview || active) return;
     setBusy(true); setError('');
     try {
       const job = await api<Job>('/experiments', { method: 'POST', body: JSON.stringify(config) });
@@ -120,7 +125,7 @@ export default function Lab() {
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <a className="brand" href="/" aria-label="Century Lab inicio"><span className="brand-symbol"><Layers3 size={23}/></span><span><b>CENTURY<span>LAB</span></b><small>Laboratorio de investigación</small></span></a>
+      <a className="brand" href={LAB_BASE_PATH} aria-label="Century Lab inicio"><span className="brand-symbol"><Layers3 size={23}/></span><span><b>CENTURY<span>LAB</span></b><small>Laboratorio de investigación</small></span></a>
       <div className="sidebar-label">FLUJO DE TRABAJO</div>
       <nav aria-label="Secciones del laboratorio">{sections.map((section, i) => <button key={section.id} className={view === section.id ? 'active' : ''} onClick={() => { setView(section.id); setError(''); }} aria-current={view === section.id ? 'page' : undefined}><section.icon size={19}/><span><b>{section.name}</b><small>{section.caption}</small></span><em>{i + 1}</em></button>)}</nav>
       <div className="sidebar-study"><span className="sidebar-label">CASO DE ESTUDIO</span><b>Century Mine</b><p>West Wall · Australia<br/>Prismas 3D y lluvia BOM</p><a href="https://zenodo.org/records/15003054" target="_blank" rel="noreferrer">Dataset público <ArrowUpRight size={14}/></a></div>
@@ -130,15 +135,16 @@ export default function Lab() {
       <header className="topbar"><div><span>Century Mine</span><span className="crumb">/</span><b>{title.name}</b></div><span className="top-tag"><FlaskConical size={14}/>RESEARCH WORKSPACE</span></header>
       <main>
         <div className="page-heading"><div><p className="eyebrow">DATOS REALES · EXPERIMENTOS REPRODUCIBLES</p><h1>{title.name}</h1><p>Del dato observado a una comparación auditable de modelos de pronóstico.</p></div><button className="button" onClick={() => setView(view === 'train' ? 'results' : 'train')}>{view === 'train' ? <BarChart3 size={16}/> : <Play size={16}/>} {view === 'train' ? 'Ver resultados' : 'Nuevo experimento'}</button></div>
+        {trainingMessage && <Note>{trainingMessage}</Note>}
         {error && <div className="error-banner" role="alert"><span>{error}</span><button aria-label="Cerrar mensaje de error" onClick={() => setError('')}><X size={17}/></button></div>}
         {data && (view === 'eda' || view === 'cross') && <div className="kpi-grid"><div><span>Mediciones de origen</span><strong>{data.audit.raw_readings.toLocaleString('es-PE')}</strong><small>Archivo público verificado por SHA256</small></div><div><span>Observaciones diarias</span><strong>{data.audit.daily_readings.toLocaleString('es-PE')}</strong><small>Última lectura de cada sensor y fecha</small></div><div><span>Prismas monitorizados</span><strong>{data.audit.sensors}</strong><small>Sin mezclar con South West</small></div><div><span>Período disponible</span><strong className="period-value">20 NOV — 20 FEB</strong><small>2013–2014 · anterior a la falla</small></div></div>}
         {(view === 'eda' || view === 'cross' || view === 'clean') && <div className="dataset-filters"><label>Prisma<select value={sensor || data?.sensor || ''} onChange={e => setSensor(e.target.value)} aria-label="Prisma de datos">{sensors.map(s => <option key={s}>{s}</option>)}</select></label>{view !== 'clean' && <><label>Desde<input type="date" min="2013-11-20" max="2014-02-20" value={start} onChange={e => setStart(e.target.value)}/></label><label>Hasta<input type="date" min="2013-11-20" max="2014-02-20" value={end} onChange={e => setEnd(e.target.value)}/></label><button className="text-button" onClick={() => { setStart(''); setEnd(''); }}>Todo el período</button></>}<span className="filter-hint">{view === 'clean' ? 'El filtro de prisma solo cambia la vista previa, no la cohorte de entrenamiento.' : 'Todas las gráficas usan el mismo prisma y filtro.'}</span></div>}
         {(view === 'eda' || view === 'cross') && (loadingData ? <Loading/> : data ? <DatasetView data={data} crossed={view === 'cross'} onLag={setLag}/> : <Note warning>No hay datos para el filtro. Elige otro prisma o restablece todo el período.</Note>)}
-        {(view === 'clean' || view === 'train') && <ExperimentView config={config} onChange={changeConfig} preview={preview} onPreview={review} onTrain={train} busy={busy} cleaning={view === 'clean'} active={active} onCancel={cancel}/>}
+        {(view === 'clean' || view === 'train') && <ExperimentView config={config} onChange={changeConfig} preview={preview} onPreview={review} onTrain={train} busy={busy} cleaning={view === 'clean'} active={active} onCancel={cancel} trainingEnabled={trainingEnabled}/>}
         {view === 'results' && <>
           <div className="history-bar"><label>Experimento<select value={selectedId} onChange={e => setSelectedId(e.target.value)}>{!jobs.length && <option value="">Todavía no hay experimentos</option>}{jobs.map(j => <option key={j.id} value={j.id}>{j.name} · {statuses[j.status]}</option>)}</select></label>{selected && <span className={`status-pill ${selected.status}`}>{statuses[selected.status]}</span>}<span className="small-copy">Historial guardado localmente</span></div>
           {selected && (selected.status === 'running' || selected.status === 'queued') && <div className="training-state"><LoaderCircle className="spin" size={32}/><h2>Comparación en curso</h2><p>{selected.message}</p><progress value={selected.progress} max={100}/><span>{fmt(selected.progress, 0)}%</span><button className="button" onClick={() => cancel(selected)}>Cancelar entrenamiento</button><small>Puedes explorar los datos mientras el motor trabaja en segundo plano.</small></div>}
-          {selected && ['failed', 'cancelled', 'interrupted'].includes(selected.status) && <div className="empty"><Activity size={30}/><h2>{statuses[selected.status]}</h2><p>{selected.message}</p><div className="actions"><a className="button" href={`/api/experiments/${selected.id}/files/worker.log`} download>Descargar diagnóstico</a><button className="button primary" onClick={() => { changeConfig(selected.config); setView('train'); }}>Revisar y volver a ejecutar</button></div></div>}
+          {selected && ['failed', 'cancelled', 'interrupted'].includes(selected.status) && <div className="empty"><Activity size={30}/><h2>{statuses[selected.status]}</h2><p>{selected.message}</p><div className="actions"><a className="button" href={researchApiPath(`/experiments/${selected.id}/files/worker.log`)} download>Descargar diagnóstico</a><button className="button primary" onClick={() => { changeConfig(selected.config); setView('train'); }}>Revisar y volver a ejecutar</button></div></div>}
           {reportLoading && <Loading message="Cargando métricas, gráficas y modelos…"/>}
           {report && selected?.status === 'completed' && <ResultsView key={selected.id} report={report} job={selected} files={files} trials={trials}/>}
           {!selected && <div className="empty"><BarChart3 size={34}/><h2>Tu primera comparación empieza aquí</h2><p>Configura las técnicas, revisa los datos y entrena. Verás predicciones, errores, pruebas estadísticas y modelos descargables.</p><button className="button primary" onClick={() => setView('train')}>Configurar entrenamiento</button></div>}

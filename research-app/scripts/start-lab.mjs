@@ -25,7 +25,7 @@ const occupied = port => new Promise(resolveProbe => {
 
 try {
   if (!existsSync(python)) throw new Error('Falta .venv. Sigue la instalación del README antes de ejecutar npm run lab.');
-  if (await occupied(3001)) throw new Error('El puerto 3001 ya está en uso. Si Century Lab está abierto, usa http://127.0.0.1:3001. No se cerró ningún servidor existente.');
+  if (await occupied(3001)) throw new Error('El puerto 3001 ya está en uso. Si Century Lab está abierto, usa http://127.0.0.1:3001/research. No se cerró ningún servidor existente.');
   if (await occupied(8001)) {
     const res = await fetch('http://127.0.0.1:8001/api/health');
     const health = await res.json();
@@ -38,7 +38,7 @@ try {
   if (mode === 'start' && !existsSync(resolve(root, '.next/BUILD_ID'))) throw new Error('Primero ejecuta npm run build, o usa npm run lab:dev.');
   const ui = spawn(process.execPath, [resolve(root, 'node_modules/next/dist/bin/next'), mode, '--hostname', '127.0.0.1', '--port', '3001'], { cwd: root, stdio: 'inherit' });
   children.push(ui);
-  console.log('\nCentury Lab: http://127.0.0.1:3001\nCtrl+C cierra únicamente los procesos iniciados por este comando.\n');
+  console.log('\nCentury Lab: http://127.0.0.1:3001/research\nCtrl+C cierra únicamente los procesos iniciados por este comando.\n');
   for (const child of children) child.on('exit', () => { stop(); });
 } catch (error) {
   console.error(error.message);

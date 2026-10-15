@@ -4,7 +4,7 @@ import http from "node:http";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { rm } from "node:fs/promises";
-import { runtimeConfiguration, requestHostAllowed } from "../src/runtime.js";
+import { runtimeConfiguration, requestHostAllowed, requestOriginAllowed } from "../src/runtime.js";
 
 test("el servidor local conserva su base y rechaza hosts externos no configurados", () => {
   const local = runtimeConfiguration({});
@@ -16,6 +16,10 @@ test("el servidor local conserva su base y rechaza hosts externos no configurado
   assert.equal(configured.databasePath, "/tmp/sslope-test.sqlite");
   assert.equal(requestHostAllowed("slopes.example.org", configured), true);
   assert.equal(requestHostAllowed("foreign.example", configured), false);
+  const proxied = { host: 'localhost:4000', 'x-forwarded-host': 'slopes.example' };
+  assert.equal(requestOriginAllowed('https://slopes.example', proxied, runtimeConfiguration({ VERCEL: '1' })), true);
+  assert.equal(requestOriginAllowed('https://foreign.example', proxied, runtimeConfiguration({ VERCEL: '1' })), false);
+  assert.equal(requestOriginAllowed('https://slopes.example', proxied, local), false);
 });
 
 test("la entrada Vercel admite dominios remotos, SQLite temporal, JSON parseado y los casos científicos", async (t) => {

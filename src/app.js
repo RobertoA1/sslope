@@ -12,7 +12,7 @@ import { TwinStore } from "./store.js";
 import { serveCenturyStudy } from "./century-study.js";
 import { serveMineTwin, mineServerSnapshot } from "./mine-twins.js";
 import { chatConfiguration, createChatGate, serveProjectChat, publicChatError } from "./chat/chat-service.js";
-import { runtimeConfiguration, requestHostAllowed } from "./runtime.js";
+import { runtimeConfiguration, requestHostAllowed, requestOriginAllowed } from "./runtime.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
@@ -222,10 +222,7 @@ export default async function handler(req, res) {
       return res.end();
     }
     if (req.method === "POST" && req.headers.origin) {
-      let originHost;
-      try { originHost = new URL(req.headers.origin).host; }
-      catch { return sendJson(res, 403, { error: "Origen no permitido" }); }
-      if (originHost !== req.headers.host) return sendJson(res, 403, { error: "Origen no permitido" });
+      if (!requestOriginAllowed(req.headers.origin, req.headers, runtime)) return sendJson(res, 403, { error: "Origen no permitido" });
     }
     if (req.method === "GET" && url.pathname === "/api/health") return sendJson(res, 200, { status: "ok", service: "M-1 Digital Twin", version: "0.1.0" });
     if (req.method === "GET" && url.pathname === "/api/chat/status") {

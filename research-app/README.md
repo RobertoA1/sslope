@@ -10,7 +10,7 @@ Arranque: `.venv/bin/python -m streamlit run streamlit_app.py` desde esta carpet
 
 App de investigación **independiente** del software FEM–LSTM del artículo. Tiene su propia interfaz Next.js/React, API FastAPI, entorno Python, copia del dataset público y base SQLite. No usa la API, modelos, archivos generados ni base de datos del visor original.
 
-Interfaz: **http://127.0.0.1:3001**. API técnica: http://127.0.0.1:8001/docs.
+Interfaz: **http://127.0.0.1:3001/research**. API técnica: http://127.0.0.1:8001/docs.
 
 ## Instalación y arranque
 
@@ -40,13 +40,17 @@ npm start
 
 Aplicación de investigación sin autenticación multiusuario. Se rechazan escrituras de otros orígenes de navegador y solo se descargan artefactos autorizados de un experimento. Para acceso remoto, utiliza una capa de autenticación y TLS.
 
-## Interfaz Next.js en Vercel
+## Next.js y FastAPI en Vercel Services
 
-Crea un proyecto Vercel con **Root Directory `research-app`** y preset **Next.js**. Configura `CENTURY_API_ORIGIN=https://tu-backend.example.org` antes del build: debe ser un origen HTTPS, sin `/api`, rutas ni credenciales. Las peticiones del navegador siguen usando `/api/*` en el mismo dominio y Next.js las reenvía al backend configurado. Cambiar esta variable requiere un nuevo despliegue. Sin ella, un build en Vercel falla con un mensaje explícito; localmente se conserva el backend en el puerto 8001.
+El `vercel.json` de la raíz despliega tres servicios en un solo dominio. Esta interfaz vive en `/research`; sus llamadas y descargas usan `/research/api/*`. El Route Handler de Next.js lee el binding `CENTURY_BACKEND_URL` en cada petición y llama al servicio interno `backend`. El binding se declara en `research-app`; **no definas su variable manualmente**. No hay rewrites públicos hacia FastAPI ni dependencia del binding durante el build.
 
-FastAPI se ejecuta en un servidor externo persistente, con las dependencias de `backend/requirements-lock.txt`, `data/century/Data.zip` y una carpeta `CENTURY_LAB_RUNTIME` persistente. Define `CENTURY_ALLOWED_ORIGINS=https://tu-interfaz.vercel.app` en ese proceso; puedes incluir otros orígenes exactos separados por comas para un dominio propio o previews. El comando de arranque del servidor es `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8001` desde esta carpeta, detrás de la capa de acceso y TLS.
+Ambos servicios usan la raíz `research-app`. FastAPI tiene entrada `backend.main:app`, de modo que conserva los imports relativos y el dataset `data/century/Data.zip`. El build Python instala `pyproject.toml` con dependencias para exploración y previews. TensorFlow y el resto del entrenamiento local permanecen en `backend/requirements-lock.txt`.
 
-El entrenamiento, TensorFlow, los subprocesos y SQLite del laboratorio permanecen en ese backend. Streamlit también requiere alojamiento Python persistente y no se convierte en una aplicación Vercel. Consulta la [guía general](../docs/VERCEL.md).
+**En Vercel puedes explorar datos y revisar limpieza y particiones; el entrenamiento y el historial son locales.** La API informa `training_enabled: false`, la interfaz deshabilita entrenar y las peticiones directas de entrenamiento reciben un 503 explicativo. No se abre SQLite ni se lanzan procesos en este modo. Fuera de Vercel se conserva el comportamiento completo del laboratorio.
+
+Para probar Services usa `vercel dev -L` desde la raíz, con Node 24 y Python 3.12. La CLI reutiliza `.venv` si existe; si tu entorno local de entrenamiento usa Python 3.11, prueba Services en otro checkout para conservarlo. Para ejecutar solo el laboratorio conserva `npm run lab`: abre `http://127.0.0.1:3001/research`. El proxy local usa `CENTURY_API_ORIGIN` o `http://127.0.0.1:8001`; Vercel exige el binding y nunca usa ese fallback.
+
+Streamlit continúa como aplicación Python local independiente. Consulta la [guía general de Services](../docs/VERCEL.md).
 
 ## Cómo usarla
 

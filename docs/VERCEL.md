@@ -1,50 +1,63 @@
-# Despliegue en Vercel
+# Un proyecto Vercel con tres servicios
 
-## Tablero principal: raíz del repositorio
+El `vercel.json` de la raíz usa Vercel Services. Las opciones de build y funciones están dentro de cada servicio; las reglas públicas permanecen en la raíz. La distribución es:
 
-1. Importa el repositorio en Vercel, con **Root Directory `.`** y **Framework Preset `Other`**.
-2. Conserva los valores de `vercel.json`: instalación `npm ci`, build `npm run build`, salida `dist` y función `api/index.js` de Node.js. `package.json` fija Node **24.x**.
-3. Si necesitas el chat, configura `OPENAI_API_KEY` y opcionalmente `OPENAI_MODEL` en las variables de entorno de Vercel. La clave solo se usa en el servidor. Sin clave, el tablero funciona y el chat informa que falta configuración.
-4. Despliega y abre el dominio asignado. También puedes ejecutar `npx vercel` desde la raíz para crear un preview y `npx vercel --prod` cuando quieras publicar producción.
+| Servicio | Raíz | Acceso público | Llamadas internas |
+| --- | --- | --- | --- |
+| `app` | `.` | `/` y todas las rutas restantes, incluida su API `/api/*` | Ninguna |
+| `research-app` | `research-app` | `/research` y `/research/*` | `backend` mediante `CENTURY_BACKEND_URL` |
+| `backend` | `research-app` | Ninguno | Recibe las llamadas de `research-app` |
 
-Para verificar el build localmente:
+El backend comparte directorio raíz con Next.js porque `backend.main:app` utiliza imports de paquete y lee `data/century/Data.zip` desde esa carpeta. Son builds independientes: Next.js instala `package-lock.json`; FastAPI instala las dependencias ligeras de `pyproject.toml`. El backend no incluye TensorFlow ni los artefactos locales de entrenamiento.
+
+## Rutas y binding
+
+Las reglas de `/research` aparecen antes del catch-all. Se conserva el prefijo al entrar en Next.js, que tiene `basePath: /research`. El navegador llama a `/research/api/*`; un Route Handler Node procesa esas llamadas y consulta `CENTURY_BACKEND_URL` **durante cada petición**. No se usa el binding en el build, en `next.config.ts`, en middleware ni en el navegador.
+
+El binding se declara en el servicio que llama, `research-app`, con los cuatro campos `type`, `service`, `format` y `env`. Vercel inyecta la URL: **no configures `CENTURY_BACKEND_URL` manualmente**. El proxy conserva un posible prefijo interno de la URL, añade `/api/*`, transmite query, JSON y descargas, y comprueba el origen de las escrituras antes de comunicarse con FastAPI.
+
+El servicio `app` declara `api/index.js` como entrada Node y `npm run dev` como comando local explícito; su build incluye los archivos públicos y los módulos Three.js. El tablero mantiene `/api/*` para sus sensores, simulaciones, minas, modelos y chat. Enviar globalmente `/api/*` a FastAPI rompería ese tablero. FastAPI no tiene rewrite público: el binding no le concede una ruta de entrada pública. Sus endpoints `/api/*` solo se utilizan internamente a través del proxy.
+
+## Desarrollo y verificación
+
+Requisitos: Node 24, una versión reciente de Vercel CLI compatible con Services y Python 3.12 para el runtime de FastAPI. `vercel dev` administra los servicios y sus bindings:
+
+```bash
+vercel dev -L
+```
+
+`-L` permite verificar sin autenticar ni vincular un proyecto de Vercel. Con un proyecto ya vinculado puedes usar `vercel dev`. Si existe una `.venv` en `research-app`, la CLI la reutiliza: debe usar Python 3.12. Conserva el entorno Python 3.11 del entrenamiento local y usa otro checkout con una `.venv` 3.12 para probar Services si necesitas ambos.
+
+Comprobaciones en el dominio o puerto único:
+
+- `/` carga el tablero y `/api/health` identifica `M-1 Digital Twin`.
+- `/api/mines/century` y `/api/mines/pasco` cargan los datos públicos del visor.
+- `/research` carga Century Lab y sus recursos están bajo `/research/_next/`.
+- `/research/api/health` identifica `century-research-lab` e informa `training_enabled: false` en Vercel.
+- `/research/api/dataset` permite explorar los datos; POST `/research/api/preview` permite revisar limpieza y particiones.
+- POST `/research/api/experiments` devuelve 503 con una explicación; no crea trabajos que puedan perderse.
+- El frontend muestra que el entrenamiento es local y mantiene deshabilitado su botón de entrenamiento en este despliegue.
+- Una ruta como `/backend/api/health` no expone FastAPI.
+
+Para comprobar código y builds por separado:
 
 ```bash
 npm ci
 npm run build
 npm test
+npm --prefix research-app ci
+npm --prefix research-app run typecheck
+npm --prefix research-app run build
 ```
 
-El build produce `dist/index.html`, estilos, módulos del tablero, el bundle del chat y Three.js en `/vendor/three/`. Vercel sirve esos archivos estáticos y enruta `/api/*` a un único handler. La función incluye los artefactos de modelos, lluvia, Century y validación que se leen en ejecución. `.vercelignore` y las exclusiones de la función dejan fuera `.env`, bases locales, fuentes externas y el laboratorio Python.
+El build Next.js funciona sin `CENTURY_BACKEND_URL`; la comprobación de disponibilidad corresponde al handler en ejecución. Para ejecutar el laboratorio completo por separado, usa `npm run lab` desde `research-app`: su URL ahora es `http://127.0.0.1:3001/research`. Fuera de Vercel, el proxy usa `CENTURY_API_ORIGIN` o el backend local `http://127.0.0.1:8001`. Este fallback no se usa en Vercel.
 
-La entrada `api/index.js` importa `src/app.js` sin iniciar un servidor. `npm start` sigue iniciando `src/server.js` y conserva SQLite local en `data/local/sslope.sqlite`. Para otro volumen local puedes definir `SSLOPE_DB_PATH`; para hosts adicionales fuera de Vercel, `SSLOPE_ALLOWED_HOSTS` acepta nombres separados por comas, sin protocolo ni puerto. En Vercel se admiten los dominios que enruta la plataforma; los POST de navegador siguen exigiendo el mismo origen.
+## Publicación y límites
 
-## Almacenamiento y límites
+Importa el repositorio con Root Directory `.` y habilita Services en tu proyecto Vercel. La plataforma construye los tres servicios de forma independiente. Para activar el chat del tablero, configura `OPENAI_API_KEY` y opcionalmente `OPENAI_MODEL` como variables del proyecto. No publiques `.env` ni bases o resultados locales; `.vercelignore` conserva el código y el dataset del backend y excluye los entornos, claves e historiales.
 
-Vercel proporciona un [sistema de archivos de solo lectura y espacio temporal en `/tmp`](https://vercel.com/docs/functions/runtimes). En este despliegue SQLite usa una carpeta temporal de la instancia; nunca intenta escribir en el código desplegado. `/api/persistence/status` devuelve `ephemeral: true` y el tablero muestra **datos temporales**, con un aviso visible de su alcance.
+El tablero `app` conserva su modalidad demostrativa con SQLite temporal por instancia. El estado puede reiniciarse o variar entre peticiones y no está aislado por usuario. Para telemetría duradera sigue disponible Node/Docker con volumen persistente.
 
-Las escrituras pueden perderse cuando la instancia desaparezca. Distintas instancias tienen bases y simulaciones independientes: incluso peticiones consecutivas pueden consultar estados diferentes. El estado de una instancia se comparte entre quienes accedan a ella; no hay aislamiento por usuario. Esta modalidad sirve para demostrar el prototipo con los casos y datos públicos incluidos. No almacenes en ella telemetría que necesites conservar.
+En Vercel, Century Lab permite exploración y vistas previas sin abrir SQLite ni lanzar trabajadores. El entrenamiento completo, sus modelos y su historial permanecen disponibles localmente con `backend/requirements-lock.txt`. Llevar entrenamiento a la nube requiere integrar una cola de trabajos y almacenamiento duradero. Streamlit sigue siendo una aplicación Python local independiente.
 
-Para persistencia duradera, el despliegue Node/Docker existente con volumen sigue disponible. Usar una base externa desde Vercel exige implementar un repositorio remoto y resolver también el estado de simulaciones que ahora vive en memoria.
-
-La función tiene una duración máxima configurada de 120 segundos para cálculo y chat. La plataforma también limita el tamaño de las peticiones y respuestas: un JSON de importación o descarga grande puede superar ese límite antes del límite propio del programa (8 MB en el servidor local). Los entrenamientos Python se ejecutan fuera de Vercel. Los límites exactos dependen de la plataforma y del plan; consulta las [limitaciones de Functions](https://vercel.com/docs/functions/limitations).
-
-Antes de compartir una URL, recuerda que el prototipo no incluye autenticación multiusuario. Si habilitas el chat con una clave de pago, limita el acceso al despliegue. El control de frecuencia del chat es local a cada instancia.
-
-## Comprobaciones tras desplegar
-
-- `/` carga el tablero; Century y Cerro de Pasco muestran sus modelos y el visor 3D.
-- `/vendor/three/build/three.module.js` y `/vendor/chat-panel.js` responden como JavaScript.
-- `/api/health` devuelve `status: "ok"`.
-- `/api/persistence/status` devuelve `ephemeral: true`.
-- `/api/mines/century`, `/api/mines/pasco` y `/api/research/century` devuelven los casos incluidos.
-- `/api/chat/status` informa de la configuración sin exponer la clave.
-- En Laboratorio TA-01, una simulación o cambio de escenario responde sin errores de disco de solo lectura.
-
-## Century Lab: proyecto independiente
-
-Para la interfaz Next.js, crea otro proyecto con raíz `research-app`, preset **Next.js** y `CENTURY_API_ORIGIN` apuntando al origen HTTPS de un backend FastAPI externo. El backend necesita `CENTURY_ALLOWED_ORIGINS` con el origen exacto de la interfaz, sus datos, dependencias Python y almacenamiento persistente. Los previews tienen su propio origen y deben autorizarse explícitamente cuando se usen para escribir.
-
-La interfaz mantiene `/api/*` en el mismo dominio y utiliza rewrites al backend. El backend conserva entrenamientos y resultados entre peticiones. No se ejecuta dentro de la función del tablero principal. La versión Streamlit requiere un alojamiento Python persistente. Consulta el [README del laboratorio](../research-app/README.md).
-
-Referencias: [runtime Node.js](https://vercel.com/docs/functions/runtimes/node-js), [versiones de Node](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions) y [configuración de Vercel](https://vercel.com/docs/project-configuration/vercel-json).
+Referencias oficiales: [Services](https://vercel.com/docs/services), [routing](https://vercel.com/docs/services/routing), [bindings](https://vercel.com/docs/services/bindings), [configuración por servicio](https://vercel.com/docs/services/config-reference) y [FastAPI](https://vercel.com/docs/frameworks/backend/fastapi).

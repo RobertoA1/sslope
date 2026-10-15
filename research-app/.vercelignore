@@ -3,9 +3,7 @@
 node_modules
 .env
 .env.*
-backend
 crisp
-data
 runtime
 streamlit-runtime
 __pycache__
@@ -13,3 +11,5 @@ __pycache__
 *.pyc
 *.tsbuildinfo
 streamlit_app.py
+build
+*.egg-info

@@ -1,0 +1,24 @@
+[project]
+name = "century-research-api"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+# Deployment only serves exploration/previews. TensorFlow and the training
+# dependencies remain in backend/requirements-lock.txt for local execution.
+dependencies = [
+  "fastapi==0.141.1",
+  "uvicorn==0.54.0",
+  "numpy==2.4.6",
+  "pandas==2.3.3",
+  "scipy==1.17.1",
+  "scikit-learn==1.9.1",
+]
+
+[tool.vercel]
+entrypoint = "backend.main:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["backend"]

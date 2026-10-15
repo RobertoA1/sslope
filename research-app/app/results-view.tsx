@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ReferenceL
 import { ArrowRight, FileDown, FlaskConical } from 'lucide-react';
 import type { Artifact, Job, ModelName, Report, Trial } from './types';
 import { Card, DownloadLink, Note, Plot, axisStyle, gridStyle, tooltipStyle } from './components';
-import { colors, dateLabel, fmt, labels } from './helpers';
+import { colors, dateLabel, fmt, labels, researchApiPath } from './helpers';
 
 export function ResultsView({ report, job, files, trials }: { report: Report; job: Job; files: Artifact[]; trials: Trial[] }) {
   const [chosenModel, setModel] = useState<ModelName>(report.selected_model);
@@ -75,7 +75,7 @@ export function ResultsView({ report, job, files, trials }: { report: Report; jo
       </Card>
       <Card title="Modelos, datos e informe descargables" note="El ZIP incluye todo lo necesario para auditar este experimento. La red HDF5 necesita su contrato de preprocesamiento." wide>
         <div className="actions"><DownloadLink id={job.id} file="experiment.zip" primary>Paquete completo</DownloadLink><DownloadLink id={job.id} file="model-card.md">Ficha del experimento</DownloadLink>{report.best_neural_model && <DownloadLink id={job.id} file={`${report.best_neural_model}.h5`}>Mejor red por validación (.h5)</DownloadLink>}</div>
-        <div className="artifact-grid">{files.filter(f => f.name !== 'experiment.zip').map(f => <a key={f.name} href={`/api/experiments/${job.id}/files/${f.name}`} download><FileDown size={18}/><span><b>{f.name}</b><small>{fmt(f.bytes / 1024, 1)} KB</small></span><ArrowRight size={15}/></a>)}</div>
+        <div className="artifact-grid">{files.filter(f => f.name !== 'experiment.zip').map(f => <a key={f.name} href={researchApiPath(`/experiments/${job.id}/files/${encodeURIComponent(f.name)}`)} download><FileDown size={18}/><span><b>{f.name}</b><small>{fmt(f.bytes / 1024, 1)} KB</small></span><ArrowRight size={15}/></a>)}</div>
       </Card>
       <Card title="Procedencia y límites del resultado" note="Este laboratorio no modifica el gemelo del artículo ni demuestra estabilidad operacional." wide><ul className="limitations">{report.warnings.map(w => <li key={w}>{w}</li>)}</ul><details><summary>Ver versiones y contrato de datos</summary><div className="version-list">{Object.entries(report.versions).map(([k, v]) => <span key={k}>{k}: <b>{v}</b></span>)}</div><p className="small-copy hash">Dataset preparado SHA256: {report.audit.prepared_sha256}</p></details></Card>
     </div>

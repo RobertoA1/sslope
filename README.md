@@ -30,11 +30,11 @@ Tanto `npm start` como Docker Compose solo exponen el servicio a `127.0.0.1` del
 
 ## Desplegar en Vercel
 
-Importa este repositorio con **Root Directory `.`** y **Framework Preset `Other`**. `vercel.json` y `package.json` configuran Node 24, `npm ci`, `npm run build`, los estáticos en `dist` y una función Node compartida para `/api/*`. El build incluye el chat y los módulos Three.js del visor, sin entrenar modelos. Para activar el chat, añade `OPENAI_API_KEY` y, opcionalmente, `OPENAI_MODEL` en las variables de entorno del proyecto Vercel y vuelve a desplegar.
+El `vercel.json` de la raíz configura un único proyecto con tres servicios: **`app`** para el tablero y su API `/api/*`, **`research-app`** para Century Lab en `/research` y **`backend`** para FastAPI interno. Next.js llama a FastAPI mediante el binding `CENTURY_BACKEND_URL`, inyectado por Vercel durante las peticiones. No definas esa variable manualmente. Para probar los tres servicios y sus rutas usa `vercel dev -L` (Node 24 y Python 3.12).
 
-**En Vercel el tablero funciona como demostración con datos temporales por instancia.** Las importaciones, simulaciones y alertas pueden perderse o cambiar al atender una petición en otra instancia. El estado tampoco está aislado por usuario. Para conservar telemetría de forma duradera sigue usando Node/Docker con volumen persistente; una base de datos externa requiere una integración adicional. Los artefactos científicos incluidos se leen del despliegue y permanecen disponibles.
+El build del tablero incluye el chat y los módulos Three.js. Para activar el chat, configura `OPENAI_API_KEY` y opcionalmente `OPENAI_MODEL` en el proyecto Vercel. **El tablero usa datos temporales por instancia**; la persistencia duradera sigue disponible con Node/Docker y volumen.
 
-La [guía de Vercel](docs/VERCEL.md) incluye configuración, comprobaciones y límites. La interfaz Next.js de `research-app` se despliega como otro proyecto, con un backend FastAPI externo. La versión Streamlit requiere un servidor Python con procesos persistentes.
+Century Lab permite explorar los datos y revisar las particiones en Vercel. El entrenamiento y su historial permanecen locales; el backend cloud no lanza trabajadores ni escribe SQLite. La versión Streamlit sigue requiriendo un proceso Python persistente. Consulta la [guía de Services](docs/VERCEL.md) para rutas, binding, comprobaciones y límites.
 
 ## Chat contextual con OpenAI
 

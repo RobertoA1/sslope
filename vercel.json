@@ -1,20 +1,87 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "installCommand": "npm ci",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 120,
-      "includeFiles": "{data/rainfall/**,data/models/**,data/validation/**,data/generated/*.json,data/generated/century-prisms-daily.csv,public/mine-twin-frame.js}",
-      "excludeFiles": "{data/local/**,data/external/**,data/generated/ta01-*.csv,node_modules/three/**,public/vendor/**,public/samples/**,research-app/**,test/**,.env,.env.*}"
+  "services": {
+    "app": {
+      "root": ".",
+      "runtime": "node",
+      "entrypoint": "api/index.js",
+      "installCommand": "npm ci",
+      "buildCommand": "npm run build",
+      "devCommand": "npm run dev",
+      "outputDirectory": "dist",
+      "functions": {
+        "api/index.js": {
+          "maxDuration": 120,
+          "includeFiles": "{data/rainfall/**,data/models/**,data/validation/**,data/generated/*.json,data/generated/century-prisms-daily.csv,public/**,node_modules/three/{build,examples/jsm}/**}",
+          "excludeFiles": "{data/local/**,data/external/**,data/generated/ta01-*.csv,research-app/**,test/**,.env,.env.*}"
+        }
+      }
+    },
+    "research-app": {
+      "root": "research-app",
+      "framework": "nextjs",
+      "installCommand": "npm ci",
+      "buildCommand": "npm run build",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "backend",
+          "format": "url",
+          "env": "CENTURY_BACKEND_URL"
+        }
+      ]
+    },
+    "backend": {
+      "root": "research-app",
+      "framework": "fastapi",
+      "entrypoint": "backend.main:app",
+      "functions": {
+        "backend/main.py": {
+          "maxDuration": 120,
+          "includeFiles": "data/century/Data.zip",
+          "excludeFiles": "{node_modules/**,.next/**,.venv/**,runtime/**,streamlit-runtime/**,crisp/**,backend/test_*.py,.env,.env.*}"
+        }
+      }
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index" }
+    {
+      "source": "/research",
+      "destination": {
+        "service": "research-app"
+      }
+    },
+    {
+      "source": "/research/(.*)",
+      "destination": {
+        "service": "research-app"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "app"
+      }
+    }
   ],
   "headers": [
-    { "source": "/api/:path*", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/research/api/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
   ]
 }

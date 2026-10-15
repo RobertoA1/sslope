@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react';
 import { Download, Info, LoaderCircle } from 'lucide-react';
 import { ResponsiveContainer } from 'recharts';
+import { researchApiPath } from './helpers';
 
 export function Card({ title, note, children, wide = false }: { title: string; note?: string; children: ReactNode; wide?: boolean }) {
   return <section className={`card${wide ? ' wide' : ''}`}><div className="card-heading"><h3>{title}</h3>{note && <p>{note}</p>}</div>{children}</section>;
@@ -16,7 +17,7 @@ export function Loading({ message = 'Cargando datos reales…' }: { message?: st
   return <div className="empty"><LoaderCircle className="spin" size={25}/><p>{message}</p></div>;
 }
 export function DownloadLink({ id, file, children, primary = false }: { id: string; file: string; children: ReactNode; primary?: boolean }) {
-  return <a className={`button${primary ? ' primary' : ''}`} href={`/api/experiments/${id}/files/${encodeURIComponent(file)}`} download><Download size={16}/>{children}</a>;
+  return <a className={`button${primary ? ' primary' : ''}`} href={researchApiPath(`/experiments/${id}/files/${encodeURIComponent(file)}`)} download><Download size={16}/>{children}</a>;
 }
 export const gridStyle = { stroke: '#e9edf3', strokeDasharray: '3 3' };
 export const axisStyle = { tick: { fill: '#7a8698', fontSize: 11 }, axisLine: false, tickLine: false } as const;

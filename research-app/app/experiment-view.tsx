@@ -11,9 +11,9 @@ const descriptions: Record<ModelName, string> = {
   dense: 'Red neuronal de la ventana completa.', lstm: 'Red recurrente con memoria temporal.', gru: 'Red recurrente con menos compuertas que LSTM.',
 };
 
-export function ExperimentView({ config, onChange, preview, onPreview, onTrain, busy, cleaning, active, onCancel }: {
+export function ExperimentView({ config, onChange, preview, onPreview, onTrain, busy, cleaning, active, onCancel, trainingEnabled }: {
   config: Config; onChange: (value: Config) => void; preview: Preview | null; onPreview: () => void; onTrain: () => void;
-  busy: boolean; cleaning: boolean; active?: Job; onCancel: (job: Job) => void;
+  busy: boolean; cleaning: boolean; active?: Job; onCancel: (job: Job) => void; trainingEnabled: boolean;
 }) {
   const change = <K extends keyof Config>(key: K, value: Config[K]) => onChange({ ...config, [key]: value });
   const toggleModel = (name: ModelName) => {
@@ -50,7 +50,7 @@ export function ExperimentView({ config, onChange, preview, onPreview, onTrain, 
         <Card title="Qué se guardará" note="Cada experimento queda en el historial independiente del laboratorio."><div className="check-list">{['Predicciones por fecha y prisma, métricas y errores', 'Ensayos del ajuste y curvas de aprendizaje', 'Modelos entrenados y contrato de preprocesamiento', 'Limpieza, particiones, versiones, hashes y ficha del modelo'].map(v => <p key={v}><Check size={16}/>{v}</p>)}</div><Note>`.h5` es una exportación real de Keras. Las técnicas clásicas no se renombran a HDF5. Descarga el paquete completo para reproducir una inferencia.</Note></Card>
       </>}
       <Card title="Revisión antes de entrenar" note="Actualiza la vista previa después de cambiar las opciones." wide>
-        <div className="actions"><button className="button" onClick={onPreview} disabled={busy}><ScanLine size={16}/>{busy ? 'Calculando…' : 'Revisar limpieza y particiones'}</button>{!cleaning && <button className="button primary" onClick={onTrain} disabled={busy || !preview || !!active || config.models.length < 2}><Play size={16}/>Entrenar y comparar</button>}<span className="small-copy">{!preview ? 'Revisa los datos para habilitar el entrenamiento.' : 'Vista previa lista. La fuente original no se modifica.'}</span></div>
+        <div className="actions"><button className="button" onClick={onPreview} disabled={busy}><ScanLine size={16}/>{busy ? 'Calculando…' : 'Revisar limpieza y particiones'}</button>{!cleaning && <button className="button primary" onClick={onTrain} disabled={!trainingEnabled || busy || !preview || !!active || config.models.length < 2}><Play size={16}/>Entrenar y comparar</button>}<span className="small-copy">{!preview ? 'Revisa los datos para habilitar el entrenamiento.' : 'Vista previa lista. La fuente original no se modifica.'}</span></div>
         {preview && <>
           <div className="split-strip">{(['train', 'validation', 'test'] as const).map(k => <div key={k} className={`split ${k}`}><span>{labels[k]}</span><strong>{preview.partitions[k]} ventanas</strong><small>{preview.partition_dates[k].join(' a ')}</small></div>)}</div>
           <div className="audit-grid"><div><span>Lluvia imputada</span><b>{preview.rain_imputed_rows} registros</b></div><div><span>Huecos o variables ausentes</span><b>{preview.exclusions.gaps_or_missing_features} ventanas excluidas</b></div><div><span>Cruces de frontera</span><b>{preview.exclusions.crossing_boundary} excluidas</b></div><div><span>Prismas no vistos en train</span><b>{preview.exclusions.unseen_sensor} excluidas</b></div><div><span>Extremos de train</span><b>{preview.exclusions.train_outliers} excluidos</b></div><div><span>Variables del modelo</span><b>{preview.features.length} variables</b></div></div>

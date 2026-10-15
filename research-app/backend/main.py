@@ -9,16 +9,26 @@ from fastapi import FastAPI, HTTPException, Request, Query, Path as ApiPath
 from fastapi.responses import FileResponse
 from . import jobs
 from .data import ExperimentConfig, describe_dataset, prepare
-from .training import LABELS
+from .catalog import LABELS
+from .folds import training_folds
+
+
+def preview_only():
+    return os.environ.get("VERCEL") == "1"
+
+
+TRAINING_MESSAGE = "En esta versión puedes explorar los datos y revisar las particiones. El entrenamiento y su historial están disponibles al ejecutar Century Lab localmente."
 
 JobId = Annotated[str, ApiPath(pattern=r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$")]
 
 
 @asynccontextmanager
 async def lifespan(app):
-    jobs.initialize(recover=True)
+    if not preview_only():
+        jobs.initialize(recover=True)
     yield
-    jobs.shutdown()
+    if not preview_only():
+        jobs.shutdown()
 
 
 app = FastAPI(title="Century Research Lab", version="0.1.0", lifespan=lifespan)
@@ -40,7 +50,8 @@ async def local_writes(request: Request, call_next):
 @app.get("/api/health")
 def health():
     return {"application": "century-research-lab", "status": "ok", "tensorflow": importlib.util.find_spec("tensorflow") is not None, "models": LABELS,
-            "default_config": ExperimentConfig().model_dump(), "max_concurrent_jobs": 1}
+            "default_config": ExperimentConfig().model_dump(), "max_concurrent_jobs": 0 if preview_only() else 1,
+            "training_enabled": not preview_only(), "training_message": TRAINING_MESSAGE if preview_only() else ""}
 
 
 @app.get("/api/dataset")
@@ -56,7 +67,6 @@ def dataset(sensor: str | None = None, start: str | None = None, end: str | None
 @app.post("/api/preview")
 def preview(config: ExperimentConfig, sensor: str | None = None):
     try:
-        from .training import training_folds
         sets, audit, cleaned = prepare(config)
         folds = training_folds(config, sets)
         from .data import observations, json_records
@@ -77,12 +87,16 @@ def preview(config: ExperimentConfig, sensor: str | None = None):
 
 @app.get("/api/experiments")
 def experiments():
+    if preview_only():
+        return []
     jobs.refresh()
     return jobs.list_jobs()
 
 
 @app.post("/api/experiments", status_code=202)
 def create_experiment(config: ExperimentConfig):
+    if preview_only():
+        raise HTTPException(503, TRAINING_MESSAGE)
     try:
         # Validate before spawning. Avoid accepted jobs that cannot make temporal folds.
         preview(config)
@@ -92,6 +106,8 @@ def create_experiment(config: ExperimentConfig):
 
 
 def require_job(job_id):
+    if preview_only():
+        raise HTTPException(503, TRAINING_MESSAGE)
     jobs.refresh()
     row = jobs.get(job_id)
     if not row:
