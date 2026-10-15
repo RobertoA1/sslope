@@ -8,11 +8,10 @@
       "installCommand": "npm ci",
       "buildCommand": "npm run build",
       "devCommand": "npm run dev",
-      "outputDirectory": "dist",
       "functions": {
         "api/index.js": {
           "maxDuration": 120,
-          "includeFiles": "{data/rainfall/**,data/models/**,data/validation/**,data/generated/*.json,data/generated/century-prisms-daily.csv,public/**,node_modules/three/{build,examples/jsm}/**}",
+          "includeFiles": "{data/rainfall/**,data/models/**,data/validation/**,data/generated/*.json,data/generated/century-prisms-daily.csv,public/**,node_modules/three/{build,examples/jsm}/**,node_modules/openai/lib/responses/**}",
           "excludeFiles": "{data/local/**,data/external/**,data/generated/ta01-*.csv,research-app/**,test/**,.env,.env.*}"
         }
       }

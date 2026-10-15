@@ -54,11 +54,25 @@ test("la entrada Vercel admite dominios remotos, SQLite temporal, JSON parseado 
         let raw = "";
         res.setEncoding("utf8");
         res.on("data", (chunk) => { raw += chunk; });
-        res.on("end", () => resolve({ status: res.statusCode, headers: res.headers, data: JSON.parse(raw) }));
+        res.on("end", () => resolve({ status: res.statusCode, headers: res.headers,
+          data: res.headers["content-type"]?.includes("application/json") ? JSON.parse(raw) : raw }));
       });
       req.on("error", reject);
       req.end(body);
     });
+  }
+
+  // El mismo handler sirve HTML, JavaScript del navegador y módulos Three.js.
+  // El JavaScript se entrega como recurso; nunca se importa como servidor.
+  for (const [route, contentType, content] of [
+    ["/", "text/html", /src="\/app\.js"/],
+    ["/app.js", "text/javascript", /window\.location\.search/],
+    ["/vendor/three/build/three.module.js", "text/javascript", /export/]
+  ]) {
+    const asset = await request(route);
+    assert.equal(asset.status, 200, route);
+    assert.ok(asset.headers["content-type"].startsWith(contentType), route);
+    assert.match(asset.data, content, route);
   }
 
   const health = await request("/api/health");

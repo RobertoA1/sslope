@@ -1,14 +1,10 @@
 import "./build-chat.js";
-import { cp, mkdir, rm } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { rm } from "node:fs/promises";
 
 const root = new URL("../", import.meta.url);
-const output = new URL("dist/", root);
-await rm(output, { recursive: true, force: true });
-await mkdir(output, { recursive: true });
-await cp(new URL("public/", root), output, { recursive: true });
-// Conserva las rutas del importmap y los imports relativos de los addons.
-for (const folder of ["build", "examples/jsm"]) {
-  await cp(new URL(`node_modules/three/${folder}/`, root), new URL(`vendor/three/${folder}/`, output), { recursive: true });
-}
-console.log(`Tablero y recursos 3D listos en ${fileURLToPath(output)}`);
+// El constructor Node de Services busca servidores también en dist aunque
+// exista una entrada explícita. Una copia de public/app.js allí se ejecutaría
+// en Node (window no existe). El handler entrega public/ y Three.js directamente.
+// Elimina también la salida del build anterior si Vercel restaura su caché.
+await rm(new URL("dist/", root), { recursive: true, force: true });
+console.log("Chat listo; api/index.js sirve el tablero y los recursos 3D.");

@@ -18,6 +18,10 @@ El binding se declara en el servicio que llama, `research-app`, con los cuatro c
 
 El servicio `app` declara `api/index.js` como entrada Node y `npm run dev` como comando local explícito; su build incluye los archivos públicos y los módulos Three.js. El tablero mantiene `/api/*` para sus sensores, simulaciones, minas, modelos y chat. Enviar globalmente `/api/*` a FastAPI rompería ese tablero. FastAPI no tiene rewrite público: el binding no le concede una ruta de entrada pública. Sus endpoints `/api/*` solo se utilizan internamente a través del proxy.
 
+El build genera el chat en `public/vendor/` y el handler entrega `public/` y Three.js desde sus rutas originales. No se configura `outputDirectory`: el constructor Node de Services interpreta un `dist/app.js` como entrada del servidor incluso si se declara otra entrada. Copiar ahí el JavaScript del navegador provoca `ReferenceError: window is not defined`. El build elimina la antigua carpeta `dist/` para evitar recuperarla del caché.
+
+La función incluye explícitamente `node_modules/openai/lib/responses/`: el rastreador de dependencias puede omitir `ResponseInputItems.js`, que LangChain importa al arrancar el chat. Las pruebas del servidor deben comprobar también el artefacto de producción, ya que `vercel dev` utiliza las dependencias completas.
+
 ## Desarrollo y verificación
 
 Requisitos: Node 24, una versión reciente de Vercel CLI compatible con Services y Python 3.12 para el runtime de FastAPI. `vercel dev` administra los servicios y sus bindings:
