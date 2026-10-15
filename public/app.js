@@ -1259,8 +1259,11 @@ async function renderAlerts() {
 async function loadPersistenceStatus() {
   try {
     const status = await api("/api/persistence/status");
-    $("#connection-status").innerHTML = `<span class="dot"></span> Servicio activo · SQLite · ${status.counts.telemetry} variables`;
-    $("#connection-status").title = "Persistencia local en modo WAL; prototipo no replicado ni cifrado.";
+    $("#connection-status").innerHTML = `<span class="dot"></span> Servicio activo · ${status.ephemeral ? "datos temporales" : "SQLite"} · ${status.counts.telemetry} variables`;
+    $("#persistence-notice").hidden = !status.ephemeral;
+    $("#connection-status").title = status.ephemeral
+      ? "Modo demostración: las importaciones y simulaciones pueden perderse al reiniciar o cambiar de instancia; el estado no se comparte entre instancias ni se aísla por usuario."
+      : "Persistencia local en modo WAL; prototipo no replicado ni cifrado.";
   } catch {
     $("#connection-status").innerHTML = '<span class="dot"></span> Servicio activo · memoria temporal';
   }

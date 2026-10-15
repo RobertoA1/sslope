@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 120,
+      "includeFiles": "{data/rainfall/**,data/models/**,data/validation/**,data/generated/*.json,data/generated/century-prisms-daily.csv,public/mine-twin-frame.js}",
+      "excludeFiles": "{data/local/**,data/external/**,data/generated/ta01-*.csv,node_modules/three/**,public/vendor/**,public/samples/**,research-app/**,test/**,.env,.env.*}"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" }
+  ],
+  "headers": [
+    { "source": "/api/:path*", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }
+  ]
+}

@@ -1,0 +1,16 @@
+.git
+.agents
+.aws
+.codex
+.env
+.env.*
+node_modules
+dist
+public/vendor
+data/local
+data/external
+research-app
+artifacts
+test
+__pycache__
+*.pyc

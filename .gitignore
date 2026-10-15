@@ -6,3 +6,5 @@ data/local/
 public/vendor/
 __pycache__/
 *.pyc
+dist/
+.vercel/

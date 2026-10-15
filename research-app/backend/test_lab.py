@@ -167,6 +167,14 @@ def test_api_bad_filters_and_foreign_writes(client, config):
     assert client.post("/api/preview", json=config.model_dump(), headers={"Origin": "https://foreign.example"}).status_code == 403
 
 
+def test_api_configured_remote_origin_is_exact(client, config, monkeypatch):
+    monkeypatch.setenv("CENTURY_ALLOWED_ORIGINS", " https://century.example.org/,https://century-preview.vercel.app ")
+    for origin in ["https://century.example.org", "https://century-preview.vercel.app"]:
+        assert client.post("/api/preview", json=config.model_dump(), headers={"Origin": origin}).status_code == 200
+    for origin in ["https://century.example.org.foreign.example", "http://century.example.org", "https://foreign.example"]:
+        assert client.post("/api/preview", json=config.model_dump(), headers={"Origin": origin}).status_code == 403
+
+
 def test_api_no_report_for_missing_or_failed_job(client, config):
     assert client.get("/api/experiments/not-a-uuid/report").status_code == 422
     missing = "11111111-1111-4111-8111-111111111111"

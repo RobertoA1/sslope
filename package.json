@@ -5,6 +5,7 @@
   "description": "MVP de gemelo digital híbrido para pronóstico de estabilidad de taludes.",
   "type": "module",
   "scripts": {
+    "build": "node scripts/build-vercel.js",
     "build:chat": "node scripts/build-chat.js",
     "prestart": "npm run build:chat",
     "predev": "npm run build:chat",
@@ -38,7 +39,7 @@
     "prepare:mine-twins": "node scripts/prepare-mine-twins.js"
   },
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   },
   "dependencies": {
     "@ai-sdk/langchain": "^3.0.118",

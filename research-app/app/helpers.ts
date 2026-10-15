@@ -17,7 +17,7 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
       const body = await res.json();
       detail = typeof body.detail === 'string' ? body.detail : Array.isArray(body.detail) ? body.detail.map((v: { msg: string }) => v.msg).join('. ') : '';
     } catch { /* Proxy unavailable or non-JSON failure. */ }
-    throw new Error(detail || `No se pudo conectar con la API (${res.status}). Comprueba que FastAPI esté ejecutándose en el puerto 8001.`);
+    throw new Error(detail || `No se pudo conectar con la API de investigación (${res.status}). Comprueba la disponibilidad del backend.`);
   }
   return res.json();
 }

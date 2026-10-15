@@ -38,7 +38,15 @@ También se pueden arrancar por separado en dos terminales:
 npm start
 ```
 
-Aplicación local de investigación: no está preparada para exposición pública. No tiene autenticación multiusuario. Se rechazan escrituras de otros orígenes de navegador y solo se descargan artefactos autorizados de un experimento. No abrir estos servicios a Internet.
+Aplicación de investigación sin autenticación multiusuario. Se rechazan escrituras de otros orígenes de navegador y solo se descargan artefactos autorizados de un experimento. Para acceso remoto, utiliza una capa de autenticación y TLS.
+
+## Interfaz Next.js en Vercel
+
+Crea un proyecto Vercel con **Root Directory `research-app`** y preset **Next.js**. Configura `CENTURY_API_ORIGIN=https://tu-backend.example.org` antes del build: debe ser un origen HTTPS, sin `/api`, rutas ni credenciales. Las peticiones del navegador siguen usando `/api/*` en el mismo dominio y Next.js las reenvía al backend configurado. Cambiar esta variable requiere un nuevo despliegue. Sin ella, un build en Vercel falla con un mensaje explícito; localmente se conserva el backend en el puerto 8001.
+
+FastAPI se ejecuta en un servidor externo persistente, con las dependencias de `backend/requirements-lock.txt`, `data/century/Data.zip` y una carpeta `CENTURY_LAB_RUNTIME` persistente. Define `CENTURY_ALLOWED_ORIGINS=https://tu-interfaz.vercel.app` en ese proceso; puedes incluir otros orígenes exactos separados por comas para un dominio propio o previews. El comando de arranque del servidor es `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8001` desde esta carpeta, detrás de la capa de acceso y TLS.
+
+El entrenamiento, TensorFlow, los subprocesos y SQLite del laboratorio permanecen en ese backend. Streamlit también requiere alojamiento Python persistente y no se convierte en una aplicación Vercel. Consulta la [guía general](../docs/VERCEL.md).
 
 ## Cómo usarla
 

@@ -6,7 +6,7 @@ MVP académico de un gemelo digital para pronóstico de estabilidad de taludes d
 
 ## Ejecutar
 
-Se requiere Node.js 24 o superior, porque la persistencia usa el módulo SQLite incorporado en Node.
+Se requiere Node.js 24.x, porque la persistencia usa el módulo SQLite incorporado en Node.
 
 ```powershell
 npm install
@@ -27,6 +27,14 @@ docker compose up --build
 
 El contenedor publica el puerto `3000`, incluye un `HEALTHCHECK` sobre `/api/health` y conserva `data/local` en el volumen `sslope-local`.
 Tanto `npm start` como Docker Compose solo exponen el servicio a `127.0.0.1` del equipo anfitrión. Si se instala en una red, se necesita una capa de autenticación, TLS y autorización antes de admitir telemetría real.
+
+## Desplegar en Vercel
+
+Importa este repositorio con **Root Directory `.`** y **Framework Preset `Other`**. `vercel.json` y `package.json` configuran Node 24, `npm ci`, `npm run build`, los estáticos en `dist` y una función Node compartida para `/api/*`. El build incluye el chat y los módulos Three.js del visor, sin entrenar modelos. Para activar el chat, añade `OPENAI_API_KEY` y, opcionalmente, `OPENAI_MODEL` en las variables de entorno del proyecto Vercel y vuelve a desplegar.
+
+**En Vercel el tablero funciona como demostración con datos temporales por instancia.** Las importaciones, simulaciones y alertas pueden perderse o cambiar al atender una petición en otra instancia. El estado tampoco está aislado por usuario. Para conservar telemetría de forma duradera sigue usando Node/Docker con volumen persistente; una base de datos externa requiere una integración adicional. Los artefactos científicos incluidos se leen del despliegue y permanecen disponibles.
+
+La [guía de Vercel](docs/VERCEL.md) incluye configuración, comprobaciones y límites. La interfaz Next.js de `research-app` se despliega como otro proyecto, con un backend FastAPI externo. La versión Streamlit requiere un servidor Python con procesos persistentes.
 
 ## Chat contextual con OpenAI
 

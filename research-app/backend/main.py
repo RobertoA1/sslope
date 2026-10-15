@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 import importlib.util
 import json
+import os
 import re
 import sqlite3
 from fastapi import FastAPI, HTTPException, Request, Query, Path as ApiPath
@@ -25,10 +26,12 @@ app = FastAPI(title="Century Research Lab", version="0.1.0", lifespan=lifespan)
 
 @app.middleware("http")
 async def local_writes(request: Request, call_next):
-    # Local laboratory, not an authenticated public service. Reject foreign browser origins.
+    # Configurar orígenes exactos permite usar la interfaz remota con el backend persistente.
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         origin = request.headers.get("origin")
-        if origin and origin not in {"http://127.0.0.1:3001", "http://localhost:3001", "http://127.0.0.1:8001", "http://localhost:8001"}:
+        allowed_origins = {"http://127.0.0.1:3001", "http://localhost:3001", "http://127.0.0.1:8001", "http://localhost:8001"}
+        allowed_origins.update(value.strip().rstrip("/") for value in os.environ.get("CENTURY_ALLOWED_ORIGINS", "").split(",") if value.strip())
+        if origin and origin not in allowed_origins:
             from fastapi.responses import JSONResponse
             return JSONResponse({"detail": "Origen no autorizado para modificar experimentos"}, status_code=403)
     return await call_next(request)

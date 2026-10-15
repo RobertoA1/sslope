@@ -1,0 +1,15 @@
+.venv
+.next
+node_modules
+.env
+.env.*
+backend
+crisp
+data
+runtime
+streamlit-runtime
+__pycache__
+.pytest_cache
+*.pyc
+*.tsbuildinfo
+streamlit_app.py

@@ -8,8 +8,9 @@ const parsed = (value, fallback = null) => {
 };
 
 export class OperationalRepository {
-  constructor(filePath) {
+  constructor(filePath, { ephemeral = false } = {}) {
     this.filePath = path.resolve(filePath);
+    this.ephemeral = ephemeral;
     mkdirSync(path.dirname(this.filePath), { recursive: true });
     this.db = new DatabaseSync(this.filePath);
     this.db.exec(`
@@ -193,10 +194,11 @@ export class OperationalRepository {
     const tables = ["sensors", "telemetry", "geometry_versions", "fem_runs", "model_versions", "forecasts", "alerts", "operational_events", "experiments"];
     return {
       engine: "SQLite",
+      ephemeral: this.ephemeral,
       filePath: this.filePath,
       journalMode: this.db.prepare("PRAGMA journal_mode").get().journal_mode,
       counts: Object.fromEntries(tables.map((table) => [table, this.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count])),
-      scientificStatus: "PERSISTENCIA_LOCAL_DE_PROTOTIPO_NO_REPLICA_NO_CIFRADA"
+      scientificStatus: this.ephemeral ? "ALMACENAMIENTO_TEMPORAL_POR_INSTANCIA_NO_DURABLE" : "PERSISTENCIA_LOCAL_DE_PROTOTIPO_NO_REPLICA_NO_CIFRADA"
     };
   }
 
