@@ -1,0 +1,75 @@
+{
+  "template_sha256": "bb10cc69c58e6f7394bdc0b69a90ce435f77c2dab0e0c99520000c93db34967c",
+  "source_unchanged": true,
+  "metric_cells_unchanged": true,
+  "abstract_words": 206,
+  "croatian_abstract_words": 203,
+  "main_tables": 6,
+  "appendix_tables": 1,
+  "figure_count": 6,
+  "native_equations": 4,
+  "reference_count": 46,
+  "preserve_only_parts_identical": true,
+  "figures": {
+    "Figure_1.jpg": {
+      "pixels": [
+        2197,
+        1044
+      ],
+      "dpi": [
+        400,
+        400
+      ]
+    },
+    "Figure_2.jpg": {
+      "pixels": [
+        2766,
+        1246
+      ],
+      "dpi": [
+        400,
+        400
+      ]
+    },
+    "Figure_3.jpg": {
+      "pixels": [
+        2766,
+        1246
+      ],
+      "dpi": [
+        400,
+        400
+      ]
+    },
+    "Figure_4.jpg": {
+      "pixels": [
+        2766,
+        1246
+      ],
+      "dpi": [
+        400,
+        400
+      ]
+    },
+    "Figure_5.jpg": {
+      "pixels": [
+        2766,
+        1326
+      ],
+      "dpi": [
+        400,
+        400
+      ]
+    },
+    "Figure_6.jpg": {
+      "pixels": [
+        2766,
+        1246
+      ],
+      "dpi": [
+        400,
+        400
+      ]
+    }
+  }
+}
