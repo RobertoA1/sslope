@@ -8,7 +8,7 @@ El `vercel.json` de la raíz usa Vercel Services. Las opciones de build y funcio
 | `research-app` | `research-app` | `/research` y `/research/*` | `backend` mediante `CENTURY_BACKEND_URL` |
 | `backend` | `research-app` | Ninguno | Recibe las llamadas de `research-app` |
 
-El backend comparte directorio raíz con Next.js porque `backend.main:app` utiliza imports de paquete y lee `data/century/Data.zip` desde esa carpeta. Son builds independientes: Next.js instala `package-lock.json`; FastAPI instala las dependencias ligeras de `pyproject.toml`. El backend no incluye TensorFlow ni los artefactos locales de entrenamiento.
+El backend comparte directorio raíz con Next.js porque `backend.main:app` utiliza imports de paquete y lee `data/century/Data.zip` desde esa carpeta. Son builds independientes: Next.js instala `package-lock.json`. Para FastAPI, `pyproject.toml` y `backend/requirements.txt` declaran las mismas dependencias ligeras de exploración. El build de producción busca junto a la entrada `backend/main.py` y puede elegir ese `requirements.txt`; `backend/.python-version` fija Python 3.12 también en ese caso. El backend no incluye TensorFlow ni los artefactos locales de entrenamiento. El comando de build elimina únicamente las carpetas de pruebas de NumPy, pandas, SciPy y scikit-learn del entorno desechable de Vercel. Conserva los módulos de cálculo y las bibliotecas nativas; no modifica el entorno local ni los cortes cronológicos.
 
 ## Rutas y binding
 
@@ -54,10 +54,12 @@ El build Next.js funciona sin `CENTURY_BACKEND_URL`; la comprobación de disponi
 
 ## Publicación y límites
 
+Si un build anterior instaló TensorFlow desde `backend/requirements.txt`, vuelve a desplegar estos cambios sin reutilizar el caché de build. El log debe seleccionar Python 3.12 y el archivo ligero de la API; las dependencias de entrenamiento no deben aparecer en el paquete.
+
 Importa el repositorio con Root Directory `.` y habilita Services en tu proyecto Vercel. La plataforma construye los tres servicios de forma independiente. Para activar el chat del tablero, configura `OPENAI_API_KEY` y opcionalmente `OPENAI_MODEL` como variables del proyecto. No publiques `.env` ni bases o resultados locales; `.vercelignore` conserva el código y el dataset del backend y excluye los entornos, claves e historiales.
 
 El tablero `app` conserva su modalidad demostrativa con SQLite temporal por instancia. El estado puede reiniciarse o variar entre peticiones y no está aislado por usuario. Para telemetría duradera sigue disponible Node/Docker con volumen persistente.
 
-En Vercel, Century Lab permite exploración y vistas previas sin abrir SQLite ni lanzar trabajadores. El entrenamiento completo, sus modelos y su historial permanecen disponibles localmente con `backend/requirements-lock.txt`. Llevar entrenamiento a la nube requiere integrar una cola de trabajos y almacenamiento duradero. Streamlit sigue siendo una aplicación Python local independiente.
+En Vercel, Century Lab permite exploración y vistas previas sin abrir SQLite ni lanzar trabajadores. El entrenamiento completo, sus modelos y su historial permanecen disponibles localmente con `backend/requirements-lock.txt`; `backend/requirements-training.txt` conserva además las dependencias de entrenamiento con rangos de versiones. No añadas TensorFlow al `backend/requirements.txt` de despliegue. Llevar entrenamiento a la nube requiere integrar una cola de trabajos y almacenamiento duradero. Streamlit sigue siendo una aplicación Python local independiente.
 
 Referencias oficiales: [Services](https://vercel.com/docs/services), [routing](https://vercel.com/docs/services/routing), [bindings](https://vercel.com/docs/services/bindings), [configuración por servicio](https://vercel.com/docs/services/config-reference) y [FastAPI](https://vercel.com/docs/frameworks/backend/fastapi).

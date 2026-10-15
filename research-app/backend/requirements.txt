@@ -1,12 +1,8 @@
-fastapi>=0.115,<1
-uvicorn>=0.34,<1
-pandas>=2.2,<3
-numpy>=2,<3
-scipy>=1.15,<2
-scikit-learn>=1.6,<2
-optuna>=4,<6
-tensorflow-cpu>=2.19,<3
-h5py>=3.12,<4
-joblib>=1.4,<2
-pytest>=8,<10
-httpx>=0.28,<1
+# Exploration/preview API deployed by Vercel. Keep aligned with ../pyproject.toml.
+# Local training: requirements-lock.txt (pinned) or requirements-training.txt.
+fastapi==0.141.1
+uvicorn==0.54.0
+numpy==2.4.6
+pandas==2.3.3
+scipy==1.17.1
+scikit-learn==1.9.1

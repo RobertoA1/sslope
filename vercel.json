@@ -41,7 +41,8 @@
           "includeFiles": "data/century/Data.zip",
           "excludeFiles": "{node_modules/**,.next/**,.venv/**,runtime/**,streamlit-runtime/**,crisp/**,backend/test_*.py,.env,.env.*}"
         }
-      }
+      },
+      "buildCommand": "python scripts/prepare-vercel-backend.py"
     }
   },
   "rewrites": [
