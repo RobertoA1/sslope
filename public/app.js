@@ -5,6 +5,9 @@ import { amplificationFromSlider, sliderFromAmplification } from "./displacement
 import { setupProjectChat } from "./vendor/chat-panel.js";
 import { setupDashboardTabs } from "./dashboard-layout.js";
 import { MineTwinController } from "./mine-twin-controller.js";
+import { setupArtifactTools, registerCanvasExporter } from "./artifact-tools.js";
+import { renderArticleFigures, articleScope } from "./article-figures.js";
+import { loadArticleTables } from "./article-tables.js";
 
 const $ = (selector) => document.querySelector(selector);
 const api = async (path, options) => {
@@ -65,10 +68,11 @@ function riskMessage(level) {
 }
 function riskColor(level) { return ({ NORMAL:"#48e2c2", VIGILANCIA:"#ffca6a", ALERTA:"#ff9655", CRITICO:"#ff6374" })[level]; }
 
-function drawChart(rows, forecast) {
+function drawChart(rows, forecast, output = null) {
   if (!forecast || !rows?.length) return;
-  const canvas = $("#chart"), ctx = canvas.getContext("2d"), width = canvas.width, height = canvas.height;
-  const dpr = window.devicePixelRatio || 1; const cssWidth = canvas.clientWidth;
+  const canvas = output || $("#chart"), ctx = canvas.getContext("2d");
+  const cssWidth = (output ? $("#chart").clientWidth : canvas.clientWidth) || 900;
+  const dpr = output ? Math.max(3, 4096 / cssWidth) : Math.max(2, window.devicePixelRatio || 1);
   canvas.width = cssWidth * dpr; canvas.height = 260 * dpr; ctx.scale(dpr, dpr);
   const w = cssWidth, h = 260, pad = { left:48,right:22,top:18,bottom:29 };
   ctx.clearRect(0,0,w,h); const values = rows.map((x) => x.displacementMm).concat([forecast.predictedDisplacementMm]);
@@ -1336,6 +1340,16 @@ setupProjectChat(() => ({
   externalViewerActive, mineTwinSnapshot:mineController?.snapshot(),
   ...(mineController?.caseId !== "LAB" ? { forecast:null, readings:[], twin:null, weather:null, femRun:null, researchExperiment:null, geometryAsset:null, photoApproximation:null } : {})
 }));
+renderArticleFigures(document.getElementById('article-figures'));
+loadArticleTables(document.getElementById('article-tables'));
+document.getElementById('article-scope').textContent = articleScope;
+setupArtifactTools(document);
+registerCanvasExporter($("#scene-3d"), () => sceneRenderer ? sceneRenderer.capturePng() : $("#scene-3d").toDataURL("image/png"));
+registerCanvasExporter($("#chart"), () => {
+  const output = document.createElement("canvas");
+  drawChart(scene.readings, scene.forecast, output);
+  return output.toDataURL("image/png");
+});
 if (!isViewerWindow && mineController.caseId === "LAB") loadLaboratoryEvidence();
 if (!isViewerWindow) loadPersistenceStatus();
 refresh();

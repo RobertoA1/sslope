@@ -1,4 +1,5 @@
 'use client';
+import { TableArtifact } from './artifact-panel';
 import { Check, Play, ScanLine, Square, ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, Tooltip, XAxis, YAxis } from 'recharts';
 import type { Config, Job, ModelName, Preview } from './types';
@@ -54,7 +55,7 @@ export function ExperimentView({ config, onChange, preview, onPreview, onTrain, 
         {preview && <>
           <div className="split-strip">{(['train', 'validation', 'test'] as const).map(k => <div key={k} className={`split ${k}`}><span>{labels[k]}</span><strong>{preview.partitions[k]} ventanas</strong><small>{preview.partition_dates[k].join(' a ')}</small></div>)}</div>
           <div className="audit-grid"><div><span>Lluvia imputada</span><b>{preview.rain_imputed_rows} registros</b></div><div><span>Huecos o variables ausentes</span><b>{preview.exclusions.gaps_or_missing_features} ventanas excluidas</b></div><div><span>Cruces de frontera</span><b>{preview.exclusions.crossing_boundary} excluidas</b></div><div><span>Prismas no vistos en train</span><b>{preview.exclusions.unseen_sensor} excluidas</b></div><div><span>Extremos de train</span><b>{preview.exclusions.train_outliers} excluidos</b></div><div><span>Variables del modelo</span><b>{preview.features.length} variables</b></div></div>
-          <div className="table-scroll"><table><thead><tr><th>Fold de ajuste</th><th>Ventanas train</th><th>Última fecha train</th><th>Ventanas validación interna</th><th>Primera fecha validación</th></tr></thead><tbody>{preview.folds.map((f, i) => <tr key={i}><td>{i + 1}</td><td>{f.train}</td><td>{f.train_end}</td><td>{f.validation}</td><td>{f.validation_start}</td></tr>)}</tbody></table></div>
+          <TableArtifact><table><thead><tr><th>Fold de ajuste</th><th>Ventanas train</th><th>Última fecha train</th><th>Ventanas validación interna</th><th>Primera fecha validación</th></tr></thead><tbody>{preview.folds.map((f, i) => <tr key={i}><td>{i + 1}</td><td>{f.train}</td><td>{f.train_end}</td><td>{f.validation}</td><td>{f.validation_start}</td></tr>)}</tbody></table></TableArtifact>
         </>}
       </Card>
       {preview && <>
@@ -62,7 +63,7 @@ export function ExperimentView({ config, onChange, preview, onPreview, onTrain, 
           <Plot><ComposedChart data={preview.series} margin={{ top: 15, right: 12, left: 0, bottom: 0 }}><CartesianGrid {...gridStyle}/><XAxis dataKey="date" tickFormatter={dateLabel} {...axisStyle} minTickGap={25}/><YAxis {...axisStyle} width={48}/><Tooltip contentStyle={tooltipStyle} labelFormatter={v => String(v).slice(0, 10)}/><Legend wrapperStyle={{ fontSize: 11 }}/><Bar dataKey="rain_before" name="Original (mm)" fill="#bdd4e8" maxBarSize={12} isAnimationActive={false}/><Line dataKey="rain" name="Preparada (mm)" stroke="#168c88" strokeDasharray="4 3" dot={false} connectNulls={false} isAnimationActive={false}/></ComposedChart></Plot>
         </Card>
         <Card title="Registro de la limpieza" note="Muestra del prisma elegido. Una lluvia 0 permanece 0; una lluvia ausente se mantiene vacía o marcada como imputada.">
-          <div className="table-scroll bounded"><table><thead><tr><th>Fecha</th><th>Despl. mm</th><th>Lluvia antes</th><th>Después</th><th>Imputada</th></tr></thead><tbody>{preview.series.map(r => <tr key={r.date}><td>{r.date.slice(0, 10)}</td><td>{fmt(r.movement)}</td><td>{fmt(r.rain_before)}</td><td>{fmt(r.rain)}</td><td>{r.rain_imputed ? 'Sí · pasada' : 'No'}</td></tr>)}</tbody></table></div>
+          <TableArtifact bounded><table><thead><tr><th>Fecha</th><th>Despl. mm</th><th>Lluvia antes</th><th>Después</th><th>Imputada</th></tr></thead><tbody>{preview.series.map(r => <tr key={r.date}><td>{r.date.slice(0, 10)}</td><td>{fmt(r.movement)}</td><td>{fmt(r.rain_before)}</td><td>{fmt(r.rain)}</td><td>{r.rain_imputed ? 'Sí · pasada' : 'No'}</td></tr>)}</tbody></table></TableArtifact>
         </Card>
       </>}
     </div>

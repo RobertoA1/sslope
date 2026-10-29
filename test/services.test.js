@@ -11,7 +11,10 @@ test('services keep dashboard API, lab paths and the private backend separate', 
   for (const pathname of ['/', '/api/health', '/api/mines/century', '/researching']) assert.equal(route(pathname), 'app');
   for (const pathname of ['/research', '/research/', '/research/api/preview', '/research/_next/static/app.js']) assert.equal(route(pathname), 'research-app');
   assert.ok(!config.rewrites.some(rule => rule.destination.service === 'backend'));
-  assert.deepEqual(config.services['research-app'].bindings, [{ type: 'service', service: 'backend', format: 'url', env: 'CENTURY_BACKEND_URL' }]);
+  assert.deepEqual(config.services['research-app'].bindings, [
+    { type: 'service', service: 'app', format: 'url', env: 'APP_INTERNAL_URL' },
+    { type: 'service', service: 'backend', format: 'url', env: 'CENTURY_BACKEND_URL' }
+  ]);
   assert.equal(config.services.backend.root, 'research-app');
   assert.equal(LAB_BASE_PATH, '/research');
   assert.equal(researchApiPath('/experiments/id/files/model.h5'), '/research/api/experiments/id/files/model.h5');

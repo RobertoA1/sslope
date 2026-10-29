@@ -13,6 +13,9 @@ import { serveCenturyStudy } from "./century-study.js";
 import { serveMineTwin, mineServerSnapshot } from "./mine-twins.js";
 import { chatConfiguration, createChatGate, serveProjectChat, publicChatError } from "./chat/chat-service.js";
 import { runtimeConfiguration, requestHostAllowed, requestOriginAllowed } from "./runtime.js";
+import { createTableInterpreter } from "./chat/table-analysis.js";
+
+const interpretTable = createTableInterpreter();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
@@ -204,8 +207,8 @@ async function staticFile(res, requestPath) {
   if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) return sendJson(res, 403, { error: "Ruta no permitida" });
   try {
     const content = await readFile(resolved);
-    const type = resolved.endsWith(".css") ? "text/css" : resolved.endsWith(".js") ? "text/javascript" : resolved.endsWith(".json") ? "application/json" : resolved.endsWith(".csv") ? "text/csv" : resolved.endsWith(".dxf") ? "application/dxf" : "text/html";
-    res.writeHead(200, { "Content-Type": `${type}; charset=utf-8` });
+    const type = { ".css": "text/css", ".js": "text/javascript", ".json": "application/json", ".csv": "text/csv", ".dxf": "application/dxf", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".svg": "image/svg+xml", ".webp": "image/webp", ".gif": "image/gif" }[path.extname(resolved).toLowerCase()] || "text/html";
+    res.writeHead(200, { "Content-Type": type.startsWith("image/") ? type : `${type}; charset=utf-8` });
     res.end(content);
   } catch {
     sendJson(res, 404, { error: "Recurso no encontrado" });
@@ -228,6 +231,25 @@ export default async function handler(req, res) {
     if (req.method === "GET" && url.pathname === "/api/chat/status") {
       res.setHeader("Cache-Control", "no-store");
       return sendJson(res, 200, chatConfiguration());
+    }
+    if (req.method === "POST" && url.pathname === "/api/tables/explain") {
+      try {
+        if (!req.headers["content-type"]?.toLowerCase().startsWith("application/json")) return sendJson(res, 415, { error: "La interpretación requiere application/json." });
+        let body;
+        try { body = await getBody(req, 240000); }
+        catch { return sendJson(res, 400, { error: "JSON inválido o tabla demasiado grande (máximo 240 kB)." }); }
+        const controller = new AbortController();
+        const onClose = () => { if (!res.writableEnded) controller.abort(); };
+        res.on("close", onClose);
+        try {
+          const value = await interpretTable(body, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(90000)]),
+            admit: () => admitChat(req.socket.remoteAddress || "local") });
+          return sendJson(res, 200, value);
+        } finally { res.off("close", onClose); }
+      } catch (error) {
+        const safe = publicChatError(error);
+        return sendJson(res, safe.status, { error: safe.message });
+      }
     }
     if (req.method === "POST" && url.pathname === "/api/chat") {
       let release;

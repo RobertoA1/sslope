@@ -11,7 +11,7 @@
       "functions": {
         "api/index.js": {
           "maxDuration": 120,
-          "includeFiles": "{data/rainfall/**,data/models/**,data/validation/**,data/generated/*.json,data/generated/century-prisms-daily.csv,public/**,node_modules/three/{build,examples/jsm}/**,node_modules/openai/lib/responses/**}",
+          "includeFiles": "{data/{rainfall,models,validation}/**,data/generated/{*.json,century-prisms-daily.csv},public/**,node_modules/{three/{build,examples/jsm}/**,openai/lib/responses/**,@langchain/langgraph-sdk/dist/node_modules/.pnpm/**/package.json}}",
           "excludeFiles": "{data/local/**,data/external/**,data/generated/ta01-*.csv,research-app/**,test/**,.env,.env.*}"
         }
       }
@@ -22,6 +22,12 @@
       "installCommand": "npm ci",
       "buildCommand": "npm run build",
       "bindings": [
+        {
+          "type": "service",
+          "service": "app",
+          "format": "url",
+          "env": "APP_INTERNAL_URL"
+        },
         {
           "type": "service",
           "service": "backend",

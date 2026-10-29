@@ -12,6 +12,11 @@ export function chatConfiguration(env = process.env) {
   return { configured: Boolean(env.OPENAI_API_KEY?.trim()), model: env.OPENAI_MODEL?.trim() || "gpt-4o-mini", provider: "OpenAI" };
 }
 
+export function createProjectModel(configuration, env = process.env) {
+  return new ChatOpenAI({ apiKey: env.OPENAI_API_KEY.trim(), model: configuration.model,
+    maxTokens: 1800, timeout: 60000, maxRetries: 0 });
+}
+
 export function validateChatRequest(body) {
   if (!body || !Array.isArray(body.messages) || !body.messages.length || body.messages.length > 20) {
     throw new ChatError("Envía entre 1 y 20 mensajes de conversación.");
@@ -66,10 +71,7 @@ export async function createProjectChatStream(body, { serverSnapshot = {}, signa
   const { messages, context } = validateChatRequest(body);
   const configuration = chatConfiguration(env);
   if (!configuration.configured) throw new ChatError("Configura OPENAI_API_KEY en el archivo .env y reinicia el servidor para activar el chat.", 503);
-  const model = modelFactory ? modelFactory(configuration) : new ChatOpenAI({
-    apiKey: env.OPENAI_API_KEY.trim(), model: configuration.model,
-    maxTokens: 1800, timeout: 60000, maxRetries: 0,
-  });
+  const model = modelFactory ? modelFactory(configuration) : createProjectModel(configuration, env);
   const history = await toBaseMessages(messages);
   // El contexto solo se agrega a la última pregunta: no se acumulan instantáneas antiguas.
   const input = [new SystemMessage(PROJECT_PROMPT), ...history.slice(0, -1), new HumanMessage(

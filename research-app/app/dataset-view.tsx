@@ -1,4 +1,5 @@
 'use client';
+import { ArtifactPanel, TableArtifact } from './artifact-panel';
 import { Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, Scatter, ScatterChart, Tooltip, XAxis, YAxis, LineChart } from 'recharts';
 import type { DataSet } from './types';
 import { calendarSeries, dateLabel, fmt, labels } from './helpers';
@@ -50,13 +51,13 @@ export function DatasetView({ data, crossed, onLag }: { data: DataSet; crossed: 
           </BarChart></Plot>
         </Card>
         <Card title="Matriz de asociaciones" note="Spearman. Lluvia usa el desfase base de 2 días. Los niveles pueden compartir tendencia sin relación causal.">
-          <div className="matrix" role="table" aria-label="Matriz de correlación Spearman"><span/>{short.map(s => <b key={s}>{s}</b>)}
-            {vars.map((v, i) => <div className="matrix-row" key={v}><b>{short[i]}</b>{vars.map(w => {
+          <TableArtifact><table className="correlation-table" aria-label="Matriz de correlación Spearman"><thead><tr><th>Variable</th>{short.map(s => <th key={s}>{s}</th>)}</tr></thead><tbody>
+            {vars.map((v, i) => <tr key={v}><th scope="row">{short[i]}</th>{vars.map(w => {
               const r = data.correlations.find(c => c.x === v && c.y === w);
               const color = r?.rho == null ? '#f1f3f7' : r.rho >= 0 ? `rgba(26, 139, 137, ${.08 + Math.abs(r.rho) * .7})` : `rgba(117, 96, 191, ${.08 + Math.abs(r.rho) * .7})`;
-              return <span key={w} style={{ background: color, color: r?.rho != null && Math.abs(r.rho) > .7 ? '#fff' : '#23394b' }} title={`${labels[v]} / ${labels[w]} · n=${r?.n}`}>{fmt(r?.rho)}</span>;
-            })}</div>)}
-          </div><div className="matrix-legend"><span>−1 · inversa</span><span>0 · sin asociación monótona</span><span>+1 · directa</span></div>
+              return <td key={w} style={{ background: color, color: r?.rho != null && Math.abs(r.rho) > .7 ? '#fff' : '#23394b' }} title={`${labels[v]} / ${labels[w]} · n=${r?.n}`}>{fmt(r?.rho)}</td>;
+            })}</tr>)}
+          </tbody></table></TableArtifact><div className="matrix-legend"><span>−1 · inversa</span><span>0 · sin asociación monótona</span><span>+1 · directa</span></div>
         </Card>
         <Normality data={data}/>
       </> : <>
@@ -67,14 +68,19 @@ export function DatasetView({ data, crossed, onLag }: { data: DataSet; crossed: 
           </BarChart></Plot>
         </Card>
         <Card title="Disponibilidad de variables" note="Dataset completo: ausente no equivale a cero. Los incrementos faltan al comenzar un prisma o tras una interrupción.">
-          <div className="missing-list">{data.missingness.map(v => <div key={v.column}><div><b>{labels[v.column]}</b><span>{v.missing} / {v.total} ausentes</span></div><div className="meter"><span style={{ width: `${v.missing / v.total * 100}%` }}/></div></div>)}</div>
+          <ArtifactPanel><svg role="img" aria-label="Disponibilidad de variables: registros ausentes por variable" viewBox={`0 0 600 ${data.missingness.length * 68}`} style={{ width: '100%', height: 'auto' }}>
+            {data.missingness.map((v, i) => <g key={v.column} transform={`translate(0,${i * 68})`}>
+              <text x="0" y="20" fontSize="14" fill="#334155">{labels[v.column]}</text><text x="600" y="20" textAnchor="end" fontSize="13" fill="#64748b">{v.missing} / {v.total} ausentes</text>
+              <rect x="0" y="34" width="600" height="9" rx="4" fill="#e9edf3"/><rect x="0" y="34" width={v.total ? 600 * v.missing / v.total : 0} height="9" rx="4" fill="#23968d"/>
+            </g>)}
+          </svg></ArtifactPanel>
           <Note>{data.audit.zero_rain.toLocaleString('es-PE')} registros contienen lluvia cero real; {data.audit.missing_rain} no tienen lluvia disponible. {marked} incrementos del prisma están señalados por 3×IQR, sin borrarlos.</Note>
         </Card>
         <Card title="Resumen numérico" note="Unidades originales. Estadística descriptiva del prisma y filtro seleccionados." wide>
-          <div className="table-scroll"><table><thead><tr><th>Variable</th><th>n</th><th>Media</th><th>Desv. estándar</th><th>Mínimo</th><th>Mediana</th><th>Máximo</th></tr></thead><tbody>{data.summary.map(r => <tr key={r.variable}><td>{labels[r.variable]}</td><td>{r.count}</td><td>{fmt(r.mean)}</td><td>{fmt(r.std)}</td><td>{fmt(r.min)}</td><td>{fmt(r['50%'])}</td><td>{fmt(r.max)}</td></tr>)}</tbody></table></div>
+          <TableArtifact><table><thead><tr><th>Variable</th><th>n</th><th>Media</th><th>Desv. estándar</th><th>Mínimo</th><th>Mediana</th><th>Máximo</th></tr></thead><tbody>{data.summary.map(r => <tr key={r.variable}><td>{labels[r.variable]}</td><td>{r.count}</td><td>{fmt(r.mean)}</td><td>{fmt(r.std)}</td><td>{fmt(r.min)}</td><td>{fmt(r['50%'])}</td><td>{fmt(r.max)}</td></tr>)}</tbody></table></TableArtifact>
         </Card>
         <Card title="Cobertura por prisma" note="Días sin lectura dentro del período de actividad de cada prisma. No se completa el terreno con valores inventados." wide>
-          <div className="table-scroll bounded"><table><thead><tr><th>Prisma</th><th>Inicio</th><th>Fin</th><th>Días observados</th><th>Días ausentes</th><th>Cobertura</th></tr></thead><tbody>{data.coverage.map(r => <tr key={r.sensor}><td>{r.sensor}</td><td>{r.start}</td><td>{r.end}</td><td>{r.observed}</td><td>{r.missing}</td><td>{fmt(100 * r.observed / (r.observed + r.missing), 1)}%</td></tr>)}</tbody></table></div>
+          <TableArtifact bounded><table><thead><tr><th>Prisma</th><th>Inicio</th><th>Fin</th><th>Días observados</th><th>Días ausentes</th><th>Cobertura</th></tr></thead><tbody>{data.coverage.map(r => <tr key={r.sensor}><td>{r.sensor}</td><td>{r.start}</td><td>{r.end}</td><td>{r.observed}</td><td>{r.missing}</td><td>{fmt(100 * r.observed / (r.observed + r.missing), 1)}%</td></tr>)}</tbody></table></TableArtifact>
         </Card>
       </>}
     </div>

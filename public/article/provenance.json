@@ -1,0 +1,101 @@
+{
+  "source": "GRUPO25_QuezadaRodriguezRobertoEnrique_TelloFuentesMelanieCeleste_ES.docx",
+  "source_sha256": "e5b1728f204d950f490c14a13e0a30c0cb0c3d5e13ac8cfa18cb14d97631d355",
+  "case": "TA-01 semisintético",
+  "extraction": "True vector SVG and PNG rendered directly from those vectors at 600 dpi; no raster upscaling",
+  "figures": [
+    {
+      "number": 1,
+      "file": "figura-1.png",
+      "embedded": "word/media/ta01-figura-1.png",
+      "caption": "Figura 1. Diferencias pareadas del MAE, Δ = MAE(LSTM) − MAE(híbrido), e intervalos percentiles del 95 % agrupados por fecha de lluvia. Los valores positivos favorecen al modelo híbrido. Las escalas horizontales difieren; no se muestran valores p. Fuente: ta01-rolling-origin-bootstrap.json.",
+      "embedded_sha256": "01f7a2a643505075b9e33d87e5f46aff84876b0f5263c08c2fd0f81570b32820",
+      "bytes": 182400,
+      "sha256": "01f7a2a643505075b9e33d87e5f46aff84876b0f5263c08c2fd0f81570b32820",
+      "formats": {
+        "png": {
+          "file": "figura-1.png",
+          "bytes": 182400,
+          "sha256": "01f7a2a643505075b9e33d87e5f46aff84876b0f5263c08c2fd0f81570b32820"
+        },
+        "svg": {
+          "file": "figura-1.svg",
+          "bytes": 39386,
+          "sha256": "3feb8a6834307d269bc3ba955c624a679e4f8c83edc4e61706fb446aeec44284"
+        }
+      },
+      "dpi": 600,
+      "data_sources": {
+        "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+        "source_files": [
+          "data/validation/ta01-rolling-origin-bootstrap.json"
+        ],
+        "sha256": {
+          "data/validation/ta01-rolling-origin-bootstrap.json": "37445d7bba5b50fccb2b16d02e6ac7a886bc11568093123652d69f2b64edf16b"
+        }
+      }
+    },
+    {
+      "number": 2,
+      "file": "figura-2.png",
+      "embedded": "word/media/ta01-figura-2.png",
+      "caption": "Figura 2. Cobertura retrospectiva de los intervalos de predicción del modelo híbrido. La cobertura global se compara con la de precipitaciones ≥5 mm/día. La línea discontinua marca la cobertura nominal del 95 %. Para lluvias intensas, solo se incluyen dos fechas de 2024 y tres de 2025; las ventanas están correlacionadas. Fuente: ta01-rolling-interval-coverage.csv.",
+      "embedded_sha256": "7639a0d4afcd2d97c8c6cb7f98d439fb58cbd907701ff4542af34f4cb2729070",
+      "bytes": 233405,
+      "sha256": "7639a0d4afcd2d97c8c6cb7f98d439fb58cbd907701ff4542af34f4cb2729070",
+      "formats": {
+        "png": {
+          "file": "figura-2.png",
+          "bytes": 233405,
+          "sha256": "7639a0d4afcd2d97c8c6cb7f98d439fb58cbd907701ff4542af34f4cb2729070"
+        },
+        "svg": {
+          "file": "figura-2.svg",
+          "bytes": 34236,
+          "sha256": "bc030391d34a8f34631acab40951d66f876459a1c1b6d4e1d37e32b790db6f6f"
+        }
+      },
+      "dpi": 600,
+      "data_sources": {
+        "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+        "source_files": [
+          "data/validation/ta01-rolling-interval-coverage.csv"
+        ],
+        "sha256": {
+          "data/validation/ta01-rolling-interval-coverage.csv": "e115337536f1b8a3c42624550f542cb33e1de01577614001b26e49bf80e2fea1"
+        }
+      }
+    },
+    {
+      "number": 3,
+      "file": "figura-3.png",
+      "embedded": "word/media/ta01-figura-3.png",
+      "caption": "Figura 3. Sensibilidad predictiva al ruido y a las entradas faltantes al azar. El ruido se expresa en relación con la desviación estándar de entrenamiento; las entradas faltantes se imputan con la media de entrenamiento. Cada punto compara una condición perturbada con el caso limpio del mismo modelo, sin reentrenamiento. Fuente: ta01-robustness-summary.csv.",
+      "embedded_sha256": "851b1ccdc424e9652b6ec1556556ffbf7bab09c1bd950485f45c180280e0e516",
+      "bytes": 354988,
+      "sha256": "851b1ccdc424e9652b6ec1556556ffbf7bab09c1bd950485f45c180280e0e516",
+      "formats": {
+        "png": {
+          "file": "figura-3.png",
+          "bytes": 354988,
+          "sha256": "851b1ccdc424e9652b6ec1556556ffbf7bab09c1bd950485f45c180280e0e516"
+        },
+        "svg": {
+          "file": "figura-3.svg",
+          "bytes": 52569,
+          "sha256": "ae8ca2d7855f51db29bda2f6745be938db9fbf2508c8246c79346bf80c0d01d4"
+        }
+      },
+      "dpi": 600,
+      "data_sources": {
+        "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+        "source_files": [
+          "data/validation/ta01-robustness-summary.csv"
+        ],
+        "sha256": {
+          "data/validation/ta01-robustness-summary.csv": "ca0f8d3fe31d320b7e37e1c1f531adb01a15e930b35059b24146d10913117a39"
+        }
+      }
+    }
+  ]
+}

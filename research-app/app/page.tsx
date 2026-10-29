@@ -1,4 +1,5 @@
 'use client';
+import { TableArtifact } from './artifact-panel';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Activity, ArrowUpRight, BarChart3, Beaker, ChartNoAxesCombined, CircleCheck, Database, FlaskConical, Layers3, LoaderCircle, Play, SlidersHorizontal, X } from 'lucide-react';
 import type { Artifact, Config, DataSet, Job, Preview, Report, Trial } from './types';
@@ -128,6 +129,8 @@ export default function Lab() {
       <a className="brand" href={LAB_BASE_PATH} aria-label="Century Lab inicio"><span className="brand-symbol"><Layers3 size={23}/></span><span><b>CENTURY<span>LAB</span></b><small>Laboratorio de investigación</small></span></a>
       <div className="sidebar-label">FLUJO DE TRABAJO</div>
       <nav aria-label="Secciones del laboratorio">{sections.map((section, i) => <button key={section.id} className={view === section.id ? 'active' : ''} onClick={() => { setView(section.id); setError(''); }} aria-current={view === section.id ? 'page' : undefined}><section.icon size={19}/><span><b>{section.name}</b><small>{section.caption}</small></span><em>{i + 1}</em></button>)}</nav>
+      <a className="paper-sidebar-link" href={`${LAB_BASE_PATH}/article`}><BarChart3 size={18} aria-hidden="true"/>Figuras del artículo · TA-01</a>
+      <a className="paper-sidebar-link" href="/"><Layers3 size={18} aria-hidden="true"/>Abrir gemelo digital</a>
       <div className="sidebar-study"><span className="sidebar-label">CASO DE ESTUDIO</span><b>Century Mine</b><p>West Wall · Australia<br/>Prismas 3D y lluvia BOM</p><a href="https://zenodo.org/records/15003054" target="_blank" rel="noreferrer">Dataset público <ArrowUpRight size={14}/></a></div>
       <div className="sidebar-bottom"><span className={`api-status ${online ? 'online' : ''}`}><i/>{online ? 'Motor local conectado' : 'Motor no conectado'}</span><p>App independiente del software del artículo. Evaluación retrospectiva.</p></div>
     </aside>
@@ -148,7 +151,7 @@ export default function Lab() {
           {reportLoading && <Loading message="Cargando métricas, gráficas y modelos…"/>}
           {report && selected?.status === 'completed' && <ResultsView key={selected.id} report={report} job={selected} files={files} trials={trials}/>}
           {!selected && <div className="empty"><BarChart3 size={34}/><h2>Tu primera comparación empieza aquí</h2><p>Configura las técnicas, revisa los datos y entrena. Verás predicciones, errores, pruebas estadísticas y modelos descargables.</p><button className="button primary" onClick={() => setView('train')}>Configurar entrenamiento</button></div>}
-          {jobs.length > 0 && <details className="history-details"><summary>Historial de experimentos ({jobs.length})</summary><div className="table-scroll"><table><thead><tr><th>Experimento</th><th>Creado</th><th>Estado</th><th>Modelos</th><th/></tr></thead><tbody>{jobs.map(j => <tr key={j.id}><td>{j.name}</td><td>{new Date(j.created).toLocaleString('es-PE')}</td><td>{statuses[j.status]}</td><td>{j.config.models.map(m => labels[m]).join(', ')}</td><td><button className="text-button" onClick={() => setSelectedId(j.id)}>Abrir</button></td></tr>)}</tbody></table></div></details>}
+          {jobs.length > 0 && <details className="history-details"><summary>Historial de experimentos ({jobs.length})</summary><TableArtifact><table><thead><tr><th>Experimento</th><th>Creado</th><th>Estado</th><th>Modelos</th><th/></tr></thead><tbody>{jobs.map(j => <tr key={j.id}><td>{j.name}</td><td>{new Date(j.created).toLocaleString('es-PE')}</td><td>{statuses[j.status]}</td><td>{j.config.models.map(m => labels[m]).join(', ')}</td><td><button className="text-button" onClick={() => setSelectedId(j.id)}>Abrir</button></td></tr>)}</tbody></table></TableArtifact></details>}
         </>}
         <footer><span>Century Lab · Next.js / React / FastAPI</span><span>Datos: Tjaart de Wit · DOI 10.5281/zenodo.15003054 · CC BY 4.0</span></footer>
       </main>

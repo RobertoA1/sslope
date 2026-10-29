@@ -99,7 +99,7 @@ export function setupProjectChat(getState) {
       else { const note = document.createElement("small"); note.textContent = message; reply.article.append(note); }
       status.textContent = message;
       failedQuestion = question;
-    } finally { controller = null; updateControls(); if (!panel.hidden) input.focus(); }
+    } finally { controller = null; updateControls(); document.dispatchEvent(new window.Event('artifacts:changed')); if (!panel.hidden) input.focus(); }
   }
   launcher.addEventListener("click", () => panel.hidden ? open() : close());
   $("#chat-close").addEventListener("click", close);

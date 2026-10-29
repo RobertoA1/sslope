@@ -1,0 +1,563 @@
+{
+  "source": "GRUPO25_QuezadaRodriguezRobertoEnrique_TelloFuentesMelanieCeleste_ES.docx",
+  "sourceSha256": "e5b1728f204d950f490c14a13e0a30c0cb0c3d5e13ac8cfa18cb14d97631d355",
+  "tables": [
+    {
+      "id": "1",
+      "caption": "Tabla 1. Comparación de alcance con estudios directamente relacionados. Esta síntesis no es una revisión sistemática.",
+      "headers": [
+        "Estudio",
+        "Datos",
+        "Componente físico",
+        "Modelo temporal",
+        "Validación informada"
+      ],
+      "rows": [
+        [
+          "Liu et al. (2022)",
+          "Monitoreo y desempeño observado",
+          "Modelo de estabilidad actualizado",
+          "Evolución temporal",
+          "Falla observada"
+        ],
+        [
+          "Pei et al. (2023)",
+          "Conjuntos de datos de estabilidad",
+          "Función de pérdida guiada por conocimiento",
+          "No es el enfoque",
+          "Comparaciones entre modelos físicos y basados en datos"
+        ],
+        [
+          "Zhang, Z., et al. (2024)",
+          "Casos numéricos",
+          "Ecuaciones y condiciones de contorno",
+          "Excitación externa",
+          "Referencia numérica"
+        ],
+        [
+          "Piciullo et al. (2025)",
+          "Monitoreo de IoT y datos meteorológicos",
+          "Modelos numéricos",
+          "Pronósticos sucesivos",
+          "Uso operativo documentado"
+        ],
+        [
+          "Este estudio",
+          "Lluvia externa y respuesta simulada",
+          "MEF 2D y monotonía agregada",
+          "LSTM a 1 h y 6 h",
+          "Fechas disjuntas; 2024 y 2025"
+        ]
+      ]
+    },
+    {
+      "id": "2",
+      "caption": "Tabla 2. Configuración experimental documentada. La arquitectura y los parámetros de entrenamiento corresponden a los artefactos guardados de 1 h; las ejecuciones cronológicas y de 6 h registran las épocas completadas. MSE: error cuadrático medio.",
+      "headers": [
+        "Componente",
+        "Valor documentado",
+        "Trazabilidad"
+      ],
+      "rows": [
+        [
+          "Escenarios",
+          "500 escenarios de 24 estados horarios; semilla 20260915",
+          "Sección 2.2"
+        ],
+        [
+          "Malla MEF",
+          "30 × 20; referencia interna 48 × 32",
+          "Sección 3.1"
+        ],
+        [
+          "Ventanas",
+          "Historial de 6 h; horizontes de 1 h y 6 h",
+          "Sección 2.5"
+        ],
+        [
+          "Optimización",
+          "Adam",
+          "Sección 2.5"
+        ],
+        [
+          "Partición principal",
+          "350 para entrenamiento, 75 para validación y 75 para prueba, por fecha",
+          "Sección 2.7"
+        ],
+        [
+          "Particiones cronológicas",
+          "Pruebas de 2024 y 2025 con reentrenamiento",
+          "Sección 2.7"
+        ],
+        [
+          "Incertidumbre",
+          "5000 remuestreos agrupados por fecha; intervalos de confianza del 95%",
+          "Sección 2.7"
+        ],
+        [
+          "Robustez",
+          "5% de ruido; 30% de datos faltantes con imputación",
+          "Sección 3.5"
+        ],
+        [
+          "Arquitectura",
+          "LSTM: 15 entradas, 12 unidades ocultas; residual MLP: 19 entradas, 16 unidades ocultas",
+          "data/​models/​ta01-​lstm-​1h.json; ta01-physics-guided-1h.json"
+        ],
+        [
+          "Entrenamiento",
+          "LSTM: Adam, MSE, máximo de 320 épocas, lote 128, tasa de aprendizaje 0.003, seed 20260916; corrección: Adam, máximo de 360 épocas, lote 128, tasa de aprendizaje 0.0015, seed 20260917",
+          "Artefactos de modelos guardados; scripts/​train-​lstm.py; scripts/​train-​physics-​guided.py"
+        ],
+        [
+          "Entorno",
+          "Node.js ≥24; NumPy ≥2, <3; versión de Python y hardware no fijados",
+          "package.json; requirements-ml.txt"
+        ]
+      ]
+    },
+    {
+      "id": "3",
+      "caption": "Tabla 3. Desempeño en la prueba con fechas de lluvia separadas. MAE y RMSE en mm; R² adimensional. Los cuatro métodos utilizan las mismas ventanas por horizonte. Fuente: data/validation/ta01-model-comparison.csv.",
+      "headers": [
+        "Horizonte (h)",
+        "Modelo",
+        "Ventanas",
+        "MAE (mm)",
+        "RMSE (mm)",
+        "R²"
+      ],
+      "rows": [
+        [
+          "1",
+          "Persistencia",
+          "1350",
+          "0.00002081",
+          "0.00010999",
+          "0.995939"
+        ],
+        [
+          "1",
+          "Ridge",
+          "1350",
+          "0.00001181",
+          "0.00006266",
+          "0.998682"
+        ],
+        [
+          "1",
+          "LSTM",
+          "1350",
+          "0.00000858",
+          "0.00005466",
+          "0.998997"
+        ],
+        [
+          "1",
+          "Híbrido",
+          "1350",
+          "0.00000798",
+          "0.00005093",
+          "0.999129"
+        ],
+        [
+          "6",
+          "Persistencia",
+          "975",
+          "0.00013169",
+          "0.00065863",
+          "0.884685"
+        ],
+        [
+          "6",
+          "Ridge",
+          "975",
+          "0.00008855",
+          "0.00044652",
+          "0.946999"
+        ],
+        [
+          "6",
+          "LSTM",
+          "975",
+          "0.00006332",
+          "0.00042635",
+          "0.951680"
+        ],
+        [
+          "6",
+          "Híbrido",
+          "975",
+          "0.00006176",
+          "0.00041181",
+          "0.954919"
+        ]
+      ]
+    },
+    {
+      "id": "4",
+      "caption": "Tabla 4. MAE de los cuatro modelos en las pruebas cronológicas, en mm. Los métodos comparten las ventanas de prueba de cada año y horizonte. Fuente: data/validation/ta01-rolling-origin-model-comparison.csv.",
+      "headers": [
+        "Año de prueba",
+        "Horizonte (h)",
+        "Ventanas",
+        "Persistencia",
+        "Ridge",
+        "LSTM",
+        "Híbrido"
+      ],
+      "rows": [
+        [
+          "2024",
+          "1",
+          "1476",
+          "0.00001049",
+          "0.00000662",
+          "0.00000435",
+          "0.00000440"
+        ],
+        [
+          "2024",
+          "6",
+          "1066",
+          "0.00006888",
+          "0.00005232",
+          "0.00002909",
+          "0.00002964"
+        ],
+        [
+          "2025",
+          "1",
+          "1404",
+          "0.00002167",
+          "0.00002055",
+          "0.00000540",
+          "0.00000519"
+        ],
+        [
+          "2025",
+          "6",
+          "1014",
+          "0.00014399",
+          "0.00015151",
+          "0.00005769",
+          "0.00005502"
+        ]
+      ]
+    },
+    {
+      "id": "5",
+      "caption": "Tabla 5. Alcance de la verificación numérica y espacial. Estas magnitudes no son errores de pronóstico temporal. CST: elemento triangular de deformación constante. Fuentes: ta01-fem-mesh-sensitivity.json y ta01-spatial-pinn-validation.json.",
+      "headers": [
+        "Verificación",
+        "Magnitud",
+        "Resultado",
+        "Alcance"
+      ],
+      "rows": [
+        [
+          "Prueba de parche CST",
+          "Deformación",
+          "1.14 × 10⁻¹⁸",
+          "Campo afín; adimensional"
+        ],
+        [
+          "Elasticidad global",
+          "Desplazamiento",
+          "1.62 × 10⁻¹¹ m",
+          "Solución analítica fabricada"
+        ],
+        [
+          "Presión uniforme de Biot",
+          "Desplazamiento",
+          "1.60 × 10⁻¹¹ m",
+          "Solución analítica fabricada"
+        ],
+        [
+          "Malla 30 × 20",
+          "Diferencia",
+          "2.13 %",
+          "Respecto de la referencia interna de 48 × 32"
+        ],
+        [
+          "PIELM/RBF TA-01",
+          "Error relativo L2",
+          "12.57 %",
+          "354 nodos sin supervisión del desplazamiento"
+        ],
+        [
+          "PIELM/RBF TA-01",
+          "Residuo relativo",
+          "14.39 %",
+          "Mismo operador de MEF de referencia"
+        ]
+      ]
+    },
+    {
+      "id": "6",
+      "caption": "Tabla 6. MAE con entradas limpias y perturbadas. Las respuestas son semisintéticas y no se reentrenó con perturbaciones. Fuente: ta01-robustness-summary.csv.",
+      "headers": [
+        "Horizonte (h)",
+        "Condición",
+        "Ventanas",
+        "LSTM MAE (mm)",
+        "Híbrido MAE (mm)"
+      ],
+      "rows": [
+        [
+          "1",
+          "Limpias",
+          "1350",
+          "0.00000858",
+          "0.00000798"
+        ],
+        [
+          "1",
+          "Ruido 5 %",
+          "1350",
+          "0.00000902",
+          "0.00001228"
+        ],
+        [
+          "1",
+          "Faltantes 30 %",
+          "1350",
+          "0.00001740",
+          "0.00001867"
+        ],
+        [
+          "6",
+          "Limpias",
+          "975",
+          "0.00006332",
+          "0.00006176"
+        ],
+        [
+          "6",
+          "Ruido 5 %",
+          "975",
+          "0.00006710",
+          "0.00009023"
+        ],
+        [
+          "6",
+          "Faltantes 30 %",
+          "975",
+          "0.00010187",
+          "0.00010547"
+        ]
+      ]
+    },
+    {
+      "id": "A1",
+      "caption": "Tabla A1. Temas metodológicos contextuales y fuentes citadas.",
+      "headers": [
+        "ID",
+        "Estudio",
+        "Tema metodológico"
+      ],
+      "rows": [
+        [
+          "E-01",
+          "Liu, X., et al. (2022)",
+          "Gemelo digital de talud con registros de desempeño y monitoreo"
+        ],
+        [
+          "E-02",
+          "Liu y Jia (2026)",
+          "Redes neuronales acopladas al análisis elastoplástico de taludes"
+        ],
+        [
+          "E-03",
+          "Pei et al. (2023)",
+          "Aprendizaje guiado por conocimiento para la estabilidad de taludes"
+        ],
+        [
+          "E-04",
+          "Wang et al. (2023)",
+          "Aprendizaje profundo para coeficientes de estabilidad de minas a cielo abierto"
+        ],
+        [
+          "E-05",
+          "Lyu et al. (2024)",
+          "Optimización bayesiana de clasificadores convolucionales de estabilidad"
+        ],
+        [
+          "E-06",
+          "Zhang, Z., et al. (2024)",
+          "Modelado tridimensional de taludes guiado por la física"
+        ],
+        [
+          "E-07",
+          "Guan y Wang (2024)",
+          "Fusión de datos geotécnicos y geofísicos para gemelos digitales"
+        ],
+        [
+          "E-08",
+          "Ragam et al. (2024)",
+          "Aprendizaje en conjunto e híbrido para la estabilidad de taludes"
+        ],
+        [
+          "E-09",
+          "Zhang, S., et al. (2024)",
+          "Confiabilidad, componentes principales y aprendizaje por transferencia"
+        ],
+        [
+          "E-10",
+          "Yuan et al. (2024)",
+          "Modelado geológico tridimensional dinámico"
+        ],
+        [
+          "E-11",
+          "Yiğit y Şenol (2025)",
+          "Fotogrametría con UAV y análisis geoespacial de cambios en la superficie"
+        ],
+        [
+          "E-12",
+          "Dahal y Lombardo (2025)",
+          "Aprendizaje informado por la física para predecir deslizamientos"
+        ],
+        [
+          "E-13",
+          "Yin et al. (2025)",
+          "Algoritmos tridimensionales para la estabilidad de taludes cóncavos"
+        ],
+        [
+          "E-14",
+          "Piciullo et al. (2025)",
+          "Pronóstico operativo de estabilidad mediante gemelo digital basado en IoT"
+        ],
+        [
+          "E-15",
+          "Tan et al. (2025)",
+          "Revisión de gemelos digitales geotécnicos"
+        ],
+        [
+          "E-16",
+          "Dong et al. (2025)",
+          "Monitoreo de taludes y alerta temprana basados en la nube"
+        ],
+        [
+          "E-17",
+          "Nanda y Patel (2026)",
+          "Equilibrio límite, MEF y redes de fracturas discretas"
+        ],
+        [
+          "E-18",
+          "Hamzaban et al. (2026)",
+          "Comparación de estabilidad de minas a cielo abierto en dos y tres dimensiones"
+        ],
+        [
+          "E-19",
+          "Tian et al. (2026)",
+          "Ensamblado interpretable y estabilidad tridimensional"
+        ],
+        [
+          "E-20",
+          "Du et al. (2026)",
+          "Simulación e IA para el diseño de minas a cielo abierto orientado al riesgo"
+        ],
+        [
+          "S-01",
+          "Catari Colque et al. (2025)",
+          "Diseño de taludes de minas superficiales mediante MEF"
+        ],
+        [
+          "S-02",
+          "Bustillos Cotrado (2024)",
+          "Análisis bidimensional de taludes en una zona de falla"
+        ],
+        [
+          "S-03",
+          "Cusme Intriago et al. (2026)",
+          "Estabilidad de taludes en torno a un reservorio comunitario"
+        ],
+        [
+          "S-04",
+          "Peña Anampa et al. (2023)",
+          "Peligro de inestabilidad de taludes en un corredor vial"
+        ],
+        [
+          "S-05",
+          "Briceño et al. (2023)",
+          "Comparación numérica de secciones de taludes viales"
+        ],
+        [
+          "S-06",
+          "Gómez Intriago et al. (2024)",
+          "Diseño geotécnico para estabilizar taludes"
+        ],
+        [
+          "S-07",
+          "Oliva González et al. (2023)",
+          "Estabilidad y probabilidad de falla de taludes de corte"
+        ],
+        [
+          "S-08",
+          "Caballero et al. (2023)",
+          "Evaluación geomecánica de la estabilidad de taludes"
+        ],
+        [
+          "S-09",
+          "Blas Cano y Milla Vergara (2023)",
+          "Modelo geotécnico de estabilización a escala reducida"
+        ],
+        [
+          "S-10",
+          "Avellán et al. (2023)",
+          "Análisis de esfuerzos y deformaciones de un talud urbano"
+        ],
+        [
+          "S-11",
+          "Úcar Navarro et al. (2024)",
+          "Criterios de falla no lineales para el deslizamiento plano de roca"
+        ],
+        [
+          "S-12",
+          "Montúfar Chiriboga (2025)",
+          "Análisis de taludes mediante MEF bajo distintas condiciones de carga"
+        ],
+        [
+          "S-13",
+          "Chilon Chilon (2025)",
+          "Relaves filtrados y estabilidad física de presas"
+        ],
+        [
+          "S-14",
+          "Campos et al. (2022)",
+          "Diseño de canteras mediante análisis cinemático y equilibrio límite"
+        ],
+        [
+          "S-15",
+          "Sequeira-Arguedas (2023)",
+          "Evaluación regional de la inestabilidad de taludes a lo largo de una vía"
+        ],
+        [
+          "S-16",
+          "González Serrano (2025)",
+          "Evaluación geotécnica de taludes mineros con apoyo de SIG"
+        ],
+        [
+          "S-17",
+          "Arias-Valencia y Aristizábal-Arias (2024)",
+          "Evaluación probabilística del deslizamiento planar"
+        ],
+        [
+          "S-18",
+          "Anchiraico Alderete et al. (2026)",
+          "Simulación geotécnica probabilística en Python"
+        ],
+        [
+          "S-19",
+          "Zamora Nevado y Medina Vásquez (2023)",
+          "Aplicación en Python para enseñar estabilidad de taludes"
+        ],
+        [
+          "S-20",
+          "Briceño Balza et al. (2022)",
+          "Ubicación y profundidad de grietas de tracción mediante métodos numéricos"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "page_count": 14,
+  "all_pages_visually_reviewed": true,
+  "figures": 3,
+  "native_tables": 7,
+  "native_equations_preserved": 4,
+  "original_content_controls_preserved": 5,
+  "editorial_comments": 5,
+  "source_data_hashes_checked": true,
+  "result_tables_match_csv": true,
+  "untouched_package_parts_preserved": true,
+  "figures_and_cross_references_consecutive": true,
+  "no_text_outside_pdf_page": true,
+  "source_unchanged": true,
+  "output_sha256": "e5b1728f204d950f490c14a13e0a30c0cb0c3d5e13ac8cfa18cb14d97631d355",
+  "png_dpi": 600,
+  "600dpi_render_review": "14 pages; only pages 7 and 9 changed; visually reviewed both"
+}

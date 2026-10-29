@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="/dashboard-layout.css" />
     <link rel="stylesheet" href="/century-panel.css" />
     <link rel="stylesheet" href="/mine-twin.css" />
+    <link rel="stylesheet" href="/artifact-tools.css" />
+    <link rel="stylesheet" href="/article-figures.css" />
   </head>
   <body data-mine-case="CENTURY">
     <header>
@@ -18,6 +20,7 @@
       </div>
       <div id="connection-status" class="connection"><span class="dot"></span> Servicio activo</div>
     </header>
+    <nav class="portal-nav" aria-label="Aplicaciones del proyecto"><a href="/" aria-current="page">Gemelo digital</a><a href="/research">Century Lab</a><a href="#article-results">Figuras y tablas del artículo</a></nav>
     <main>
       <p id="persistence-notice" class="persistence-notice" role="status" hidden>Demostración con datos temporales: las importaciones y simulaciones pueden reiniciarse entre consultas y compartirse entre visitantes.</p>
 
@@ -272,6 +275,19 @@
           <div><div class="research-table-wrap"><table class="research-table"><thead><tr><th>Modelo</th><th>MAE validación (mm)</th><th>MAE prueba (mm)</th><th>RMSE prueba (mm)</th><th>R² prueba</th></tr></thead><tbody id="century-metrics"></tbody></table></div><p id="century-selection"></p></div>
         </div>
         <details><summary>Qué se puede concluir y qué falta</summary><ul id="century-limitations"></ul></details>
+      </section>
+
+      <section id="article-results" class="paper-extract" aria-labelledby="article-heading">
+        <p class="label">ARTÍCULO · EXPERIMENTO SEMISINTÉTICO TA-01</p>
+        <h2 id="article-heading">Resultados esenciales del artículo</h2>
+        <p id="article-scope"></p>
+        <div class="paper-links"><a href="/research/article">Ver figuras y tablas del artículo</a><a href="#article-tables">Tablas del DOCX · Excel y CSV</a><a href="/article/provenance.json" download>Procedencia de las imágenes</a></div>
+        <div id="article-figures" class="paper-figures"></div>
+        <section class="paper-tables" aria-labelledby="article-tables-title">
+          <h2 id="article-tables-title">Tablas del artículo</h2>
+          <p>Las siete tablas del DOCX, incluida la bibliografía A1. Abre una tabla para ampliarla, descargarla en Excel o CSV y consultar su interpretación.</p>
+          <div id="article-tables"></div>
+        </section>
       </section>
 
       <section class="card research-panel laboratory-only" aria-label="Validación experimental del artículo">

@@ -5,7 +5,7 @@ El `vercel.json` de la raíz usa Vercel Services. Las opciones de build y funcio
 | Servicio | Raíz | Acceso público | Llamadas internas |
 | --- | --- | --- | --- |
 | `app` | `.` | `/` y todas las rutas restantes, incluida su API `/api/*` | Ninguna |
-| `research-app` | `research-app` | `/research` y `/research/*` | `backend` mediante `CENTURY_BACKEND_URL` |
+| `research-app` | `research-app` | `/research` y `/research/*` | `backend` mediante `CENTURY_BACKEND_URL`; `app` mediante `APP_INTERNAL_URL` para interpretar tablas |
 | `backend` | `research-app` | Ninguno | Recibe las llamadas de `research-app` |
 
 El backend comparte directorio raíz con Next.js porque `backend.main:app` utiliza imports de paquete y lee `data/century/Data.zip` desde esa carpeta. Son builds independientes: Next.js instala `package-lock.json`. Para FastAPI, `pyproject.toml` y `backend/requirements.txt` declaran las mismas dependencias ligeras de exploración. El build de producción busca junto a la entrada `backend/main.py` y puede elegir ese `requirements.txt`; `backend/.python-version` fija Python 3.12 también en ese caso. El backend no incluye TensorFlow ni los artefactos locales de entrenamiento. El comando de build elimina únicamente las carpetas de pruebas de NumPy, pandas, SciPy y scikit-learn del entorno desechable de Vercel. Conserva los módulos de cálculo y las bibliotecas nativas; no modifica el entorno local ni los cortes cronológicos.
@@ -16,11 +16,15 @@ Las reglas de `/research` aparecen antes del catch-all. Se conserva el prefijo a
 
 El binding se declara en el servicio que llama, `research-app`, con los cuatro campos `type`, `service`, `format` y `env`. Vercel inyecta la URL: **no configures `CENTURY_BACKEND_URL` manualmente**. El proxy conserva un posible prefijo interno de la URL, añade `/api/*`, transmite query, JSON y descargas, y comprueba el origen de las escrituras antes de comunicarse con FastAPI.
 
+El laboratorio comparte el modelo y la clave del chat mediante el binding `research-app → app`, `APP_INTERNAL_URL`. El handler Node `/research/api/table-explanation` lo consulta en ejecución y llama a `/api/tables/explain` del tablero. No definas `APP_INTERNAL_URL` manualmente. En desarrollo independiente, inicia también el tablero en el puerto 3000 o configura `TABLE_AI_ORIGIN`; la clave solo se carga en el tablero. No se envía al navegador ni a FastAPI.
+
 El servicio `app` declara `api/index.js` como entrada Node y `npm run dev` como comando local explícito; su build incluye los archivos públicos y los módulos Three.js. El tablero mantiene `/api/*` para sus sensores, simulaciones, minas, modelos y chat. Enviar globalmente `/api/*` a FastAPI rompería ese tablero. FastAPI no tiene rewrite público: el binding no le concede una ruta de entrada pública. Sus endpoints `/api/*` solo se utilizan internamente a través del proxy.
 
 El build genera el chat en `public/vendor/` y el handler entrega `public/` y Three.js desde sus rutas originales. No se configura `outputDirectory`: el constructor Node de Services interpreta un `dist/app.js` como entrada del servidor incluso si se declara otra entrada. Copiar ahí el JavaScript del navegador provoca `ReferenceError: window is not defined`. El build elimina la antigua carpeta `dist/` para evitar recuperarla del caché.
 
 La función incluye explícitamente `node_modules/openai/lib/responses/`: el rastreador de dependencias puede omitir `ResponseInputItems.js`, que LangChain importa al arrancar el chat. Las pruebas del servidor deben comprobar también el artefacto de producción, ya que `vercel dev` utiliza las dependencias completas.
+
+El build agrega los `package.json` ESM ausentes de las dependencias incluidas dentro de `@langchain/langgraph-sdk/dist/node_modules/.pnpm/` y los incorpora a la función. Esos archivos JavaScript ya son ESM; sin los metadatos, el runtime de Vercel puede interpretarlos como CommonJS y detener toda la aplicación al cargar `p-retry`. Los metadatos existentes se conservan.
 
 ## Desarrollo y verificación
 

@@ -1,0 +1,198 @@
+{
+  "source": "/home/robertoa1/Datos/proyectos/sslope-articulo/GRUPO25_QuezadaRodriguezRobertoEnrique_TelloFuentesMelanieCeleste_ES.docx",
+  "source_sha256": "7279e9d8470518e81b700999c74bb96e1568ba26a8be1bfe18d105eb32a6c232",
+  "output_sha256": "e5b1728f204d950f490c14a13e0a30c0cb0c3d5e13ac8cfa18cb14d97631d355",
+  "figures": [
+    {
+      "number": 1,
+      "previous_number": 3,
+      "image_sha256": "01f7a2a643505075b9e33d87e5f46aff84876b0f5263c08c2fd0f81570b32820",
+      "pixels": [
+        4067,
+        1750
+      ],
+      "dpi": 600,
+      "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+      "source_files": [
+        "data/validation/ta01-rolling-origin-bootstrap.json"
+      ],
+      "sha256": {
+        "data/validation/ta01-rolling-origin-bootstrap.json": "37445d7bba5b50fccb2b16d02e6ac7a886bc11568093123652d69f2b64edf16b"
+      }
+    },
+    {
+      "number": 2,
+      "previous_number": 4,
+      "image_sha256": "7639a0d4afcd2d97c8c6cb7f98d439fb58cbd907701ff4542af34f4cb2729070",
+      "pixels": [
+        4030,
+        1810
+      ],
+      "dpi": 600,
+      "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+      "source_files": [
+        "data/validation/ta01-rolling-interval-coverage.csv"
+      ],
+      "sha256": {
+        "data/validation/ta01-rolling-interval-coverage.csv": "e115337536f1b8a3c42624550f542cb33e1de01577614001b26e49bf80e2fea1"
+      }
+    },
+    {
+      "number": 3,
+      "previous_number": 5,
+      "image_sha256": "851b1ccdc424e9652b6ec1556556ffbf7bab09c1bd950485f45c180280e0e516",
+      "pixels": [
+        4030,
+        1928
+      ],
+      "dpi": 600,
+      "classification": "RESULTADOS_SEMISINTETICOS_ARCHIVADOS",
+      "source_files": [
+        "data/validation/ta01-robustness-summary.csv"
+      ],
+      "sha256": {
+        "data/validation/ta01-robustness-summary.csv": "ca0f8d3fe31d320b7e37e1c1f531adb01a15e930b35059b24146d10913117a39"
+      }
+    }
+  ],
+  "changes": [
+    {
+      "paragraph": 31,
+      "removed": "Figure image"
+    },
+    {
+      "paragraph": 32,
+      "removed": "Figura 1. Flujo de datos y evaluación del prototipo semisintético TA-01. LHS: muestreo hipercúbico latino. Este esquema describe el experimento, no un sistema de monitoreo de campo."
+    },
+    {
+      "paragraph": 67,
+      "removed": "Figure image"
+    },
+    {
+      "paragraph": 68,
+      "removed": "Figura 2. Sensibilidad del desplazamiento máximo inducido por la lluvia a la discretización del MEF. Las diferencias se calculan respecto de la malla interna de 48 × 32 y no demuestran convergencia. Fuente: ta01-fem-mesh-summary.csv."
+    },
+    {
+      "paragraph": 95,
+      "removed": "Figure image"
+    },
+    {
+      "paragraph": 96,
+      "removed": "Figura 6. Enmascaramiento de entradas hidrológicas y mecánicas durante la inferencia, usando las medias de entrenamiento. El MAE se calcula con las mismas ventanas de prueba no cronológicas. Las variantes no son modelos reentrenados ni ablaciones aisladas de la función de corrección. Fuente: ta01-ablation-summary.csv."
+    },
+    {
+      "paragraph": 30,
+      "before": " La figura 1 resume el flujo de trabajo.",
+      "after": ""
+    },
+    {
+      "paragraph": 26,
+      "before": "figura 3",
+      "after": "figura 1"
+    },
+    {
+      "paragraph": 26,
+      "before": "figura 5",
+      "after": "figura 3"
+    },
+    {
+      "paragraph": 26,
+      "before": " y la figura 2",
+      "after": ""
+    },
+    {
+      "paragraph": 58,
+      "before": "figura 4",
+      "after": "figura 2"
+    },
+    {
+      "paragraph": 66,
+      "before": " La figura 2 muestra esta sensibilidad a la malla.",
+      "after": ""
+    },
+    {
+      "paragraph": 75,
+      "before": "figura 3",
+      "after": "figura 1"
+    },
+    {
+      "paragraph": 79,
+      "before": "Figura 3.",
+      "after": "Figura 1."
+    },
+    {
+      "paragraph": 81,
+      "before": "figura 4",
+      "after": "figura 2"
+    },
+    {
+      "paragraph": 83,
+      "before": "Figura 4.",
+      "after": "Figura 2."
+    },
+    {
+      "paragraph": 89,
+      "before": "figura 5",
+      "after": "figura 3"
+    },
+    {
+      "paragraph": 93,
+      "before": "Figura 5.",
+      "after": "Figura 3."
+    },
+    {
+      "paragraph": 94,
+      "before": "La figura 6 compara variantes en las que las entradas hidrológicas o mecánicas se reemplazaron por sus medias de entrenamiento durante la inferencia.",
+      "after": "Las pruebas complementarias de enmascaramiento reemplazaron las entradas hidrológicas o mecánicas por sus medias de entrenamiento durante la inferencia."
+    },
+    {
+      "table": 3,
+      "source": "ta01-model-comparison.csv",
+      "rows": 8,
+      "action": "Rebuilt as native editable Word cells from archived software output; no retraining"
+    },
+    {
+      "table": 4,
+      "source": "ta01-rolling-origin-model-comparison.csv",
+      "rows": 4,
+      "action": "Rebuilt as native editable Word cells from archived software output; no retraining"
+    },
+    {
+      "table": 6,
+      "source": "ta01-robustness-summary.csv",
+      "rows": 6,
+      "action": "Rebuilt as native editable Word cells from archived software output; no retraining"
+    }
+  ],
+  "changed_package_parts": [
+    "[Content_Types].xml",
+    "word/_rels/document.xml.rels",
+    "word/comments.xml",
+    "word/document.xml",
+    "word/media/ta01-figura-1.png",
+    "word/media/ta01-figura-2.png",
+    "word/media/ta01-figura-3.png"
+  ],
+  "removed_package_parts": [
+    "word/media/image2.jpg",
+    "word/media/image3.jpg",
+    "word/media/image4.jpg",
+    "word/media/image5.jpg",
+    "word/media/image6.jpg",
+    "word/media/image7.jpg"
+  ],
+  "excluded_outputs": [
+    "Century Mine and its EDA/model tables: different case and target",
+    "Interactive viewer safety indicators, alerts and scenario snapshots: not the archived experiment",
+    "External SSRM/transient-seepage extensions: separate protocols",
+    "Runtime experiment history/configuration controls: interface metadata, not results"
+  ],
+  "preserved": [
+    "Original journal page geometry, styles, headers, footers and references",
+    "Four native Word equations",
+    "Five original content controls",
+    "Methodological tables 1 and 2, numerical verification table 5 and bibliographic appendix A1"
+  ],
+  "png_dpi": 600,
+  "png_source": "Rendered from original vector SVG; no raster upscaling"
+}

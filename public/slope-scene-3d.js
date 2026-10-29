@@ -203,6 +203,24 @@ function disposeObject(object, preservedTextures) {
 }
 
 export class SlopeScene3D {
+  capturePng() {
+    const size = this.renderer.getSize(new Vector2());
+    const ratio = this.renderer.getPixelRatio();
+    const current = this.renderer.getDrawingBufferSize(new Vector2());
+    const width = Math.min(this.renderer.capabilities.maxTextureSize, Math.max(3840, current.x));
+    const height = Math.round(width * size.y / Math.max(1, size.x));
+    try {
+      this.renderer.setPixelRatio(1);
+      this.renderer.setSize(width, height, false);
+      this.renderer.render(this.scene, this.camera);
+      return this.canvas.toDataURL("image/png");
+    } finally {
+      this.renderer.setPixelRatio(ratio);
+      this.renderer.setSize(size.x, size.y, false);
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+
   constructor(canvas, onSensorSelect) {
     this.canvas = canvas;
     this.onSensorSelect = onSensorSelect;

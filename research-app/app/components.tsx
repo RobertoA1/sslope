@@ -3,12 +3,13 @@ import type { ReactNode } from 'react';
 import { Download, Info, LoaderCircle } from 'lucide-react';
 import { ResponsiveContainer } from 'recharts';
 import { researchApiPath } from './helpers';
+import { ArtifactPanel } from './artifact-panel';
 
 export function Card({ title, note, children, wide = false }: { title: string; note?: string; children: ReactNode; wide?: boolean }) {
   return <section className={`card${wide ? ' wide' : ''}`}><div className="card-heading"><h3>{title}</h3>{note && <p>{note}</p>}</div>{children}</section>;
 }
 export function Plot({ children, height = 260 }: { children: React.ReactElement; height?: number }) {
-  return <div className="plot" style={{ height }}><ResponsiveContainer width="100%" height="100%" minWidth={0}>{children}</ResponsiveContainer></div>;
+  return <ArtifactPanel><div className="plot" style={{ height }}><ResponsiveContainer width="100%" height="100%" minWidth={0}>{children}</ResponsiveContainer></div></ArtifactPanel>;
 }
 export function Note({ children, warning = false }: { children: ReactNode; warning?: boolean }) {
   return <div className={`note${warning ? ' warning' : ''}`}><Info size={17} aria-hidden="true"/><div>{children}</div></div>;

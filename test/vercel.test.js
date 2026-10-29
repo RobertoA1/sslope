@@ -67,12 +67,34 @@ test("la entrada Vercel admite dominios remotos, SQLite temporal, JSON parseado 
   for (const [route, contentType, content] of [
     ["/", "text/html", /src="\/app\.js"/],
     ["/app.js", "text/javascript", /window\.location\.search/],
+    ["/artifact-tools.js", "text/javascript", /tableWorkbook/],
+    ["/table-workbook.js", "text/javascript", /spreadsheetml/],
+    ["/article-tables.js", "text/javascript", /renderArticleTables/],
     ["/vendor/three/build/three.module.js", "text/javascript", /export/]
   ]) {
     const asset = await request(route);
     assert.equal(asset.status, 200, route);
     assert.ok(asset.headers["content-type"].startsWith(contentType), route);
     assert.match(asset.data, content, route);
+  }
+
+  const articleTables = await request('/article/tables.json');
+  assert.equal(articleTables.status, 200);
+  assert.equal(articleTables.data.tables.length, 7);
+  assert.equal(articleTables.data.tables.at(-1).rows.length, 40);
+
+  for (const number of [3, 4, 5]) {
+    const figure = await request(`/article/figura-${number}.jpg`);
+    assert.equal(figure.status, 200);
+    assert.equal(figure.headers['content-type'], 'image/jpeg');
+    assert.ok(Number(figure.headers['content-length'] || 0) > 0 || figure.data.length > 100000);
+  }
+  for (const number of [1, 2, 3]) {
+    for (const [format, type] of [['svg', 'image/svg+xml'], ['png', 'image/png']]) {
+      const figure = await request(`/article/figura-${number}.${format}`);
+      assert.equal(figure.status, 200);
+      assert.equal(figure.headers['content-type'], type);
+    }
   }
 
   const health = await request("/api/health");
@@ -83,6 +105,13 @@ test("la entrada Vercel admite dominios remotos, SQLite temporal, JSON parseado 
   assert.equal(persistence.data.filePath, runtime.databasePath);
   const chat = await request("/api/chat/status");
   assert.equal(chat.data.configured, false);
+  const table = { title: "Prueba de interpretación", context: "mm", headers: ["Modelo", "MAE"], rows: [["Persistencia", "2.3"]] };
+  const noModel = await request("/api/tables/explain", { method: "POST", body: JSON.stringify(table) });
+  assert.equal(noModel.status, 503);
+  const invalidTable = await request("/api/tables/explain", { method: "POST", body: "{" });
+  assert.equal(invalidTable.status, 400);
+  const foreignTable = await request("/api/tables/explain", { method: "POST", body: JSON.stringify(table), headers: { Origin: "https://foreign.example" } });
+  assert.equal(foreignTable.status, 403);
 
   for (const route of ["/api/mines/century", "/api/mines/pasco", "/api/research/century", "/api/research/chronological?horizon=6&testYear=2024", "/api/research/ta01-spatial-prediction", "/api/research/ta01-wet-scenario", "/api/rainfall-history"]) {
     const response = await request(route);

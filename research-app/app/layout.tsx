@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import '../../public/artifact-tools.css';
+import '../../public/article-figures.css';
 
 export const metadata: Metadata = {
   title: 'Century Lab · Análisis y entrenamiento',

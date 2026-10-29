@@ -30,6 +30,12 @@ Tanto `npm start` como Docker Compose solo exponen el servicio a `127.0.0.1` del
 
 ## Desplegar en Vercel
 
+Las figuras y tablas incluyen íconos para ampliarlas y descargarlas. Los gráficos SVG y las tablas se exportan como vectores; las tablas también ofrecen Excel (.xlsx) y CSV UTF-8 con todas sus filas. Los gráficos canvas se exportan en PNG sin pérdida y el visor 3D se vuelve a renderizar en alta resolución. La ampliación muestra una instantánea del resultado elegido.
+
+El gemelo digital permanece en `/` y Century Lab en `/research`, con enlaces entre ambas aplicaciones. Las figuras esenciales del artículo están en el gemelo y en `/research/article`: figuras 1 (comparación LSTM–híbrido), 2 (cobertura) y 3 (robustez), renumeradas como en el DOCX revisado. Corresponden exclusivamente a TA-01 semisintético. Se extrajeron de `../sslope-articulo/GRUPO25_QuezadaRodriguezRobertoEnrique_TelloFuentesMelanieCeleste_ES.docx` conservando los bytes originales, sin redimensionar ni recomprimir. `public/article/provenance.json` registra los pies, el archivo incrustado y los hashes SHA-256. Para actualizar las tres imágenes: `python3 scripts/import-article-figures.py [ruta-del-docx]`. El selector de formato permite elegir el SVG vectorial de origen o el PNG de publicación renderizado desde el SVG a 600 dpi. Se comprueba que los PNG del DOCX y los archivos vectoriales correspondan a las mismas figuras y datos archivados. El servidor entrega `image/svg+xml` o `image/png`. Los gráficos SVG interactivos y las tablas también permiten PNG sin pérdida, renderizado a 600 dpi con al menos 4096 píxeles de ancho; el visor 3D conserva PNG con metadatos a 600 dpi. El importador usa Sharp incluido con Next.js para generar los PNG directamente desde los vectores.
+
+Cada tabla visible genera automáticamente su explicación e interpretación con la misma configuración `OPENAI_API_KEY` y `OPENAI_MODEL` del chat. Se envían la tabla completa y su contexto; los cambios de datos o filtros invalidan la explicación anterior. Las respuestas idénticas se reutilizan temporalmente y los errores permiten volver a intentarlo. Las explicaciones describen métricas y límites del estudio; no sustituyen la validación geotécnica.
+
 El `vercel.json` de la raíz configura un único proyecto con tres servicios: **`app`** para el tablero y su API `/api/*`, **`research-app`** para Century Lab en `/research` y **`backend`** para FastAPI interno. Next.js llama a FastAPI mediante el binding `CENTURY_BACKEND_URL`, inyectado por Vercel durante las peticiones. No definas esa variable manualmente. Para probar los tres servicios y sus rutas usa `vercel dev -L` (Node 24 y Python 3.12).
 
 El build del tablero incluye el chat y los módulos Three.js. Para activar el chat, configura `OPENAI_API_KEY` y opcionalmente `OPENAI_MODEL` en el proyecto Vercel. **El tablero usa datos temporales por instancia**; la persistencia duradera sigue disponible con Node/Docker y volumen.
@@ -226,5 +232,9 @@ El proyecto ya incluye un FEM 2D lineal, una LSTM entrenada, un corrector neuron
 La correspondencia entre el manuscrito, los módulos implementados y los criterios para avanzar a resultados publicables se documenta en [INTEGRACION_ARTICULO.md](docs/INTEGRACION_ARTICULO.md).
 
 ## Licencias y procedencia
+
+Las tablas del gemelo digital y de Century Lab incluyen descargas completas en Excel (`.xlsx`) y CSV, también desde la ampliación. Excel conserva como texto los identificadores con ceros iniciales y las cifras que exceden sus 15 dígitos de precisión; los resultados numéricos mantienen los decimales publicados.
+
+`/research/article#article-tables` y la sección del artículo del gemelo digital contienen las tablas 1–6 y A1 del DOCX. Para sincronizarlas después de editar el documento, ejecuta `python3 scripts/import-article-tables.py /ruta/al/articulo.docx`. El importador conserva los textos dentro de controles de contenido de Word y registra el nombre y SHA-256 del DOCX en `public/article/tables.json`.
 
 El código y la documentación de sslope se distribuyen bajo la [licencia MIT](LICENSE). Las aportaciones originales de los autores en los datos semisintéticos y resultados de investigación de `data/generated/`, `data/models/` y `data/validation/` se distribuyen bajo [CC BY 4.0](data/LICENSE.md). La licencia de datos se aplica solo a los derechos de los autores; los datos de fuentes externas conservan sus propias condiciones y procedencia, detalladas en `data/rainfall/README.md` y `data/sites/raul-rojas-nw-provenance.json`.
