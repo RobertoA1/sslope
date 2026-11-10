@@ -1,0 +1,32 @@
+{
+  "schema": "century-southwest-field-v1",
+  "archive_sha256": "b0d3eca632c5c7831d391f6f90b4d88b1a7384b3eb596c19ddaaf64147a24d22",
+  "source_member": "radar-deformation-data/South_West_Corner_06082014.csv",
+  "reference_date": "2014-01-01",
+  "train_end": "2014-03-31",
+  "validation_end": "2014-04-30",
+  "test_end": "2014-08-06",
+  "lookback": 6,
+  "features": ["movement_mm", "previous_increment_mm", "previous_interval_hours", "rain_lag2_mm"],
+  "models": ["persistence", "trend", "ridge", "lstm"],
+  "seeds": [15003054, 15003055, 15003056, 15003057, 15003058],
+  "ridge_candidates": [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+  "lstm_candidates": [
+    {"units": 8, "dropout": 0.0, "learning_rate": 0.001},
+    {"units": 8, "dropout": 0.0, "learning_rate": 0.003},
+    {"units": 8, "dropout": 0.0, "learning_rate": 0.01},
+    {"units": 16, "dropout": 0.0, "learning_rate": 0.001},
+    {"units": 16, "dropout": 0.0, "learning_rate": 0.003},
+    {"units": 16, "dropout": 0.0, "learning_rate": 0.01}
+  ],
+  "epochs": 100,
+  "block_lengths": [3, 7, 14],
+  "bootstrap_reps": 20000,
+  "alpha": 0.05,
+  "selection_rule": "Hyperparameters and stopping epochs use three train-only temporal folds. Algorithm selected by equal-date validation MAE, before test evaluation. Final fits retain the original train set, without incorporating validation outcomes.",
+  "target": "Euclidean norm in mm of E,N,Height change from the last observed position on 2014-01-01; not cumulative path length, not the West Wall published target.",
+  "quality_rule": "Validate source hash; last real reading per sensor/date; consolidate identical duplicates; exclude conflicting timestamps. Keep all finite target values, including large jumps, without treating them as confirmed failure or measurement error. No interpolation or future rain.",
+  "prior_exposure": "South West has been visualised previously. This is a new model evaluation declared before this run, not an externally preregistered prospective experiment or an independent mine.",
+  "primary_contrast": "LSTM seed ensemble minus persistence, equal-date MAE in mm; ridge and trend versus persistence are secondary contrasts.",
+  "uncertainty_rule": "Resample paired calendar losses in moving blocks that never cross missing calendar dates. Report ordinary and Bonferroni intervals for three planned contrasts; sensitivity at block lengths 3,7,14. Treat intervals as exploratory under nonstationary slope response. Seeds are training sensitivity, not independent field samples."
+}

@@ -1,0 +1,23 @@
+{
+  "schema": "ta01-oof-reproduction-v1",
+  "partitions": {
+    "date-disjoint": "data/generated/ta01-fem-500",
+    "2024": "data/generated/ta01-fem-500-backtest-2024",
+    "2025": "data/generated/ta01-fem-500-chronological"
+  },
+  "horizons": [1, 6],
+  "lookback": 6,
+  "base_seeds": [20260916, 20260917, 20260918],
+  "corrector_seeds": [20261030, 20261031, 20261032],
+  "fold_seed": 20261029,
+  "folds": 5,
+  "lstm": {"hidden": 12, "epochs": 320, "patience": 40, "batch_size": 128, "learning_rate": 0.003},
+  "corrector": {"hidden": 16, "epochs": 360, "patience": 45, "batch_size": 128, "learning_rate": 0.0015},
+  "loss_weights": {"data": 1.0, "monotonicity": 0.12, "dryBoundary": 0.08, "l2": 0.000001},
+  "bootstrap_reps": 100000,
+  "primary": "First fully refitted seed pair, OOF residual training; all additional seed pairs retained as full-pipeline training sensitivity, not independent events.",
+  "normalization": "Each base-fold scaler and delta scaler fitted on that fold train only. Convert fold predictions back to mm before expressing them on the full-train target scale. Corrector scaler uses OOF inputs only.",
+  "early_stopping": "Original external validation partition reused for all fold checkpoints, never final test. Full floating-point MAE selects checkpoints; no metric rounding before selection. This is cross-fitting with reused validation, not fully nested selection.",
+  "prior_exposure": "All six TA-01 test combinations were examined during previous development. Analyses are retrospective and exploratory.",
+  "reporting": "Save matched full-precision predictions, weights, OOF assignments, training histories, source hashes, all seeds and failures. Regenerate every table from these new outputs; do not copy unavailable supplementary numbers."
+}

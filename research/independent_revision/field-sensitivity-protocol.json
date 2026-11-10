@@ -1,0 +1,24 @@
+{
+  "schema": "southwest-independent-review-sensitivity-v2",
+  "status": "Retrospective diagnostic protocol recorded after independent review; historical test already known. Not external preregistration.",
+  "target": "Next-calendar-day increment of coordinate-derived reference-relative displacement norm, in mm; zero increment is the baseline. Add current observed norm only to reconstruct a level for presentation.",
+  "units": [8,16,32],
+  "learning_rates": [0.0003,0.001,0.003,0.01],
+  "dropout": [0.0,0.15],
+  "epochs": 200,
+  "patience": 20,
+  "batch_size": 64,
+  "seeds": [15003054,15003055,15003056,15003057,15003058],
+  "variants": ["lag2","no_rain","lag1","increment_only"],
+  "variant_definitions": {
+    "lag2": "Expanded train-only tuning, same four input channels and conservative two-date rainfall availability as previous main evaluation.",
+    "no_rain": "Matched selected architecture, stopping epoch and seeds, remove rain input; no variant-specific tuning.",
+    "lag1": "One-date rainfall lag, optimistic availability sensitivity because sensor/BOM timestamp alignment is unconfirmed. Not a proven deployable information set.",
+    "increment_only": "Remove absolute displacement-level input; retain previous increments, reading intervals and lag-two rain. Tests dependence on reference-relative level input."
+  },
+  "selection": "Choose 24 architecture/learning-rate/dropout candidates using three training-only temporal folds. Early stopping monitors increment MAE (normalisation is train-only). Refit for the median best epoch across those folds. All variants use this choice, five seeds and identical common source keys. Do not tune on test or promote a favourable variant to a new confirmatory primary result.",
+  "blocks": [3,7,14],
+  "bootstrap_reps": 20000,
+  "bootstrap_seed": 20261104,
+  "inference": "Four sensitivity-versus-zero-increment contrasts, shared segmented temporal resampling, ordinary and four-contrast Bonferroni intervals. Exploratory conditional on fixed models and observed date gaps; original main comparison retained separately."
+}

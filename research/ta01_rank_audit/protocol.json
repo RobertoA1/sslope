@@ -1,0 +1,118 @@
+{
+  "schema": "ta01-rounded-target-ranking-audit-v1",
+  "scope": "Conditional identification of paired absolute-loss rankings under rounded targets, with TA-01 and controlled analytic functions. No mine-validation or new geomechanical law claim.",
+  "timing": "Specified after the TA-01 structural audit and historical tests were known, but before executing this new ranking analysis or controlled suite. Local retrospective protocol, not external preregistration.",
+  "primary_questions": [
+    "Which historical model rankings are invariant over every latent target in the declared rounding cells?",
+    "How much do known zero rainfall and a shared generator amplitude narrow the ranking identified set?",
+    "Does a generic paired-loss certificate remain informative across controlled nonlinear functions and model families, while avoiding incorrect certified rankings?"
+  ],
+  "mathematics": {
+    "loss_contrast": "D(y)=sum_i w_i*(abs(a_i-y_i)-abs(b_i-y_i))/sum_i w_i, with shared latent y_i and fixed nonnegative weights.",
+    "box_bound": "Each scalar absolute-loss difference is monotonic or constant in y_i. Its infimum/supremum on [l_i,u_i] is the smaller/larger endpoint contrast. Weighted sums attain the joint box extrema using corresponding endpoint witnesses. These are conditional sharp deterministic bounds, not confidence intervals.",
+    "separate_loss_outer_bound": "Bound each model's MAE separately then subtract intervals. This allows different latent targets for the two extrema and is an outer bound, usually not attainable jointly.",
+    "lipschitz_outer_bound": "Stored-label contrast plus/minus sum_i(2*w_i*epsilon_i)/sum_i w_i, where epsilon_i=max(abs(stored_i-l_i),abs(stored_i-u_i)).",
+    "shared_amplitude": "For y_i=alpha*x_i with x_i>=0 and shared alpha in [L,U], loss contrasts are piecewise linear. Exact extrema lie at endpoints or at a_i/x_i,b_i/x_i inside the interval (x_i>0). The same candidate set suffices under any nonnegative reweighting.",
+    "coefficient_set": "Intersect the nonnegative-alpha intervals implied by ALL 12000 stored labels and q=1e-5 mm. This is a retrospective consistency/identification check, not a fitted forecasting competitor. Use Decimal for source decimal cell edges; return outward-rounded float endpoints and record exact decimals. Numerical results remain conditional on the declared normal form, exported covariates and rounding model.",
+    "uncertainty_separation": "Quantization identified sets and bootstrap variability are distinct. Bootstrap envelopes contain all percentile intervals over the stipulated target sets under the same resamples. Do not call them calibrated confidence regions or claim uniform/population coverage. Partial-identification inference needs additional assumptions.",
+    "bootstrap_envelope_limit": "Pointwise extrema for each resample are sharp under their target set, but their quantile envelope is only an OUTER envelope of percentile intervals. A single shared alpha need not attain its outer endpoints across all resamples.",
+    "rounding_cells": "Use CLOSED HULLS of nearest-rounding cells, capped at zero for TA01 only. This conservatively includes ties regardless of tie-breaking; endpoint witnesses attain hull bounds, or are limits for a half-open true cell. Controlled labels use numpy.rint; verify exact targets are contained numerically.",
+    "empty_coefficient_set": "If the exact Decimal lower bound exceeds the upper bound, retain the empty intersection and report shared-amplitude model incompatible. Do not widen cells, refit a coefficient or discard rows to force non-emptiness. Continue generic cell analyses; shared-amplitude results remain unavailable."
+  },
+  "ta01": {
+    "original_label_step_mm": 1e-05,
+    "zero_constraint": "Collapse cells only after verifying structural dry status from the archived daily total and rectangular profile duration/start: daily total=0 or target hour before rain onset. Verify all exported-R-zero rows coincide with that structural status; do not infer exact internal zero solely from six-decimal exported zero. Preserve any mismatch and do not silently collapse it.",
+    "target_models": [
+      "nonnegative independent rounding cells",
+      "rounding cells with structural R=0 zeros",
+      "shared-amplitude coefficient identified set"
+    ],
+    "input_models": "All 18 retained partition-horizon-seed tasks, no refitting or selection.",
+    "methods": [
+      "proportional",
+      "persistence",
+      "ridge",
+      "lstm",
+      "hybrid_oof"
+    ],
+    "point_pairs": "All 10 unordered method pairs in all 18 tasks, fixed method order, 180 comparisons. Retain observed, reference-law, sharp and outer bounds, candidate extrema and witnesses.",
+    "reference": "Use the existing unrounded default-scenario coefficient from audit-v2 as a separate reference-target evaluation. It is not field truth and does not decompose solver/profile-rounding errors.",
+    "bootstrap": {
+      "primary_seed_index": 0,
+      "contrasts": [
+        [
+          "lstm",
+          "proportional"
+        ],
+        [
+          "hybrid_oof",
+          "proportional"
+        ],
+        [
+          "hybrid_oof",
+          "lstm"
+        ]
+      ],
+      "family_size": 18,
+      "draws": 100000,
+      "seed": 20261104,
+      "cluster": "Original source rainfall date; retain every window of resampled dates and repeated-date multiplicities. Same RNG/chunk/condition order as original summarize_ta01.py to reconcile historical intervals.",
+      "chunk_size": 1000,
+      "quantiles": [
+        0.025,
+        0.975,
+        0.001388888888888889,
+        0.9986111111111111
+      ],
+      "reporting": "Ordinary and Bonferroni percentile interval envelopes for each conditional target set, paired reference-law intervals and original stored-label intervals. Dependence across dates and historical exposure remain limitations; no new independent predictive trial."
+    },
+    "decision_tolerance_mm": 1e-14,
+    "amplitude_covariate": "At TARGET hour i, x_i=R_i*eta(k_i)*(1-d_i)/(E_i*S_i) divided by a(reference parameters), where R_i is EXPORTED accumulated rain in mm, E numeric MPa, k numeric m/s, d and S dimensionless. This differs from the future-rain input channel, which is a horizon sum repeated over histories. Treat exported covariates as fixed exact inputs to the CONDITIONAL normal form; profile/export rounding and solver uncertainty are not bounded by the alpha identified set."
+  },
+  "controlled_suite": {
+    "purpose": "Transferability and informativeness of the generic rounding certificate; not a comparison of geotechnical forecasting performance or calibration.",
+    "functions": {
+      "friedman1": "x independent U[0,1]^10; f=10*sin(pi*x1*x2)+20*(x3-.5)^2+10*x4+5*x5. Five irrelevant dimensions retained.",
+      "ishigami": "x independent U[-pi,pi]^3; f=sin(x1)+7*sin(x2)^2+.1*x3^4*sin(x1).",
+      "sobol_g": "x independent U[0,1]^6; f=product((abs(4*x_i-2)+a_i)/(1+a_i)); a=[0,1,4.5,9,99,99]."
+    },
+    "replicates_per_function": 100,
+    "root_seed": 20261105,
+    "rng": "numpy SeedSequence([root_seed,function_index,replicate]) and default_rng; arrays generated once per replicate and reused for every model and label step.",
+    "train_rows": 256,
+    "test_rows": 512,
+    "target_scaling": "Subtract training mean and divide by training population standard deviation. Fit exact standardized training targets. No observation noise or quantization during training; only test labels are rounded, deliberately isolating evaluation precision.",
+    "rounding_steps_training_sd": [
+      0,
+      0.02,
+      0.1,
+      0.5
+    ],
+    "models": {
+      "ridge": "StandardScaler of features fitted on train then Ridge(alpha=1).",
+      "random_forest": "RandomForestRegressor(n_estimators=64,max_depth=6,min_samples_leaf=4,max_features=1.0,n_jobs=1,random_state=replicate_seed).",
+      "hist_gradient_boosting": "HistGradientBoostingRegressor(max_iter=100,max_leaf_nodes=15,learning_rate=.1,l2_regularization=1,early_stopping=False,random_state=replicate_seed)."
+    },
+    "selection": "All model settings and functions fixed; no tuning, early-stopping selection, test-driven seed choice or dropped repetitions. Every fitted model is reused across all label steps. Retain all 900 fitted models and source arrays.",
+    "point_pairs": "All three unordered model pairs at each of four steps in each of 300 generated datasets: 3600 comparisons.",
+    "decision_tolerance_training_sd": 1e-12,
+    "outcomes": [
+      "rounded-label rank reversal relative to exact function targets",
+      "sharp and outer-bound certified fractions",
+      "false certified rankings",
+      "width reduction from shared-target versus separate-loss/Lipschitz bounds"
+    ],
+    "aggregation": "Report per function and step. Resample complete generated datasets, keeping three dependent model-pair records together, for descriptive 95% Monte Carlo intervals. 10000 resamples, seed 20261106. These intervals concern only the constructed simulation design, not geotechnical events. No pooling 3600 pairs as independent.",
+    "failure_policy": "Preserve any fitting failure and report incomplete suite rather than replacing a seed or declaring all fits completed."
+  },
+  "verification": [
+    "Prove endpoint and coefficient-breakpoint results independently of implementation.",
+    "Compare small examples with exact Fraction arithmetic and enumerated endpoint witnesses; include a shared-coefficient example with an interior optimum.",
+    "q=0 reproduces stored point contrast and bootstrap intervals; A=B gives zero; swapping A/B negates bounds.",
+    "Sharp box bounds lie inside separate-loss and Lipschitz outer bounds; zero constraints can only tighten boxes; the shared-amplitude set can only tighten the zero-constrained box up to reported float tolerance.",
+    "Reference alpha belongs to the coefficient set and its contrasts lie within the set bounds. Retain any violated check.",
+    "All controlled exact test targets lie in their rounding cells and every certified sign agrees with exact-target sign. This is verification of the conditional certificate, not an empirical coverage guarantee.",
+    "Reload every fitted controlled model and reconcile every saved forecast. Check source arrays and output hashes."
+  ],
+  "preservation": "Use fresh output folders; freeze new source/protocol, original data, reference audit and all saved forecast hashes before execution. Do not change existing manuscripts, audits, models, labels or peer-review reports. No external publication without a separate author decision."
+}

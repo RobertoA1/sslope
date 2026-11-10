@@ -1,0 +1,23 @@
+{
+  "name": "Article revision West Wall full retrospective evaluation 2026-11-04",
+  "models": ["persistence", "trend", "ridge", "random_forest", "boosting", "dense", "lstm", "gru"],
+  "lookback": 6,
+  "train_end": "2014-01-31",
+  "validation_end": "2014-02-10",
+  "test_end": "2014-02-20",
+  "rain_policy": "drop",
+  "use_rain": true,
+  "remove_train_outliers": false,
+  "trials": 6,
+  "epochs": 100,
+  "seed": 15003054,
+  "sensors": [],
+  "outer_folds": 3,
+  "repeats": 5,
+  "block_days": 3,
+  "bootstrap_reps": 5000,
+  "alpha": 0.05,
+  "practical_mm": 1.0,
+  "business_goal": "Audit next-calendar-day displacement forecasts from real West Wall prism observations, independently of TA-01 simulated targets.",
+  "success_criterion": "Report equal-date MAE against persistence, all planned model comparisons and uncertainty without selecting on final-test results. The 1 mm threshold is an analytical sensitivity threshold, not an operational tolerance."
+}

@@ -1,0 +1,166 @@
+{
+  "schema": "ta01-structural-certificate-audit-v2",
+  "status": "Reviewed local retrospective audit specification; freeze exact protocol and code/model/source hashes before execution. Not external preregistration.",
+  "scope": "Numerical verification and functional-property audit of the existing TA-01 generator and retained predictors. No field validation, operational warning or calibrated digital-twin claim.",
+  "prior_exposure": "The original TA-01 data, fitted models and their original test results are already known. New audits are retrospective implementation/property tests, not a new confirmatory predictive benchmark. The earlier 18-solve mesh-sensitivity diagnostic is already known and remains exploratory.",
+  "questions": {
+    "Q1": "Does the fixed-geometry generator reduce to a single amplitude proportional to R*eta(k)*(1-d)/(E*S), with cohesion, friction, density and initial water table cancelling from rainfall-induced displacement?",
+    "Q2": "Do the implemented CST element, assembly and iterative solver reproduce an independently assembled system and the expected refinement behaviour for a smooth manufactured elasticity problem?",
+    "Q3": "Does conditional monotonicity of the residual correction survive composition with the unconstrained LSTM when future rainfall changes coherently in every sequence step?"
+  },
+  "amplitude_certificate": {
+    "reference": "alpha_ref = maximum nodal norm of the unrounded default-scenario incremental displacement / 48 mm; unit mm displacement per mm rainfall. Reference modulus is in MPa, as are all modulus ratios.",
+    "evaluation": "All 500 archived scenarios and all 12000 stored hourly labels, with no coefficient fitted to those labels",
+    "formula": "y = alpha_ref * R * [eta(k)*(1-d)/(E*S)]/[eta(k_ref)*(1-d_ref)/(E_ref*S_ref)] for fixed geometry, layer ratios, Poisson ratios and Biot coefficient",
+    "eta": "clip(0.12 + 0.78*(log10(k)+12)/9, 0.08, 0.9)",
+    "reporting": "Report residuals against stored labels separately from unrounded incremental solves. Compare rounding half-step 5e-6 mm descriptively; do not assign all residual to rounding without testing solver effects.",
+    "direct_scenario_solves": [
+      1,
+      2,
+      100,
+      250,
+      400,
+      500
+    ],
+    "parameter_interventions": "Default scenario; each parameter independently at its two original design endpoints, with other inputs fixed; include a doubled-E positive control. Record every result and tolerance, including violations.",
+    "numerical_relative_tolerance": 1e-06,
+    "cancellation_rain_totals_mm": [
+      0,
+      1,
+      12,
+      48,
+      102.88
+    ],
+    "error_routes": "Separately compare the law with (1) all 12000 stored labels using exported cumulative rainfall, (2) unrounded wet-minus-dry total PCG solutions, and (3) direct incremental PCG solutions. Routes 2 and 3 use the six predeclared scenarios at all five declared rain totals.",
+    "norms_and_zeros": "Relative vector errors use L2 difference / L2 expected vector; report maximum absolute component as well. At zero rain use absolute differences and mark relative ratios null. Stored-zero labels have separate absolute-error summaries, never a relative-per-label denominator. No complete rounding-only bound is asserted.",
+    "true_residual": "Recompute ||K*u-f||_2/||f||_2 by an explicit matrix-vector multiply for dry, wet and incremental solves; retain recursive solver-reported residual separately. At zero RHS use absolute residual, and relative zero only when residual is also exactly zero.",
+    "zero_absolute_tolerance_mm": 1e-14
+  },
+  "independent_assembly": {
+    "cases": [
+      {
+        "height": 60,
+        "width": 100,
+        "benches": 3,
+        "poisson": 0.2
+      },
+      {
+        "height": 60,
+        "width": 100,
+        "benches": 3,
+        "poisson": 0.35
+      },
+      {
+        "height": 100,
+        "width": 160,
+        "benches": 5,
+        "poisson": 0.2
+      },
+      {
+        "height": 100,
+        "width": 160,
+        "benches": 5,
+        "poisson": 0.35
+      },
+      {
+        "height": 140,
+        "width": 220,
+        "benches": 7,
+        "poisson": 0.2
+      },
+      {
+        "height": 140,
+        "width": 220,
+        "benches": 7,
+        "poisson": 0.35
+      }
+    ],
+    "mesh": [
+      15,
+      10
+    ],
+    "rain_mm": 48,
+    "method": "Reassemble CST stiffness and incremental Biot loads separately in Python from exported mesh geometry and material identifiers; compare with the JavaScript assembly and solve with scipy.sparse.linalg.spsolve",
+    "stiffness_relative_tolerance": 1e-12,
+    "load_relative_tolerance": 1e-10,
+    "displacement_relative_tolerance": 1e-06,
+    "independence": "Separate implementation and solver used by the same research workflow, not an external team's reproduction",
+    "norms": "Matrix: relative Frobenius norm with maximum absolute entry also reported. Loads/displacements: relative L2 norm with maximum absolute component also reported; denominators are norms of JavaScript references. Zero reference vectors use absolute errors and relative null except exact zero/zero -> 0.",
+    "boundary_conditions": "Deduce fixed DOFs independently from exported coordinates using the declared base/left rules; compare with the export. Independently classify material centroids using exact rational nominal structured-grid coordinates derived from dimensions, mesh indices and decimal parameters, applying <= at interfaces. Retain the floating-classifier disagreements. Use exported floating coordinates for stiffness/load and disclose shared geometry.",
+    "true_residual": "Report true residual from matrix-vector multiplication separately from PCG recursive residual; residual size is not a displacement-error bound."
+  },
+  "manufactured_elasticity": {
+    "domain": "Unit square with homogeneous displacement on all four boundaries",
+    "plane_strain": true,
+    "young_modulus_kpa": 1000,
+    "poisson_ratio": 0.28,
+    "exact_displacement_m": [
+      "sin(pi*x)*sin(pi*y)",
+      "0.5*sin(2*pi*x)*sin(pi*y)"
+    ],
+    "force": "Derived analytically from -mu*laplacian(u)-(lambda+mu)*grad(div(u))",
+    "mesh_subdivisions": [
+      4,
+      8,
+      16,
+      32
+    ],
+    "quadrature": "Seven-point degree-five triangular quadrature for load, L2 error and energy error",
+    "source_under_test": "Original CST element stiffness and PCG solver exposed through additional in-memory exports; production source bytes remain unchanged. The manufactured-domain assembly adapter and homogeneous boundary elimination are disclosed separately.",
+    "pcg_relative_tolerance": 1e-12,
+    "max_iterations": 1800,
+    "acceptance": {
+      "minimum_final_l2_order": 1.8,
+      "minimum_final_energy_order": 0.9
+    },
+    "scope_limit": "Smooth manufactured-problem refinement does not prove convergence of the stepped TA-01 geometry or constitutive validity",
+    "explicit_body_force": [
+      "pi^2*((lambda+3*mu)*sin(pi*x)*sin(pi*y)-(lambda+mu)*cos(2*pi*x)*cos(pi*y))",
+      "pi^2*((lambda/2+3*mu)*sin(2*pi*x)*sin(pi*y)-(lambda+mu)*cos(pi*x)*cos(pi*y))"
+    ],
+    "strain_convention": "Engineering shear [du1/dx, du2/dy, du1/dy+du2/dx]; energy error sqrt(integral(delta_strain.T D delta_strain)), vector L2 error sqrt(integral(sum((u-uh)^2))).",
+    "triangulation_and_units": "Unit-thickness plane strain; structured n by n squares split counterclockwise along bottom-left to top-right diagonals. Length m, displacement m, modulus kPa. Adapter fixes both axes on all four unit-square boundaries; this differs from production slope BCs.",
+    "final_order": "log(error at n=16 / error at n=32)/log(2); report all other pair orders and norms too.",
+    "independent_numerical_agreement_tolerances": {
+      "relative_l2_displacement": 1e-08,
+      "relative_l2_error_norm": 1e-08,
+      "relative_energy_error_norm": 1e-08
+    }
+  },
+  "composite_monotonicity": {
+    "models": "Every retained base and OOF-corrector pair: three seeds, three original partitions and two horizons; no model selection or refitting",
+    "histories": "Every original test history, preserving its original current observation and all non-forecast channels",
+    "primary_grid": "Unique quantiles 0, .25, .5, .75, 1 of forecast rain in that task's training windows; future-rain input changes at all six history steps",
+    "stress_grid_mm": [
+      0,
+      1,
+      6,
+      12,
+      24,
+      48,
+      96,
+      200
+    ],
+    "evaluations": [
+      "raw LSTM",
+      "LSTM with current-value floor",
+      "raw composite LSTM plus residual",
+      "composite with current-value floor",
+      "residual correction with original base prediction held fixed"
+    ],
+    "decrease_tolerance_mm": 1e-10,
+    "reporting": "Retain per-history adjacent-grid decreases, maxima, denominators and complete seed results. Separate primary marginal-training-range grid from wider stress grid. Neither guarantees joint support with a particular past history.",
+    "inference": "Functional diagnostics on retained networks, not population event rates or causal field effects. Overlapping histories, reused dates, seeds and partitions are not independent physical events. No p-values or claims of a new independent test. A finite grid can falsify a guarantee but cannot prove global monotonicity.",
+    "quantiles": "numpy.quantile(method=linear) over every training window forecast input; sort and deduplicate exact float64 values. Grids with fewer than two unique values yield no adjacent comparisons and a null violation rate.",
+    "denominators": "For each task/grid/method report histories, unique grid values, adjacent pairs = histories*(grid size-1), violating adjacent pairs and histories with any violating pair. Never treat these frequencies as event prevalence or compare grids as if they used the same sampling measure.",
+    "composition": "Recompute the raw standardized LSTM delta and all corrector inputs at every grid value. Compose raw base plus residual before any current-value floor. For the conditional-corrector control, hold each history original raw base prediction fixed.",
+    "future_information": "The forecast rain channel is the sum of future rain from the constructed scenario, repeated at all six history steps. It is idealized future information; meteorological forecast error and operational availability are not evaluated.",
+    "inventory": "Before executing, enumerate all 18 original partition-horizon-seed task folders and hash their complete.json, base-network.json, corrector.json and oof-date-assignment.json files, plus protocol and source CSVs. Inventory is fixed without consulting audit outcomes."
+  },
+  "preservation": "Use a new output directory. Keep original article, data, model weights, forecasts and all source hashes. Publish neither manuscript nor archive without the author's separate decision. Do not conceal failed checks or modify thresholds after outcomes.",
+  "amendment_after_v1": {
+    "reason": "The first Python numerical check stopped at three elements in each of two cases: a reordered floating surface formula gave depths 12+3.55e-15 or 12+7.11e-15 m, selecting WEATHERED instead of SOIL. Exact rational nominal-grid geometry puts these centroids at depth exactly 12 m, where the declared <= convention selects SOIL, agreeing with JavaScript.",
+    "change": "Use exact rational nominal geometry for the independent material classification, retain the floating classifier disagreements, and continue separate case checks when one fails. Exported floating coordinates still determine stiffness and load.",
+    "preservation": "audit-v1, its failed logs, rational diagnostic and exact audit-source snapshot remain retained. No thresholds, cases, predictor weights, grids or hypotheses were changed. This implementation amendment follows a known failure and is not presented as preregistered."
+  }
+}

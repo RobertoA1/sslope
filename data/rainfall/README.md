@@ -21,6 +21,6 @@
 
 ## Uso en el simulador
 
-El valor diario seleccionado se conserva íntegramente. Para ejecutar el motor horario, el sistema lo distribuye uniformemente entre 24 intervalos. Esta transformación se registra como `UNIFORM_24H_ESTIMATED`; no representa una observación horaria ni mediciones dentro de una mina.
+El valor diario seleccionado se conserva íntegramente. La utilidad `uniformHourlyProfile` lo distribuye uniformemente entre 24 intervalos y registra `UNIFORM_24H_ESTIMATED`. El generador TA-01 (`src/core/study-case-ta01.js`) usa también perfiles rectangulares supuestos de 6, 12 o 24 horas, repartiendo el total diario dentro de su duración; las horas restantes tienen lluvia cero. El escenario sin lluvia usa 24 horas. Ambas transformaciones son distribuciones horarias estimadas: no son observaciones horarias ni mediciones dentro de una mina. El manifiesto y cada escenario conservan la duración utilizada.
 
 La lluvia tiene procedencia real de reanálisis, pero la presión de poros y el desplazamiento resultantes continúan siendo salidas simuladas del modelo reducido. Por ello el conjunto combinado se clasifica como semisintético y no permite uso operacional.
